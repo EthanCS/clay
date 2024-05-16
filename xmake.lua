@@ -1,3 +1,4 @@
+set_languages("c99", "cxx20")
 add_rules("mode.debug", "mode.release")
 
 includes("modules")
