@@ -33,10 +33,16 @@ struct RenderBackendCreateDesc {
     bool                    debug{ false };
 };
 
-class RenderBackend
-{
-protected:
-    flecs::world world;
+struct RenderBackend {
+    RenderBackendType::Enum type;
+    flecs::world            world;
+
+    RenderBackend(RenderBackendType::Enum _type)
+        : type(_type)
+        , world(flecs::world())
+    {
+    }
+    virtual ~RenderBackend() = default;
 };
 
 static RenderBackend* s_backend = nullptr;
