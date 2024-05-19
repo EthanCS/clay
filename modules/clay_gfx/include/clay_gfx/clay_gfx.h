@@ -20,7 +20,7 @@ DEFINE_CLAY_GFX_HANDLE(Pipeline)
 DEFINE_CLAY_GFX_HANDLE(RenderPass)
 DEFINE_CLAY_GFX_HANDLE(Framebuffer)
 
-struct BackendType {
+struct RenderBackendType {
     enum Enum
     {
         Vulkan,
@@ -28,13 +28,20 @@ struct BackendType {
     };
 };
 
-struct Init {
-    BackendType::Enum type;
-    bool              debug{ false };
+struct RenderBackendCreateDesc {
+    RenderBackendType::Enum type;
+    bool                    debug{ false };
 };
 
-bool init(const Init& desc);
-void shutdown();
+class RenderBackend
+{
+protected:
+    flecs::world world;
+};
+
+static RenderBackend* s_backend = nullptr;
+bool                  init(const RenderBackendCreateDesc& desc);
+void                  shutdown();
 
 } // namespace gfx
 } // namespace clay
