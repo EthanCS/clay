@@ -1,6 +1,6 @@
-target("clay_mem")
+target("clay_core")
     set_kind("static")
     add_files("src/**.cpp")
     add_includedirs("include/", {public = true})
-    add_packages("mimalloc")
+    add_packages("spdlog", "mimalloc")
 target_end()

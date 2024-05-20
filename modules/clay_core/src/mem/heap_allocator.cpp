@@ -1,13 +1,13 @@
-#include <clay_mem/clay_mem.h>
+#include <clay_core/mem/allocator.h>
 
 namespace clay
 {
-namespace mem
+namespace core
 {
 
 HeapAllocator::~HeapAllocator() {}
 
-void HeapAllocator::init(size_t size)
+void HeapAllocator::init(usize size)
 {
     this->heap = mi_heap_new();
 }
@@ -17,12 +17,12 @@ void HeapAllocator::shutdown()
     mi_heap_delete(this->heap);
 }
 
-void* HeapAllocator::allocate(size_t size, size_t alignment)
+void* HeapAllocator::allocate(usize size, usize alignment)
 {
     return mi_heap_malloc_aligned(this->heap, size, alignment);
 }
 
-void* HeapAllocator::allocate(size_t size, size_t alignment, const char* file, int32_t line)
+void* HeapAllocator::allocate(usize size, usize alignment, const char* file, i32 line)
 {
     return mi_heap_malloc_aligned(this->heap, size, alignment);
 }
@@ -32,5 +32,5 @@ void HeapAllocator::deallocate(void* ptr)
     mi_free(ptr);
 }
 
-} // namespace mem
+} // namespace core
 } // namespace clay

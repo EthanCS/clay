@@ -1,2 +1,2 @@
+includes("clay_core")
 includes("clay_gfx")
-includes("clay_mem")
