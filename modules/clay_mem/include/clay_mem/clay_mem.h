@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <mimalloc.h>
+
 namespace clay
 {
 namespace mem
@@ -24,6 +26,9 @@ struct HeapAllocator : public Allocator {
     void* allocate(size_t size, size_t alignment) override;
     void* allocate(size_t size, size_t alignment, const char* file, int32_t line) override;
     void  deallocate(void* ptr) override;
+
+private:
+    mi_heap_t* heap;
 };
 
 } // namespace mem
