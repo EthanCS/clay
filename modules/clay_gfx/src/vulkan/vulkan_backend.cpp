@@ -29,6 +29,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     : RenderBackend(desc.type)
 {
+    //////// Init Vulkan instance.
     VkApplicationInfo app_info  = {};
     app_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     app_info.pApplicationName   = "Clay";
@@ -55,6 +56,11 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     }
 
     VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
+    CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan instance.");
+
+    //////// Pick physcial device.
+    uint32_t physical_device_count = 0;
+    vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 }
 
 VulkanBackend::~VulkanBackend()
