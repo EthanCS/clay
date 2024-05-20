@@ -2,7 +2,7 @@ set_languages("c99", "cxx20")
 add_rules("mode.debug", "mode.release")
 
 add_requires("flecs 3.2.11")
-add_requires("vulkansdk")
+add_requires("vulkansdk", "mimalloc")
 
 includes("modules")
 

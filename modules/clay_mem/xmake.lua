@@ -1,0 +1,6 @@
+target("clay_mem")
+    set_kind("static")
+    add_files("src/**.cpp")
+    add_includedirs("include/", {public = true})
+    add_packages("mimalloc")
+target_end()
