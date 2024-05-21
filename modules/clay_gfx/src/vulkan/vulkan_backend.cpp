@@ -29,7 +29,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     : RenderBackend(desc.type)
 {
-    CLAY_LOG_INFO_LOCATION("Initializing Vulkan backend.");
+    CLAY_LOG_INFO("Initializing Vulkan backend...");
 
     //////// Init Vulkan instance.
     VkApplicationInfo app_info  = {};
@@ -63,6 +63,46 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     //////// Pick physcial device.
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
+    CLAY_ASSERT(physical_device_count > 0, "No Vulkan physical devices found.");
+
+    std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
+    vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
+
+    VkPhysicalDevice target_device = VK_NULL_HANDLE;
+    if (desc.device_id != U32_MAX)
+    {
+        CLAY_LOG_INFO("Try to create device with id: {}", desc.device_id);
+        bool bFoundPreferredDevice = false;
+        for (const auto& device : physical_devices)
+        {
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
+            if (desc.device_id == properties.deviceID)
+            {
+                target_device         = device;
+                bFoundPreferredDevice = true;
+                break;
+            }
+        }
+
+        if (!bFoundPreferredDevice)
+        {
+            CLAY_LOG_INFO("Preferred device not found. Automatically select device.");
+        }
+    }
+
+    if (target_device == VK_NULL_HANDLE)
+    {
+        target_device = physical_devices[0];
+    }
+    CLAY_ASSERT(target_device != VK_NULL_HANDLE, "Failed to select Vulkan physical device.");
+
+    if (target_device != VK_NULL_HANDLE)
+    {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(target_device, &properties);
+        CLAY_LOG_INFO("Selected GPU: {}, Device ID: {}, Driver Version: {}", properties.deviceName, properties.deviceID, properties.driverVersion);
+    }
 }
 
 VulkanBackend::~VulkanBackend()
