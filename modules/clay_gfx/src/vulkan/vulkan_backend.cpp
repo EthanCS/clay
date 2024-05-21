@@ -29,6 +29,8 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     : RenderBackend(desc.type)
 {
+    CLAY_LOG_INFO_LOCATION("Initializing Vulkan backend.");
+
     //////// Init Vulkan instance.
     VkApplicationInfo app_info  = {};
     app_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
