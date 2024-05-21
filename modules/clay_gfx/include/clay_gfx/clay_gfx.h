@@ -25,12 +25,15 @@ struct RenderBackendType {
     enum Enum
     {
         Vulkan,
+        DirectX12,
+        Metal,
         Count
     };
 };
 
 struct RenderBackendCreateDesc {
     RenderBackendType::Enum type;
+    void*                   window{ nullptr }; // Maybe SDL_Window* or any other window handle
     bool                    debug{ false };
     u32                     device_id{ u32_MAX };
 };
