@@ -10,7 +10,7 @@ namespace clay
 namespace gfx
 {
 
-std::vector<const char*> vulkan_get_layer_names(bool debug)
+inline std::vector<const char*> vulkan_get_layer_names(bool debug)
 {
     std::vector<const char*> layerNames;
 
@@ -18,17 +18,18 @@ std::vector<const char*> vulkan_get_layer_names(bool debug)
     {
         layerNames.push_back("VK_LAYER_KHRONOS_validation");
     }
-    layerNames.push_back("");
 
     return layerNames;
 }
 
-std::vector<const char*> vulkan_get_extension_names(bool debug)
+inline std::vector<const char*> vulkan_get_extension_names(bool debug)
 {
     std::vector<const char*> extensionNames;
 
     extensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
     extensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#endif
 
     if (debug)
     {
