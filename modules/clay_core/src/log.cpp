@@ -1,6 +1,6 @@
-#include "clay_core/log.h"
-#include "spdlog/sinks/base_sink.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include <clay_core/log.h>
+#include <spdlog/sinks/base_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace clay
 {
