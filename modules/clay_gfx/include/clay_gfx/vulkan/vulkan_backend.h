@@ -26,6 +26,12 @@ private:
     VulkanQueue compute_queue;
     VulkanQueue transfer_queue;
 
+    bool                             debug_utils_enabled;
+    VkDebugUtilsMessengerEXT         debug_utils_messenger;
+    PFN_vkSetDebugUtilsObjectNameEXT pfn_SetDebugUtilsObjectNameEXT;
+    PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT;
+    PFN_vkCmdEndDebugUtilsLabelEXT   pfn_CmdEndDebugUtilsLabelEXT;
+
 public:
     VulkanBackend(const RenderBackendCreateDesc& desc);
     virtual ~VulkanBackend() override;

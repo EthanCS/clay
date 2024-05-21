@@ -78,6 +78,35 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
     CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan instance. ({})", string_VkResult(result));
 
+    //////// Init debug utils.
+    if (desc.debug)
+    {
+        u32 num_instance_extensions;
+        vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions, nullptr);
+        std::vector<VkExtensionProperties> extensions(num_instance_extensions);
+        vkEnumerateInstanceExtensionProperties(nullptr, &num_instance_extensions, extensions.data());
+        for (usize i = 0; i < num_instance_extensions; i++)
+        {
+            if (!strcmp(extensions[i].extensionName, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+            {
+                debug_utils_enabled = true;
+                break;
+            }
+        }
+
+        if (debug_utils_enabled)
+        {
+            // Create new debug utils callback
+            auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+            auto debug_messenger_create_info    = create_debug_utils_messenger_info();
+            vkCreateDebugUtilsMessengerEXT(instance, &debug_messenger_create_info, nullptr, &debug_utils_messenger);
+        }
+        else
+        {
+            CLAY_LOG_WARNING("Debug utils extension not found. Debug messages will not be displayed.");
+        }
+    }
+
     //////// Pick physcial device.
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
@@ -217,10 +246,24 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
         transfer_queue.family_index = transfer_queue_family_index;
         vkGetDeviceQueue(device, transfer_queue_family_index, 0, &transfer_queue.queue);
     }
+
+    //////// Init debug utils function pointers.
+    if (debug_utils_enabled)
+    {
+        pfn_SetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT");
+        pfn_CmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT");
+        pfn_CmdEndDebugUtilsLabelEXT   = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT");
+    }
 }
 
 VulkanBackend::~VulkanBackend()
 {
+    if (debug_utils_messenger != VK_NULL_HANDLE)
+    {
+        auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
+    }
+
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
