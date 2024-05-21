@@ -10,11 +10,21 @@ namespace clay
 namespace gfx
 {
 
+struct VulkanQueue {
+    VkQueue queue;
+    u32     family_index;
+};
+
 class VulkanBackend : public RenderBackend
 {
 private:
     VkInstance instance;
     VkDevice   device;
+
+    VulkanQueue graphics_queue;
+    VulkanQueue present_queue;
+    VulkanQueue compute_queue;
+    VulkanQueue transfer_queue;
 
 public:
     VulkanBackend(const RenderBackendCreateDesc& desc);

@@ -32,7 +32,7 @@ struct RenderBackendType {
 struct RenderBackendCreateDesc {
     RenderBackendType::Enum type;
     bool                    debug{ false };
-    u32                     device_id{ U32_MAX };
+    u32                     device_id{ u32_MAX };
 };
 
 struct RenderBackend {

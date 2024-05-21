@@ -1,6 +1,6 @@
-#include "stdio.h"
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 namespace clay
 {
@@ -12,7 +12,23 @@ static VkBool32 debug_utils_callback(VkDebugUtilsMessageSeverityFlagBitsEXT     
                                      const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
                                      void*                                       user_data)
 {
-    printf(" MessageID: %s %i\nMessage: %s\n\n", callback_data->pMessageIdName, callback_data->messageIdNumber, callback_data->pMessage);
+    switch (severity)
+    {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            CLAY_LOG_VERBOSE("{}", callback_data->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            CLAY_LOG_INFO("{}", callback_data->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            CLAY_LOG_WARNING("{}", callback_data->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            CLAY_LOG_ERROR("{}", callback_data->pMessage);
+            break;
+        default:
+            break;
+    }
     return VK_FALSE;
 }
 
@@ -58,7 +74,7 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     }
 
     VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
-    CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan instance.");
+    CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan instance. ({})", string_VkResult(result));
 
     //////// Pick physcial device.
     uint32_t physical_device_count = 0;
@@ -68,46 +84,135 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
     vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
 
-    VkPhysicalDevice target_device = VK_NULL_HANDLE;
-    if (desc.device_id != U32_MAX)
+    VkPhysicalDevice adapter = VK_NULL_HANDLE;
+    if (desc.device_id != u32_MAX)
     {
         CLAY_LOG_INFO("Try to create device with id: {}", desc.device_id);
-        bool bFoundPreferredDevice = false;
+        bool bFoundDevice = false;
         for (const auto& device : physical_devices)
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
             if (desc.device_id == properties.deviceID)
             {
-                target_device         = device;
-                bFoundPreferredDevice = true;
+                adapter      = device;
+                bFoundDevice = true;
                 break;
             }
         }
 
-        if (!bFoundPreferredDevice)
-        {
-            CLAY_LOG_INFO("Preferred device not found. Automatically select device.");
-        }
+        if (!bFoundDevice) { CLAY_LOG_INFO("Preferred device not found. Automatically select device."); }
     }
 
-    if (target_device == VK_NULL_HANDLE)
+    if (adapter == VK_NULL_HANDLE)
     {
-        target_device = physical_devices[0];
+        adapter = physical_devices[0];
     }
-    CLAY_ASSERT(target_device != VK_NULL_HANDLE, "Failed to select Vulkan physical device.");
+    CLAY_ASSERT(adapter != VK_NULL_HANDLE, "Failed to select Vulkan physical device.");
 
-    if (target_device != VK_NULL_HANDLE)
+    //////// Create logical device.
+    if (adapter != VK_NULL_HANDLE)
     {
         VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(target_device, &properties);
+        vkGetPhysicalDeviceProperties(adapter, &properties);
         CLAY_LOG_INFO("Selected GPU: {}, Device ID: {}, Driver Version: {}", properties.deviceName, properties.deviceID, properties.driverVersion);
+
+        // Find Queue Family
+        uint32_t queue_family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, nullptr);
+        CLAY_ASSERT(queue_family_count > 0, "No Vulkan queue families found.");
+        std::vector<VkQueueFamilyProperties> queue_family_properties(queue_family_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, queue_family_properties.data());
+
+        u32 main_queue_family_index     = u32_MAX;
+        u32 compute_queue_family_index  = u32_MAX;
+        u32 transfer_queue_family_index = u32_MAX;
+        u32 compute_queue_index         = u32_MAX;
+
+        for (int i = 0; i < queue_family_count; ++i)
+        {
+            const auto& q = queue_family_properties[i];
+            if (q.queueCount == 0) { continue; }
+
+            if (q.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+            {
+                main_queue_family_index = i;
+                if (q.queueCount > 1)
+                {
+                    compute_queue_family_index = i;
+                    compute_queue_index        = 1;
+                }
+                continue;
+            }
+
+            // Compute queue
+            if (q.queueFlags & VK_QUEUE_COMPUTE_BIT && compute_queue_family_index == u32_MAX)
+            {
+                compute_queue_family_index = i;
+                compute_queue_index        = 0;
+            }
+
+            // Transfer queue
+            if (q.queueFlags & VK_QUEUE_TRANSFER_BIT && !(q.queueFlags & VK_QUEUE_COMPUTE_BIT))
+            {
+                transfer_queue_family_index = i;
+                continue;
+            }
+        }
+
+        std::vector<VkDeviceQueueCreateInfo> queue_infos;
+
+        VkDeviceQueueCreateInfo main_queue = {};
+        main_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        main_queue.queueFamilyIndex        = main_queue_family_index;
+        main_queue.queueCount              = main_queue_family_index == compute_queue_family_index ? 2 : 1;
+        float queue_priority[]             = { 1.0f, 1.0f };
+        main_queue.pQueuePriorities        = queue_priority;
+        queue_infos.push_back(main_queue);
+
+        if (main_queue_family_index != compute_queue_family_index)
+        {
+            VkDeviceQueueCreateInfo compute_queue = {};
+            compute_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            compute_queue.queueFamilyIndex        = compute_queue_family_index;
+            compute_queue.queueCount              = 1;
+            compute_queue.pQueuePriorities        = queue_priority;
+            queue_infos.push_back(compute_queue);
+        }
+
+        if (transfer_queue_family_index < queue_family_properties.size())
+        {
+            VkDeviceQueueCreateInfo transfer_queue = {};
+            transfer_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            transfer_queue.queueFamilyIndex        = transfer_queue_family_index;
+            transfer_queue.queueCount              = 1;
+            transfer_queue.pQueuePriorities        = queue_priority;
+            queue_infos.push_back(transfer_queue);
+        }
+
+        VkDeviceCreateInfo device_info   = {};
+        device_info.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_info.queueCreateInfoCount = queue_infos.size();
+        device_info.pQueueCreateInfos    = queue_infos.data();
+
+        result = vkCreateDevice(adapter, &device_info, nullptr, &device);
+        CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan logical device. ({})", string_VkResult(result));
+
+        graphics_queue.family_index = main_queue_family_index;
+        vkGetDeviceQueue(device, main_queue_family_index, 0, &graphics_queue.queue);
+        present_queue = graphics_queue;
+
+        compute_queue.family_index = compute_queue_family_index;
+        vkGetDeviceQueue(device, compute_queue_family_index, compute_queue_index, &compute_queue.queue);
+
+        transfer_queue.family_index = transfer_queue_family_index;
+        vkGetDeviceQueue(device, transfer_queue_family_index, 0, &transfer_queue.queue);
     }
 }
 
 VulkanBackend::~VulkanBackend()
 {
-    // vkDestroyDevice(device, nullptr);
+    vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
 
