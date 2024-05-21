@@ -21,6 +21,10 @@ typedef double f64;
 
 typedef size_t usize;
 
+#define PP_THIRD_ARG(a, b, c, ...) c
+#define VA_OPT_SUPPORTED_I(...) PP_THIRD_ARG(__VA_OPT__(, ), true, false, )
+#define VA_OPT_SUPPORTED VA_OPT_SUPPORTED_I(?)
+
 #if defined(_MSC_VER)
     #define CLAY_DEBUG_BREAK __debugbreak();
 #else

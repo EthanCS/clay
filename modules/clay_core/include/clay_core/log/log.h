@@ -19,9 +19,9 @@ void set_log_level_error();
 } // namespace clay
 
 #define CLAY_LOG_VERBOSE(...) (::clay::core::default_logger()).log(spdlog::level::debug, __VA_ARGS__)
-#define CLAY_LOG_INFO(...) (::clay::core::default_logger()).log(spdlog::level::debug, __VA_ARGS__)
-#define CLAY_LOG_WARNING(...) (::clay::core::default_logger()).log(spdlog::level::debug, __VA_ARGS__)
-#define CLAY_LOG_ERROR(...) (::clay::core::default_logger()).log(spdlog::level::debug, __VA_ARGS__)
+#define CLAY_LOG_INFO(...) (::clay::core::default_logger()).log(spdlog::level::info, __VA_ARGS__)
+#define CLAY_LOG_WARNING(...) (::clay::core::default_logger()).log(spdlog::level::warn, __VA_ARGS__)
+#define CLAY_LOG_ERROR(...) (::clay::core::default_logger()).log(spdlog::level::err, __VA_ARGS__)
 
 #define CLAY_LOG_VERBOSE_LOCATION(...) \
     (::clay::core::default_logger()).log(spdlog::source_loc{ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::debug, __VA_ARGS__)
@@ -32,13 +32,26 @@ void set_log_level_error();
 #define CLAY_LOG_ERROR_LOCATION(...) \
     (::clay::core::default_logger()).log(spdlog::source_loc{ __FILE__, __LINE__, SPDLOG_FUNCTION }, spdlog::level::err, __VA_ARGS__)
 
-#define CLAY_ASSERT(x, msg, ...)                                      \
-    do                                                                \
-    {                                                                 \
-        if (!(x)) [[unlikely]]                                        \
-        {                                                             \
-            auto m = fmt::format(msg, __VA_ARGS__);                   \
-            CLAY_LOG_ERROR_LOCATION("Assertion: {}, Msg: {}", #x, m); \
-            CLAY_DEBUG_BREAK                                          \
-        }                                                             \
-    } while (false)
+#if !VA_OPT_SUPPORTED
+    #define CLAY_ASSERT(x, msg, ...)                                      \
+        do                                                                \
+        {                                                                 \
+            if (!(x)) [[unlikely]]                                        \
+            {                                                             \
+                auto m = fmt::format(msg, __VA_ARGS__);                   \
+                CLAY_LOG_ERROR_LOCATION("Assertion: {}, Msg: {}", #x, m); \
+                CLAY_DEBUG_BREAK                                          \
+            }                                                             \
+        } while (false)
+#else
+    #define CLAY_ASSERT(x, msg, ...)                                      \
+        do                                                                \
+        {                                                                 \
+            if (!(x)) [[unlikely]]                                        \
+            {                                                             \
+                auto m = fmt::format(msg __VA_OPT__(, ) __VA_ARGS__);     \
+                CLAY_LOG_ERROR_LOCATION("Assertion: {}, Msg: {}", #x, m); \
+                CLAY_DEBUG_BREAK                                          \
+            }                                                             \
+        } while (false)
+#endif

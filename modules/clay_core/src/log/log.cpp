@@ -1,4 +1,3 @@
-#include "spdlog/common.h"
 #include <clay_core/log/log.h>
 
 #include <spdlog/sinks/base_sink.h>
