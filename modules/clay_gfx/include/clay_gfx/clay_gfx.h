@@ -1,7 +1,7 @@
 #pragma once
 
+#include <clay_core/macro.h>
 #include <flecs.h>
-#include <clay_core/clay_core.h>
 
 #define DEFINE_CLAY_GFX_HANDLE(name) \
     struct name##Handle {            \

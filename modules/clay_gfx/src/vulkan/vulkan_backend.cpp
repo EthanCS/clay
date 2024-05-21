@@ -1,3 +1,5 @@
+#include <clay_core/log.h>
+#include <clay_core/macro.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
 #include <vulkan/vk_enum_string_helper.h>
@@ -117,87 +119,94 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
         vkGetPhysicalDeviceProperties(adapter, &properties);
         CLAY_LOG_INFO("Selected GPU: {}, Device ID: {}, Driver Version: {}", properties.deviceName, properties.deviceID, properties.driverVersion);
 
-        // Find Queue Family
-        uint32_t queue_family_count = 0;
+        //////// Handle queue families.
+        u32 queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, nullptr);
         CLAY_ASSERT(queue_family_count > 0, "No Vulkan queue families found.");
         std::vector<VkQueueFamilyProperties> queue_family_properties(queue_family_count);
         vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, queue_family_properties.data());
 
-        u32 main_queue_family_index     = u32_MAX;
-        u32 compute_queue_family_index  = u32_MAX;
-        u32 transfer_queue_family_index = u32_MAX;
-        u32 compute_queue_index         = u32_MAX;
-
-        for (int i = 0; i < queue_family_count; ++i)
+        u32 main_queue_family_index = u32_MAX, transfer_queue_family_index = u32_MAX, compute_queue_family_index = u32_MAX, present_queue_family_index = u32_MAX;
+        u32 compute_queue_index = u32_MAX;
+        for (u32 fi = 0; fi < queue_family_count; ++fi)
         {
-            const auto& q = queue_family_properties[i];
-            if (q.queueCount == 0) { continue; }
+            VkQueueFamilyProperties queue_family = queue_family_properties[fi];
 
-            if (q.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
+            if (queue_family.queueCount == 0) { continue; }
+
+            // Search for main queue that should be able to do all work (graphics, compute and transfer)
+            if ((queue_family.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT)) == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT))
             {
-                main_queue_family_index = i;
-                if (q.queueCount > 1)
+                main_queue_family_index = fi;
+
+                if (queue_family.queueCount > 1)
                 {
-                    compute_queue_family_index = i;
+                    compute_queue_family_index = fi;
                     compute_queue_index        = 1;
                 }
+
                 continue;
             }
 
-            // Compute queue
-            if (q.queueFlags & VK_QUEUE_COMPUTE_BIT && compute_queue_family_index == u32_MAX)
+            // Search for another compute queue if graphics queue exposes only one queue
+            if ((queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT) && compute_queue_index == u32_MAX)
             {
-                compute_queue_family_index = i;
+                compute_queue_family_index = fi;
                 compute_queue_index        = 0;
             }
 
-            // Transfer queue
-            if (q.queueFlags & VK_QUEUE_TRANSFER_BIT && !(q.queueFlags & VK_QUEUE_COMPUTE_BIT))
+            // Search for transfer queue
+            if ((queue_family.queueFlags & VK_QUEUE_COMPUTE_BIT) == 0 && (queue_family.queueFlags & VK_QUEUE_TRANSFER_BIT))
             {
-                transfer_queue_family_index = i;
+                transfer_queue_family_index = fi;
                 continue;
             }
         }
 
-        std::vector<VkDeviceQueueCreateInfo> queue_infos;
+        const float             queue_priority[] = { 1.0f, 1.0f };
+        VkDeviceQueueCreateInfo queue_info[3]    = {};
+        u32                     queue_count      = 0;
 
-        VkDeviceQueueCreateInfo main_queue = {};
-        main_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        main_queue.queueFamilyIndex        = main_queue_family_index;
-        main_queue.queueCount              = main_queue_family_index == compute_queue_family_index ? 2 : 1;
-        float queue_priority[]             = { 1.0f, 1.0f };
-        main_queue.pQueuePriorities        = queue_priority;
-        queue_infos.push_back(main_queue);
+        VkDeviceQueueCreateInfo& main_queue = queue_info[queue_count++];
+        main_queue.sType                    = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        main_queue.queueFamilyIndex         = main_queue_family_index;
+        main_queue.queueCount               = compute_queue_family_index == main_queue_family_index ? 2 : 1;
+        main_queue.pQueuePriorities         = queue_priority;
 
-        if (main_queue_family_index != compute_queue_family_index)
+        if (compute_queue_family_index != main_queue_family_index)
         {
-            VkDeviceQueueCreateInfo compute_queue = {};
-            compute_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            compute_queue.queueFamilyIndex        = compute_queue_family_index;
-            compute_queue.queueCount              = 1;
-            compute_queue.pQueuePriorities        = queue_priority;
-            queue_infos.push_back(compute_queue);
+            VkDeviceQueueCreateInfo& compute_queue = queue_info[queue_count++];
+            compute_queue.queueFamilyIndex         = compute_queue_family_index;
+            compute_queue.sType                    = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            compute_queue.queueCount               = 1;
+            compute_queue.pQueuePriorities         = queue_priority;
         }
 
-        if (transfer_queue_family_index < queue_family_properties.size())
+        if (transfer_queue_family_index < queue_family_count)
         {
-            VkDeviceQueueCreateInfo transfer_queue = {};
-            transfer_queue.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            transfer_queue.queueFamilyIndex        = transfer_queue_family_index;
-            transfer_queue.queueCount              = 1;
-            transfer_queue.pQueuePriorities        = queue_priority;
-            queue_infos.push_back(transfer_queue);
+            VkDeviceQueueCreateInfo& transfer_queue_info = queue_info[queue_count++];
+            transfer_queue_info.sType                    = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            transfer_queue_info.queueFamilyIndex         = transfer_queue_family_index;
+            transfer_queue_info.queueCount               = 1;
+            transfer_queue_info.pQueuePriorities         = queue_priority;
         }
 
-        VkDeviceCreateInfo device_info   = {};
-        device_info.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        device_info.queueCreateInfoCount = queue_infos.size();
-        device_info.pQueueCreateInfos    = queue_infos.data();
+        //////// Handle device extensions.
+        std::vector<const char*> device_extensions;
+        device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+        //////// Create VKDevice.
+        VkDeviceCreateInfo device_info      = {};
+        device_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_info.queueCreateInfoCount    = queue_count;
+        device_info.pQueueCreateInfos       = queue_info;
+        device_info.enabledExtensionCount   = device_extensions.size();
+        device_info.ppEnabledExtensionNames = device_extensions.data();
 
         result = vkCreateDevice(adapter, &device_info, nullptr, &device);
         CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan logical device. ({})", string_VkResult(result));
 
+        //////// Get queues.
         graphics_queue.family_index = main_queue_family_index;
         vkGetDeviceQueue(device, main_queue_family_index, 0, &graphics_queue.queue);
         present_queue = graphics_queue;
