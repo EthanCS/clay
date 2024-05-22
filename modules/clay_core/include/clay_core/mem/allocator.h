@@ -1,7 +1,6 @@
 #pragma once
 
 #include <clay_core/macro.h>
-#include <mimalloc.h>
 
 namespace clay
 {
@@ -26,7 +25,7 @@ struct HeapAllocator : public Allocator {
     void  deallocate(void* ptr) override;
 
 private:
-    mi_heap_t* heap;
+    void* heap;
 };
 
 } // namespace core
