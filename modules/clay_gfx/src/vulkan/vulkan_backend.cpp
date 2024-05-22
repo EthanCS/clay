@@ -3,12 +3,13 @@
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
 #include <vulkan/vk_enum_string_helper.h>
+#include <SDL.h>
+#include <SDL_vulkan.h>
 
 namespace clay
 {
 namespace gfx
 {
-
 static VkBool32 debug_utils_callback(VkDebugUtilsMessageSeverityFlagBitsEXT      severity,
                                      VkDebugUtilsMessageTypeFlagsEXT             types,
                                      const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
@@ -254,10 +255,19 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
         pfn_CmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT");
         pfn_CmdEndDebugUtilsLabelEXT   = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT");
     }
+
+    //////// Create surface
+    SDL_Window* window = static_cast<SDL_Window*>(desc.window);
+    if (SDL_Vulkan_CreateSurface(window, instance, &surface) == SDL_FALSE)
+    {
+        CLAY_ASSERT(false, "Failed to create Vulkan surface.");
+    }
 }
 
 VulkanBackend::~VulkanBackend()
 {
+    vkDestroySurfaceKHR(instance, surface, nullptr);
+
     if (debug_utils_messenger != VK_NULL_HANDLE)
     {
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -267,6 +277,5 @@ VulkanBackend::~VulkanBackend()
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
-
 } // namespace gfx
 } // namespace clay

@@ -33,9 +33,9 @@ struct RenderBackendType {
 
 struct RenderBackendCreateDesc {
     RenderBackendType::Enum type;
-    void*                   window{ nullptr }; // Maybe SDL_Window* or any other window handle
-    bool                    debug{ false };
+    void*                   window; // Maybe SDL_Window* or any other window handle
     u32                     device_id{ u32_MAX };
+    bool                    debug{ false };
 };
 
 struct RenderBackend {

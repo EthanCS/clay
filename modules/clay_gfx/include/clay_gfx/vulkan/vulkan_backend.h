@@ -9,7 +9,6 @@ namespace clay
 {
 namespace gfx
 {
-
 struct VulkanQueue {
     VkQueue queue;
     u32     family_index;
@@ -18,8 +17,9 @@ struct VulkanQueue {
 class VulkanBackend : public RenderBackend
 {
 private:
-    VkInstance instance;
-    VkDevice   device;
+    VkInstance   instance;
+    VkDevice     device;
+    VkSurfaceKHR surface;
 
     VulkanQueue graphics_queue;
     VulkanQueue present_queue;
@@ -36,6 +36,5 @@ public:
     VulkanBackend(const RenderBackendCreateDesc& desc);
     virtual ~VulkanBackend() override;
 };
-
 } // namespace gfx
 } // namespace clay
