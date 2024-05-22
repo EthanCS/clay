@@ -6,9 +6,14 @@ namespace clay
 {
 namespace app
 {
+struct WindowConfig {
+    const char* title{ nullptr };
+    u32         width;
+    u32         height;
+};
 
 struct Window {
-    void init();
+    void init(const WindowConfig& config);
     void shutdown();
 
     void handle_events();
@@ -20,6 +25,5 @@ struct Window {
     u32   width           = 0;
     u32   height          = 0;
 };
-
 } // namespace app
 } // namespace clay

@@ -1,4 +1,3 @@
-#include "SDL_video.h"
 #include <clay_app/window.h>
 #include <clay_core/log.h>
 
@@ -8,8 +7,7 @@ namespace clay
 {
 namespace app
 {
-
-void Window::init()
+void Window::init(const WindowConfig& config)
 {
     CLAY_LOG_INFO("Initializing window...");
 
@@ -21,7 +19,7 @@ void Window::init()
 
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
-    platform_handle = SDL_CreateWindow("Clay", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    platform_handle = SDL_CreateWindow(config.title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, config.width, config.height, window_flags);
 
     CLAY_LOG_INFO("Window initialized successfully!");
 }
@@ -47,22 +45,43 @@ void Window::handle_events()
             case SDL_WINDOWEVENT:
                 switch (event.window.event)
                 {
-                    case SDL_WINDOWEVENT_RESIZED:
-                        resized = true;
-                        width   = event.window.data1;
-                        height  = event.window.data2;
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    case SDL_WINDOWEVENT_RESIZED: {
+                        u32 new_width  = (u32)(event.window.data1);
+                        u32 new_height = (u32)(event.window.data2);
+                        if (new_width != width || new_height != height)
+                        {
+                            resized = true;
+                            width   = new_width;
+                            height  = new_height;
+                            CLAY_LOG_INFO("Window resized to {}x{}", width, height);
+                        }
                         break;
-                    case SDL_WINDOWEVENT_MINIMIZED:
-                        minimized = true;
-                        break;
-                    case SDL_WINDOWEVENT_RESTORED:
+                    }
+                    case SDL_WINDOWEVENT_MAXIMIZED: {
                         minimized = false;
+                        CLAY_LOG_INFO("Window maximized");
                         break;
+                    }
+                    case SDL_WINDOWEVENT_MINIMIZED: {
+                        minimized = true;
+                        CLAY_LOG_INFO("Window minimized");
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_RESTORED: {
+                        minimized = false;
+                        CLAY_LOG_INFO("Window restored");
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_CLOSE: {
+                        requested_exit = true;
+                        CLAY_LOG_INFO("Window close event received.");
+                        break;
+                    }
                 }
                 break;
         }
     }
 }
-
 } // namespace app
 } // namespace clay

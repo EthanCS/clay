@@ -10,7 +10,7 @@ int main(int argc, char** argv)
     gfx::shutdown();
 
     app::Window window;
-    window.init();
+    window.init(app::WindowConfig{ .title = "Clay", .width = 1280, .height = 720 });
     while (!window.requested_exit)
     {
         window.handle_events();
