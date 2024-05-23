@@ -53,11 +53,11 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     //////// Init Vulkan instance.
     VkApplicationInfo app_info  = {};
     app_info.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName   = "Clay";
+    app_info.pApplicationName   = desc.app_name == nullptr ? "Clay Default Game" : desc.app_name;
     app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     app_info.pEngineName        = "Clay";
     app_info.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion         = VK_API_VERSION_1_0;
+    app_info.apiVersion         = VK_API_VERSION_1_3;
 
     std::vector<const char*> extensions = vulkan_get_extension_names(desc.debug);
     std::vector<const char*> layers     = vulkan_get_layer_names(desc.debug);
@@ -109,52 +109,57 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     }
 
     //////// Pick physcial device.
-    uint32_t physical_device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
-    CLAY_ASSERT(physical_device_count > 0, "No Vulkan physical devices found.");
-
-    std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
-    vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
-
-    VkPhysicalDevice adapter = VK_NULL_HANDLE;
-    if (desc.device_id != u32_MAX)
+    physical_device = VK_NULL_HANDLE;
     {
-        CLAY_LOG_INFO("Try to create device with id: {}", desc.device_id);
-        bool bFoundDevice = false;
-        for (const auto& device : physical_devices)
+        uint32_t physical_device_count = 0;
+        vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
+        CLAY_ASSERT(physical_device_count > 0, "No Vulkan physical devices found.");
+
+        std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
+        vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
+
+        VkPhysicalDevice adapter = VK_NULL_HANDLE;
+        if (desc.device_id != u32_MAX)
         {
-            VkPhysicalDeviceProperties properties;
-            vkGetPhysicalDeviceProperties(device, &properties);
-            if (desc.device_id == properties.deviceID)
+            CLAY_LOG_INFO("Try to create device with id: {}", desc.device_id);
+            bool bFoundDevice = false;
+            for (const auto& device : physical_devices)
             {
-                adapter      = device;
-                bFoundDevice = true;
-                break;
+                VkPhysicalDeviceProperties properties;
+                vkGetPhysicalDeviceProperties(device, &properties);
+                if (desc.device_id == properties.deviceID)
+                {
+                    adapter      = device;
+                    bFoundDevice = true;
+                    break;
+                }
             }
+
+            if (!bFoundDevice) { CLAY_LOG_INFO("Preferred device not found. Automatically select device."); }
         }
 
-        if (!bFoundDevice) { CLAY_LOG_INFO("Preferred device not found. Automatically select device."); }
-    }
+        if (adapter == VK_NULL_HANDLE)
+        {
+            adapter = physical_devices[0];
+        }
 
-    if (adapter == VK_NULL_HANDLE)
-    {
-        adapter = physical_devices[0];
+        physical_device = adapter;
     }
-    CLAY_ASSERT(adapter != VK_NULL_HANDLE, "Failed to select Vulkan physical device.");
+    CLAY_ASSERT(physical_device != VK_NULL_HANDLE, "Failed to select Vulkan physical device.");
 
     //////// Create logical device.
-    if (adapter != VK_NULL_HANDLE)
+    if (physical_device != VK_NULL_HANDLE)
     {
         VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(adapter, &properties);
+        vkGetPhysicalDeviceProperties(physical_device, &properties);
         CLAY_LOG_INFO("Selected GPU: {}, Device ID: {}, Driver Version: {}", properties.deviceName, properties.deviceID, properties.driverVersion);
 
         //////// Handle queue families.
         u32 queue_family_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
         CLAY_ASSERT(queue_family_count > 0, "No Vulkan queue families found.");
         std::vector<VkQueueFamilyProperties> queue_family_properties(queue_family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(adapter, &queue_family_count, queue_family_properties.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_family_properties.data());
 
         u32 main_queue_family_index = u32_MAX, transfer_queue_family_index = u32_MAX, compute_queue_family_index = u32_MAX, present_queue_family_index = u32_MAX;
         u32 compute_queue_index = u32_MAX;
@@ -233,7 +238,7 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
         device_info.enabledExtensionCount   = device_extensions.size();
         device_info.ppEnabledExtensionNames = device_extensions.data();
 
-        result = vkCreateDevice(adapter, &device_info, nullptr, &device);
+        result = vkCreateDevice(physical_device, &device_info, nullptr, &device);
         CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan logical device. ({})", string_VkResult(result));
 
         //////// Get queues.
@@ -261,6 +266,15 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     if (SDL_Vulkan_CreateSurface(window, instance, &surface) == SDL_FALSE)
     {
         CLAY_ASSERT(false, "Failed to create Vulkan surface.");
+    }
+
+    //////// Create swapchain
+    VkBool32 is_surface_support = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, graphics_queue.family_index, surface, &is_surface_support);
+    CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
+    if (is_surface_support)
+    {
+        // swapchain.init(device, physical_device, surface, desc.width, desc.height);
     }
 }
 

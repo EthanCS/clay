@@ -4,6 +4,15 @@ namespace clay
 {
 namespace gfx
 {
+struct RenderBackendType {
+    enum Enum
+    {
+        Vulkan,
+        DirectX12,
+        Metal,
+        Count
+    };
+};
 
 struct QueueType {
     enum Enum
@@ -14,6 +23,5 @@ struct QueueType {
         Transfer,
     };
 };
-
 } // namespace gfx
 } // namespace clay

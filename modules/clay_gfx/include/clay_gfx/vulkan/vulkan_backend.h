@@ -1,9 +1,10 @@
 #pragma once
 
-#include <clay_gfx/clay_gfx.h>
-
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
+
+#include <clay_gfx/backend.h>
+#include <clay_gfx/vulkan/vulkan_swapchain.h>
 
 namespace clay
 {
@@ -17,9 +18,11 @@ struct VulkanQueue {
 class VulkanBackend : public RenderBackend
 {
 private:
-    VkInstance   instance;
-    VkDevice     device;
-    VkSurfaceKHR surface;
+    VkInstance       instance;
+    VkDevice         device;
+    VkPhysicalDevice physical_device;
+    VkSurfaceKHR     surface;
+    VulkanSwapchain  swapchain;
 
     VulkanQueue graphics_queue;
     VulkanQueue present_queue;

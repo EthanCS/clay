@@ -1,4 +1,4 @@
-#include <clay_gfx/clay_gfx.h>
+#include <clay_gfx/backend.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
 
 namespace clay
