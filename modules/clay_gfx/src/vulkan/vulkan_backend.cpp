@@ -45,7 +45,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
     return creation_info;
 }
 
-VulkanBackend::VulkanBackend(RenderBackendType::Enum type_)
+VulkanBackend::VulkanBackend(BackendType::Enum type_)
     : RenderBackend(type_)
     , world(flecs::world())
     , instance(VK_NULL_HANDLE)
@@ -283,7 +283,7 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
     if (is_surface_support)
     {
-        // swapchain.init(device, physical_device, surface, desc.width, desc.height);
+        swapchain.init(device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
     }
 
     return true;
@@ -291,6 +291,7 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
 
 VulkanBackend::~VulkanBackend()
 {
+    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
     if (debug_utils_messenger != VK_NULL_HANDLE)

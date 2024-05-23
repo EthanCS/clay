@@ -5,7 +5,8 @@
 #define DEFINE_CLAY_GFX_RESOURCE_HANDLE(name) \
     struct name##Handle {                     \
         u32 id;                               \
-    };
+    };                                        \
+    static const name##Handle Invalid##name##Handle = { u32_MAX };
 
 namespace clay
 {
@@ -13,6 +14,7 @@ namespace gfx
 {
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Buffer)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Texture)
+DEFINE_CLAY_GFX_RESOURCE_HANDLE(TextureView)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Sampler)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Shader)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Pipeline)

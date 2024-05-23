@@ -9,7 +9,7 @@ bool init(const RenderBackendCreateDesc& desc)
 {
     switch (desc.type)
     {
-        case RenderBackendType::Vulkan:
+        case BackendType::Vulkan:
             s_backend = new VulkanBackend(desc.type);
             break;
     }

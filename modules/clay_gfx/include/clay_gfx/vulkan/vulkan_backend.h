@@ -40,7 +40,7 @@ private:
     PFN_vkCmdEndDebugUtilsLabelEXT   pfn_CmdEndDebugUtilsLabelEXT;
 
 public:
-    VulkanBackend(RenderBackendType::Enum type);
+    VulkanBackend(BackendType::Enum type);
     virtual ~VulkanBackend() override;
 
     bool init(const RenderBackendCreateDesc& desc) override;
