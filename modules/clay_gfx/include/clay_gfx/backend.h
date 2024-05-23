@@ -16,18 +16,25 @@ struct RenderBackendCreateDesc {
 };
 
 struct RenderBackend {
+private:
     RenderBackendType::Enum type;
 
+public:
     RenderBackend(RenderBackendType::Enum _type)
         : type(_type)
     {
     }
-
     virtual ~RenderBackend() = default;
+
+    /////// API ///////
+public:
+    virtual bool                   init(const RenderBackendCreateDesc& desc) = 0;
+    inline RenderBackendType::Enum get_type() const { return type; }
 };
 
 static RenderBackend* s_backend = nullptr;
 bool                  init(const RenderBackendCreateDesc& desc);
+RenderBackend*        get_backend();
 void                  shutdown();
 
 } // namespace gfx

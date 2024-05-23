@@ -45,8 +45,17 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
     return creation_info;
 }
 
-VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
-    : RenderBackend(desc.type)
+VulkanBackend::VulkanBackend(RenderBackendType::Enum type_)
+    : RenderBackend(type_)
+    , world(flecs::world())
+    , instance(VK_NULL_HANDLE)
+    , device(VK_NULL_HANDLE)
+    , physical_device(VK_NULL_HANDLE)
+    , surface(VK_NULL_HANDLE)
+{
+}
+
+bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
 {
     CLAY_LOG_INFO("Initializing Vulkan backend...");
 
@@ -276,6 +285,8 @@ VulkanBackend::VulkanBackend(const RenderBackendCreateDesc& desc)
     {
         // swapchain.init(device, physical_device, surface, desc.width, desc.height);
     }
+
+    return true;
 }
 
 VulkanBackend::~VulkanBackend()

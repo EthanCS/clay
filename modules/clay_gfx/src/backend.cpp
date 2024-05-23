@@ -5,16 +5,26 @@ namespace clay
 {
 namespace gfx
 {
-
 bool init(const RenderBackendCreateDesc& desc)
 {
     switch (desc.type)
     {
         case RenderBackendType::Vulkan:
-            s_backend = new VulkanBackend(desc);
+            s_backend = new VulkanBackend(desc.type);
             break;
     }
-    return true;
+
+    if (s_backend != nullptr)
+    {
+        return s_backend->init(desc);
+    }
+
+    return false;
+}
+
+RenderBackend* get_backend()
+{
+    return s_backend;
 }
 
 void shutdown()
@@ -25,6 +35,5 @@ void shutdown()
         s_backend = nullptr;
     }
 }
-
 } // namespace gfx
 } // namespace clay
