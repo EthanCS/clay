@@ -3,12 +3,16 @@
 #include <vector>
 #include <algorithm>
 
-#include <clay_gfx/vulkan/vulkan_utils.h>
 #include <clay_gfx/resource.h>
+#include <clay_gfx/vulkan/vulkan_utils.h>
 #include <clay_gfx/vulkan/vulkan_swapchain.h>
+#include <clay_gfx/vulkan/vulkan_texture.h>
+
 #include <clay_core/log.h>
 #include <clay_core/macro.h>
+
 #include <vulkan/vk_enum_string_helper.h>
+#include <flecs.h>
 
 namespace clay
 {
@@ -22,7 +26,7 @@ VulkanSwapchain::VulkanSwapchain() noexcept
 {
 }
 
-bool VulkanSwapchain::init(VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
+bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
 {
     u32 format_count;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
@@ -102,6 +106,23 @@ bool VulkanSwapchain::init(VkDevice device, VkPhysicalDevice physical_device, Vk
 
     VkResult result = vkCreateSwapchainKHR(device, &create_info, nullptr, &swapchain);
     CLAY_ASSERT(result == VK_SUCCESS, "Failed to create swapchain! ({})", string_VkResult(result));
+
+    // Fetch swapchain images and create image views
+    {
+        u32 image_count;
+        vkGetSwapchainImagesKHR(device, swapchain, &image_count, nullptr);
+        std::vector<VkImage> swapchain_images = std::vector<VkImage>(image_count);
+        vkGetSwapchainImagesKHR(device, swapchain, &image_count, swapchain_images.data());
+
+        for (int i = 0; i < image_count; i++)
+        {
+            flecs::entity image_entity = world->entity();
+            images[i].id               = image_entity.id();
+
+            image_entity.set<VulkanTexture>({ .image = swapchain_images[i] });
+        }
+    }
+
     return true;
 }
 } // namespace gfx

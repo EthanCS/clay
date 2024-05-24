@@ -283,7 +283,7 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
     if (is_surface_support)
     {
-        swapchain.init(device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
+        swapchain.init(&world, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
     }
 
     return true;

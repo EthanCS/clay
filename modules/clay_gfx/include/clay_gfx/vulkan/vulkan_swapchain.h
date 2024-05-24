@@ -7,6 +7,11 @@
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
 
+namespace flecs
+{
+struct world;
+}
+
 namespace clay
 {
 namespace gfx
@@ -21,7 +26,7 @@ struct VulkanSwapchain {
     TextureViewHandle image_views[MAX_SWAPCHAIN_IMAGES];
 
     VulkanSwapchain() noexcept;
-    bool init(VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
+    bool init(flecs::world* world, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
 };
 } // namespace gfx
 } // namespace clay

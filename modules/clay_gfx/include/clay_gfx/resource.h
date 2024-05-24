@@ -4,9 +4,9 @@
 
 #define DEFINE_CLAY_GFX_RESOURCE_HANDLE(name) \
     struct name##Handle {                     \
-        u32 id;                               \
+        u64 id;                               \
     };                                        \
-    static const name##Handle Invalid##name##Handle = { u32_MAX };
+    static const name##Handle Invalid##name##Handle = { u64_MAX };
 
 namespace clay
 {
