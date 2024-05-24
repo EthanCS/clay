@@ -1,3 +1,4 @@
+#include <clay_gfx/resource.h>
 #include <clay_core/log.h>
 #include <clay_core/macro.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
@@ -5,6 +6,7 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include <flecs.h>
 
 namespace clay
 {
@@ -287,6 +289,70 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     }
 
     return true;
+}
+
+void VulkanBackend::device_wait_idle()
+{
+    vkDeviceWaitIdle(device);
+}
+
+FenceHandle VulkanBackend::create_fence(bool signal)
+{
+    VkFenceCreateInfo create_info = {};
+    create_info.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    create_info.flags             = signal ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+
+    VkFence  fence  = VK_NULL_HANDLE;
+    VkResult result = vkCreateFence(device, &create_info, nullptr, &fence);
+
+    if (result != VK_SUCCESS)
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan fence. ({})", string_VkResult(result));
+        return FenceHandle::Invalid;
+    }
+    else
+    {
+        flecs::entity fence_entity = world.entity();
+        fence_entity.set<VulkanFence>({ .fence = fence });
+        return FenceHandle{ .id = fence_entity.id() };
+    }
+}
+
+void VulkanBackend::destroy_fence(const FenceHandle& fence)
+{
+    if (fence == FenceHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, fence.id);
+    vkDestroyFence(device, entity.get<VulkanFence>()->fence, nullptr);
+    entity.destruct();
+}
+
+SemaphoreHandle VulkanBackend::create_semaphore()
+{
+    VkSemaphoreCreateInfo create_info = {};
+    create_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    VkResult    result    = vkCreateSemaphore(device, &create_info, nullptr, &semaphore);
+
+    if (result != VK_SUCCESS)
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan semaphore. ({})", string_VkResult(result));
+        return SemaphoreHandle::Invalid;
+    }
+    else
+    {
+        flecs::entity semaphore_entity = world.entity();
+        semaphore_entity.set<VulkanSemaphore>({ .semaphore = semaphore });
+        return SemaphoreHandle{ .id = semaphore_entity.id() };
+    }
+}
+
+void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
+{
+    if (semaphore == SemaphoreHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, semaphore.id);
+    vkDestroySemaphore(device, entity.get<VulkanSemaphore>()->semaphore, nullptr);
+    entity.destruct();
 }
 
 VulkanBackend::~VulkanBackend()

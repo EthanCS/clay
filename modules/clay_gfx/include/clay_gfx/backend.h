@@ -1,8 +1,8 @@
 #pragma once
 
-#include "define.h"
 #include <clay_core/macro.h>
 #include <clay_gfx/define.h>
+#include <clay_gfx/resource.h>
 
 namespace clay
 {
@@ -29,12 +29,23 @@ public:
         : type(_type)
     {
     }
-    virtual ~RenderBackend() = default;
+    virtual ~RenderBackend()                               = default;
+    virtual bool init(const RenderBackendCreateDesc& desc) = 0;
 
     /////// API ///////
 public:
-    virtual bool             init(const RenderBackendCreateDesc& desc) = 0;
     inline BackendType::Enum get_type() const { return type; }
+
+    /////// Device
+    virtual void device_wait_idle() = 0;
+
+    /////// Fence
+    virtual FenceHandle create_fence(bool signal)               = 0;
+    virtual void        destroy_fence(const FenceHandle& fence) = 0;
+
+    /////// Semaphore
+    virtual SemaphoreHandle create_semaphore()                                  = 0;
+    virtual void            destroy_semaphore(const SemaphoreHandle& semaphore) = 0;
 };
 
 static RenderBackend* s_backend = nullptr;

@@ -17,6 +17,14 @@ struct VulkanQueue {
     u32     family_index;
 };
 
+struct VulkanFence {
+    VkFence fence;
+};
+
+struct VulkanSemaphore {
+    VkSemaphore semaphore;
+};
+
 class VulkanBackend : public RenderBackend
 {
 private:
@@ -42,8 +50,15 @@ private:
 public:
     VulkanBackend(BackendType::Enum type);
     virtual ~VulkanBackend() override;
-
     bool init(const RenderBackendCreateDesc& desc) override;
+
+    void device_wait_idle() override;
+
+    FenceHandle create_fence(bool signal) override;
+    void        destroy_fence(const FenceHandle& fence) override;
+
+    SemaphoreHandle create_semaphore() override;
+    void            destroy_semaphore(const SemaphoreHandle& semaphore) override;
 };
 } // namespace gfx
 } // namespace clay

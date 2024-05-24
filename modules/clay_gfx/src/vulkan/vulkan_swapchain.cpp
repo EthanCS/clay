@@ -21,8 +21,8 @@ namespace gfx
 VulkanSwapchain::VulkanSwapchain() noexcept
     : swapchain(VK_NULL_HANDLE)
     , image_count(0)
-    , images{ InvalidTextureHandle, InvalidTextureHandle, InvalidTextureHandle }
-    , image_views{ InvalidTextureViewHandle, InvalidTextureViewHandle, InvalidTextureViewHandle }
+    , images{ TextureHandle::Invalid, TextureHandle::Invalid, TextureHandle::Invalid }
+    , image_views{ TextureViewHandle::Invalid, TextureViewHandle::Invalid, TextureViewHandle::Invalid }
 {
 }
 
@@ -117,8 +117,7 @@ bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevic
         for (int i = 0; i < image_count; i++)
         {
             flecs::entity image_entity = world->entity();
-            images[i].id               = image_entity.id();
-
+            images[i]                  = TextureHandle{ .id = image_entity.id() };
             image_entity.set<VulkanTexture>({ .image = swapchain_images[i] });
         }
     }

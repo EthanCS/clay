@@ -10,5 +10,9 @@ namespace gfx
 struct VulkanTexture {
     VkImage image;
 };
+
+struct VulkanTextureView {
+    VkImageView view;
+};
 } // namespace gfx
 } // namespace clay
