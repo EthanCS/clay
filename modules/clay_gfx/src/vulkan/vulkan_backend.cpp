@@ -3,9 +3,13 @@
 #include <clay_core/macro.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
+#include <clay_gfx/vulkan/vulkan_texture.h>
+
 #include <vulkan/vk_enum_string_helper.h>
+
 #include <SDL.h>
 #include <SDL_vulkan.h>
+
 #include <flecs.h>
 
 namespace clay
@@ -342,14 +346,17 @@ FenceHandle VulkanBackend::create_fence(bool signal)
 void VulkanBackend::wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)
 {
     if (fence == FenceHandle::Invalid) { return; }
+
     flecs::entity entity = flecs::entity(world.m_world, fence.id);
     if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
+
     vkWaitForFences(device, 1, &entity.get<VulkanFence>()->fence, wait_all, timeout);
 }
 
 void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout)
 {
     if (num_fence == 0) { return; }
+
     std::vector<VkFence> vk_fences;
     vk_fences.reserve(num_fence);
     for (int i = 0; i < num_fence; i++)
@@ -358,15 +365,22 @@ void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bo
         if (!entity.is_alive() || !entity.has<VulkanFence>()) { continue; }
         vk_fences.push_back(entity.get<VulkanFence>()->fence);
     }
-    vkWaitForFences(device, vk_fences.size(), vk_fences.data(), wait_all, timeout);
+
+    if (!vk_fences.empty())
+    {
+        vkWaitForFences(device, vk_fences.size(), vk_fences.data(), wait_all, timeout);
+    }
 }
 
 void VulkanBackend::destroy_fence(const FenceHandle& fence)
 {
     if (fence == FenceHandle::Invalid) { return; }
+
     flecs::entity entity = flecs::entity(world.m_world, fence.id);
     if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
+
     vkDestroyFence(device, entity.get<VulkanFence>()->fence, nullptr);
+
     entity.destruct();
 }
 
@@ -394,15 +408,41 @@ SemaphoreHandle VulkanBackend::create_semaphore()
 void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
 {
     if (semaphore == SemaphoreHandle::Invalid) { return; }
+
     flecs::entity entity = flecs::entity(world.m_world, semaphore.id);
     if (!entity.is_alive() || !entity.has<VulkanSemaphore>()) { return; }
+
     vkDestroySemaphore(device, entity.get<VulkanSemaphore>()->semaphore, nullptr);
+
+    entity.destruct();
+}
+
+void VulkanBackend::destroy_texture(const TextureHandle& texture)
+{
+    if (texture == TextureHandle::Invalid) { return; }
+
+    flecs::entity entity = flecs::entity(world.m_world, texture.id);
+    if (!entity.is_alive() || !entity.has<VulkanTexture>()) { return; }
+
+    const VulkanTexture* vulkan_texture = entity.get<VulkanTexture>();
+    for (const auto& view : vulkan_texture->views)
+    {
+        vkDestroyImageView(device, view, nullptr);
+    }
+    vkDestroyImage(device, vulkan_texture->image, nullptr);
+
     entity.destruct();
 }
 
 VulkanBackend::~VulkanBackend()
 {
+    for (int i = 0; i < swapchain.image_count; i++)
+    {
+        flecs::entity image_entity = flecs::entity(world.m_world, swapchain.images[i].id);
+        if (image_entity.is_alive()) { image_entity.destruct(); }
+    }
     vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
     if (debug_utils_messenger != VK_NULL_HANDLE)
@@ -410,6 +450,18 @@ VulkanBackend::~VulkanBackend()
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
     }
+
+    // Destroy ECS world
+    world.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
+    world.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
+    world.each([&](VulkanTexture& t) {
+        for (const auto& view : t.views)
+        {
+            vkDestroyImageView(device, view, nullptr);
+        }
+        vkDestroyImage(device, t.image, nullptr);
+    });
+    world.each([&](flecs::entity e) { e.destruct(); });
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);

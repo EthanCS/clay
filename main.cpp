@@ -24,10 +24,10 @@ int main(int argc, char** argv)
         gfx::RenderBackend* rb = gfx::backend();
 
         gfx::FenceHandle fence = rb->create_fence(true);
-        rb->destroy_fence(fence);
+        // rb->destroy_fence(fence);
 
         gfx::SemaphoreHandle semaphore = rb->create_semaphore();
-        rb->destroy_semaphore(semaphore);
+        // rb->destroy_semaphore(semaphore);
 
         window.handle_events();
     }

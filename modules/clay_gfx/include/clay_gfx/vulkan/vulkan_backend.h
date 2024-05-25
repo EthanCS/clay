@@ -63,6 +63,8 @@ public:
 
     SemaphoreHandle create_semaphore() override;
     void            destroy_semaphore(const SemaphoreHandle& semaphore) override;
+
+    void destroy_texture(const TextureHandle& texture) override;
 };
 } // namespace gfx
 } // namespace clay

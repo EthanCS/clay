@@ -21,9 +21,8 @@ static const u32 MAX_SWAPCHAIN_IMAGES = 3;
 struct VulkanSwapchain {
     VkSwapchainKHR swapchain;
 
-    u32               image_count;
-    TextureHandle     images[MAX_SWAPCHAIN_IMAGES];
-    TextureViewHandle image_views[MAX_SWAPCHAIN_IMAGES];
+    u32           image_count;
+    TextureHandle images[MAX_SWAPCHAIN_IMAGES];
 
     VulkanSwapchain() noexcept;
     bool init(flecs::world* world, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);

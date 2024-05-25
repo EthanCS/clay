@@ -51,6 +51,9 @@ public:
     /////// Semaphore
     virtual SemaphoreHandle create_semaphore()                                  = 0;
     virtual void            destroy_semaphore(const SemaphoreHandle& semaphore) = 0;
+
+    /////// Texture
+    virtual void destroy_texture(const TextureHandle& texture) = 0;
 };
 
 static RenderBackend* s_backend = nullptr;

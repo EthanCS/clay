@@ -45,5 +45,40 @@ struct Format {
         R32G32B32A32_SFLOAT,
     };
 };
+
+struct TextureComponentSwizzle {
+    enum Enum
+    {
+        Identity,
+        Zero,
+        One,
+        R,
+        G,
+        B,
+        A,
+    };
+};
+
+struct TextureAspect {
+    enum Flag : char
+    {
+        Color   = 1 << 0,
+        Depth   = 1 << 1,
+        Stencil = 1 << 2,
+    };
+};
+
+struct TextureViewType {
+    enum Enum
+    {
+        Texture1D,
+        Texture2D,
+        Texture3D,
+        TextureCube,
+        Texture1DArray,
+        Texture2DArray,
+        TextureCubeArray,
+    };
+};
 } // namespace gfx
 } // namespace clay

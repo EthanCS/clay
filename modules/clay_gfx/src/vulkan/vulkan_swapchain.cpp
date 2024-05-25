@@ -22,7 +22,6 @@ VulkanSwapchain::VulkanSwapchain() noexcept
     : swapchain(VK_NULL_HANDLE)
     , image_count(0)
     , images{ TextureHandle::Invalid, TextureHandle::Invalid, TextureHandle::Invalid }
-    , image_views{ TextureViewHandle::Invalid, TextureViewHandle::Invalid, TextureViewHandle::Invalid }
 {
 }
 
@@ -108,8 +107,8 @@ bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevic
     CLAY_ASSERT(result == VK_SUCCESS, "Failed to create swapchain! ({})", string_VkResult(result));
 
     // Fetch swapchain images and create image views
+    image_count = 0;
     {
-        u32 image_count;
         vkGetSwapchainImagesKHR(device, swapchain, &image_count, nullptr);
         std::vector<VkImage> swapchain_images = std::vector<VkImage>(image_count);
         vkGetSwapchainImagesKHR(device, swapchain, &image_count, swapchain_images.data());
