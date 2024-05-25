@@ -25,7 +25,7 @@ struct VulkanSemaphore {
     VkSemaphore semaphore;
 };
 
-class VulkanBackend : public RenderBackend
+class VulkanBackend final : public RenderBackend
 {
 private:
     flecs::world world;
@@ -54,7 +54,11 @@ public:
 
     void device_wait_idle() override;
 
+    void queue_wait_idle(QueueType::Enum queue_type) override;
+
     FenceHandle create_fence(bool signal) override;
+    void        wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout) override;
+    void        wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout) override;
     void        destroy_fence(const FenceHandle& fence) override;
 
     SemaphoreHandle create_semaphore() override;

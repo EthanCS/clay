@@ -296,6 +296,27 @@ void VulkanBackend::device_wait_idle()
     vkDeviceWaitIdle(device);
 }
 
+void VulkanBackend::queue_wait_idle(QueueType::Enum queue_type)
+{
+    switch (queue_type)
+    {
+        case QueueType::Graphics:
+            vkQueueWaitIdle(graphics_queue.queue);
+            break;
+        case QueueType::Present:
+            vkQueueWaitIdle(present_queue.queue);
+            break;
+        case QueueType::Compute:
+            vkQueueWaitIdle(compute_queue.queue);
+            break;
+        case QueueType::Transfer:
+            vkQueueWaitIdle(transfer_queue.queue);
+            break;
+        default:
+            break;
+    }
+}
+
 FenceHandle VulkanBackend::create_fence(bool signal)
 {
     VkFenceCreateInfo create_info = {};
@@ -318,10 +339,33 @@ FenceHandle VulkanBackend::create_fence(bool signal)
     }
 }
 
+void VulkanBackend::wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)
+{
+    if (fence == FenceHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, fence.id);
+    if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
+    vkWaitForFences(device, 1, &entity.get<VulkanFence>()->fence, wait_all, timeout);
+}
+
+void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout)
+{
+    if (num_fence == 0) { return; }
+    std::vector<VkFence> vk_fences;
+    vk_fences.reserve(num_fence);
+    for (int i = 0; i < num_fence; i++)
+    {
+        flecs::entity entity = flecs::entity(world.m_world, fences[i].id);
+        if (!entity.is_alive() || !entity.has<VulkanFence>()) { continue; }
+        vk_fences.push_back(entity.get<VulkanFence>()->fence);
+    }
+    vkWaitForFences(device, vk_fences.size(), vk_fences.data(), wait_all, timeout);
+}
+
 void VulkanBackend::destroy_fence(const FenceHandle& fence)
 {
     if (fence == FenceHandle::Invalid) { return; }
     flecs::entity entity = flecs::entity(world.m_world, fence.id);
+    if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
     vkDestroyFence(device, entity.get<VulkanFence>()->fence, nullptr);
     entity.destruct();
 }
@@ -351,6 +395,7 @@ void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
 {
     if (semaphore == SemaphoreHandle::Invalid) { return; }
     flecs::entity entity = flecs::entity(world.m_world, semaphore.id);
+    if (!entity.is_alive() || !entity.has<VulkanSemaphore>()) { return; }
     vkDestroySemaphore(device, entity.get<VulkanSemaphore>()->semaphore, nullptr);
     entity.destruct();
 }

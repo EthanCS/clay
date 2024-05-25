@@ -22,7 +22,7 @@ bool init(const RenderBackendCreateDesc& desc)
     return false;
 }
 
-RenderBackend* get_backend()
+RenderBackend* backend()
 {
     return s_backend;
 }

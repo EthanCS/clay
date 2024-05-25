@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
     while (!window.requested_exit)
     {
-        gfx::RenderBackend* rb = gfx::get_backend();
+        gfx::RenderBackend* rb = gfx::backend();
 
         gfx::FenceHandle fence = rb->create_fence(true);
         rb->destroy_fence(fence);

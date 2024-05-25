@@ -39,9 +39,14 @@ public:
     /////// Device
     virtual void device_wait_idle() = 0;
 
+    /////// Queue
+    virtual void queue_wait_idle(QueueType::Enum queue_type) = 0;
+
     /////// Fence
-    virtual FenceHandle create_fence(bool signal)               = 0;
-    virtual void        destroy_fence(const FenceHandle& fence) = 0;
+    virtual FenceHandle create_fence(bool signal)                                                             = 0;
+    virtual void        wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)                  = 0;
+    virtual void        wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout) = 0;
+    virtual void        destroy_fence(const FenceHandle& fence)                                               = 0;
 
     /////// Semaphore
     virtual SemaphoreHandle create_semaphore()                                  = 0;
@@ -50,7 +55,7 @@ public:
 
 static RenderBackend* s_backend = nullptr;
 bool                  init(const RenderBackendCreateDesc& desc);
-RenderBackend*        get_backend();
+RenderBackend*        backend();
 void                  shutdown();
 
 } // namespace gfx
