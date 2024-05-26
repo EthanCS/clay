@@ -1,16 +1,13 @@
-#include <clay_gfx/resource.h>
-#include <clay_core/log.h>
-#include <clay_core/macro.h>
-#include <clay_gfx/vulkan/vulkan_backend.h>
-#include <clay_gfx/vulkan/vulkan_utils.h>
-#include <clay_gfx/vulkan/vulkan_texture.h>
-
-#include <vulkan/vk_enum_string_helper.h>
-
+#include "clay_gfx/vulkan/vulkan_resource.h"
+#include <flecs.h>
 #include <SDL.h>
 #include <SDL_vulkan.h>
+#include <clay_core/log.h>
+#include <clay_core/macro.h>
 
-#include <flecs.h>
+#include <clay_gfx/resource.h>
+#include <clay_gfx/vulkan/vulkan_backend.h>
+#include <clay_gfx/vulkan/vulkan_utils.h>
 
 namespace clay
 {
@@ -346,7 +343,6 @@ FenceHandle VulkanBackend::create_fence(bool signal)
 void VulkanBackend::wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)
 {
     if (fence == FenceHandle::Invalid) { return; }
-
     flecs::entity entity = flecs::entity(world.m_world, fence.id);
     if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
 
@@ -375,7 +371,6 @@ void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bo
 void VulkanBackend::destroy_fence(const FenceHandle& fence)
 {
     if (fence == FenceHandle::Invalid) { return; }
-
     flecs::entity entity = flecs::entity(world.m_world, fence.id);
     if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
 
@@ -408,7 +403,6 @@ SemaphoreHandle VulkanBackend::create_semaphore()
 void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
 {
     if (semaphore == SemaphoreHandle::Invalid) { return; }
-
     flecs::entity entity = flecs::entity(world.m_world, semaphore.id);
     if (!entity.is_alive() || !entity.has<VulkanSemaphore>()) { return; }
 
@@ -417,20 +411,40 @@ void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
     entity.destruct();
 }
 
+ShaderStateHandle VulkanBackend::create_shader_state(const ShaderStateCreateDesc& desc)
+{
+    VulkanShaderState shader = {};
+    bool              res    = shader.init(device, desc);
+
+    if (res)
+    {
+        flecs::entity shader_state_entity = world.entity();
+        shader_state_entity.set<VulkanShaderState>(shader);
+        return ShaderStateHandle{ .id = shader_state_entity.id() };
+    }
+    else
+    {
+        return ShaderStateHandle::Invalid;
+    }
+}
+
+void VulkanBackend::destroy_shader_state(const ShaderStateHandle& state)
+{
+    if (state == ShaderStateHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, state.id);
+    if (!entity.is_alive() || !entity.has<VulkanShaderState>()) { return; }
+
+    entity.get<VulkanShaderState>()->destroy(device);
+    entity.destruct();
+}
+
 void VulkanBackend::destroy_texture(const TextureHandle& texture)
 {
     if (texture == TextureHandle::Invalid) { return; }
-
     flecs::entity entity = flecs::entity(world.m_world, texture.id);
     if (!entity.is_alive() || !entity.has<VulkanTexture>()) { return; }
 
-    const VulkanTexture* vulkan_texture = entity.get<VulkanTexture>();
-    for (const auto& view : vulkan_texture->views)
-    {
-        vkDestroyImageView(device, view, nullptr);
-    }
-    vkDestroyImage(device, vulkan_texture->image, nullptr);
-
+    entity.get<VulkanTexture>()->destroy(device);
     entity.destruct();
 }
 
@@ -454,13 +468,7 @@ VulkanBackend::~VulkanBackend()
     // Destroy ECS world
     world.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
     world.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
-    world.each([&](VulkanTexture& t) {
-        for (const auto& view : t.views)
-        {
-            vkDestroyImageView(device, view, nullptr);
-        }
-        vkDestroyImage(device, t.image, nullptr);
-    });
+    world.each([&](VulkanTexture& t) { t.destroy(device); });
     world.each([&](flecs::entity e) { e.destruct(); });
 
     vkDestroyDevice(device, nullptr);

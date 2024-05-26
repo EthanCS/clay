@@ -2,9 +2,7 @@
 
 #include <vector>
 #include <clay_gfx/define.h>
-
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan/vulkan.h>
+#include <clay_gfx/vulkan/vulkan_header.h>
 
 namespace clay
 {
@@ -33,6 +31,41 @@ inline std::vector<const char*> vulkan_get_extension_names(bool debug)
         extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
     return extensionNames;
+}
+
+inline VkShaderStageFlags to_vk_shader_stage_flags(const ShaderStage::Flag& stage)
+{
+    VkShaderStageFlags flags = 0;
+    if (stage & ShaderStage::Vertex)
+    {
+        flags |= VK_SHADER_STAGE_VERTEX_BIT;
+    }
+    if (stage & ShaderStage::Fragment)
+    {
+        flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+    }
+    if (stage & ShaderStage::Compute)
+    {
+        flags |= VK_SHADER_STAGE_COMPUTE_BIT;
+    }
+    return flags;
+}
+
+inline VkShaderStageFlagBits to_vk_shader_stage_flag_bits(const ShaderStage::Flag& stage)
+{
+    if (stage & ShaderStage::Vertex)
+    {
+        return VK_SHADER_STAGE_VERTEX_BIT;
+    }
+    if (stage & ShaderStage::Fragment)
+    {
+        return VK_SHADER_STAGE_FRAGMENT_BIT;
+    }
+    if (stage & ShaderStage::Compute)
+    {
+        return VK_SHADER_STAGE_COMPUTE_BIT;
+    }
+    return VK_SHADER_STAGE_ALL;
 }
 
 inline VkFormat to_vk_format(Format::Enum format)

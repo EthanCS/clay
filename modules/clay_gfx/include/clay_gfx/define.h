@@ -1,9 +1,14 @@
 #pragma once
 
+#include <clay_core/macro.h>
+
 namespace clay
 {
 namespace gfx
 {
+static const u32 MAX_SWAPCHAIN_IMAGES = 3;
+static const u32 MAX_SHADER_STAGES    = 5;
+
 struct BackendType {
     enum Enum
     {
@@ -21,6 +26,15 @@ struct QueueType {
         Present,
         Compute,
         Transfer,
+    };
+};
+
+struct ShaderStage {
+    enum Flag
+    {
+        Vertex   = 1 << 0,
+        Fragment = 1 << 4,
+        Compute  = 1 << 5,
     };
 };
 

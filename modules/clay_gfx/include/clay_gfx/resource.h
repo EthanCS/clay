@@ -1,6 +1,5 @@
 #pragma once
 
-#include "define.h"
 #include <clay_gfx/define.h>
 #include <clay_core/macro.h>
 #include <optional>
@@ -33,7 +32,7 @@ DEFINE_CLAY_GFX_RESOURCE_HANDLE(Semaphore)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Buffer)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Texture)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Sampler)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Shader)
+DEFINE_CLAY_GFX_RESOURCE_HANDLE(ShaderState)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Pipeline)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(RenderPass)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Framebuffer)
@@ -50,6 +49,23 @@ struct TextureViewDesc {
     TextureComponentSwizzle::Enum component_g{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_b{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
+};
+
+struct ShaderStageDesc {
+    const char*       code        = nullptr;
+    u32               code_size   = 0;
+    const char*       entry_point = nullptr;
+    ShaderStage::Flag stage;
+};
+
+struct ShaderStateCreateDesc {
+    const char*     name       = nullptr;
+    u32             num_stages = 0;
+    ShaderStageDesc stages[MAX_SHADER_STAGES];
+
+    ShaderStateCreateDesc& reset();
+    ShaderStateCreateDesc& set_name(const char* name);
+    ShaderStateCreateDesc& add_stage(const ShaderStageDesc& stage);
 };
 } // namespace gfx
 } // namespace clay

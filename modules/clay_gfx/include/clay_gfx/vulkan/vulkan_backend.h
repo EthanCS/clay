@@ -1,10 +1,8 @@
 #pragma once
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan/vulkan.h>
-
+#include <clay_gfx/vulkan/vulkan_header.h>
 #include <clay_gfx/backend.h>
-#include <clay_gfx/vulkan/vulkan_swapchain.h>
+#include <clay_gfx/vulkan/vulkan_resource.h>
 
 #include <flecs.h>
 
@@ -12,19 +10,6 @@ namespace clay
 {
 namespace gfx
 {
-struct VulkanQueue {
-    VkQueue queue;
-    u32     family_index;
-};
-
-struct VulkanFence {
-    VkFence fence;
-};
-
-struct VulkanSemaphore {
-    VkSemaphore semaphore;
-};
-
 class VulkanBackend final : public RenderBackend
 {
 private:
@@ -63,6 +48,9 @@ public:
 
     SemaphoreHandle create_semaphore() override;
     void            destroy_semaphore(const SemaphoreHandle& semaphore) override;
+
+    ShaderStateHandle create_shader_state(const ShaderStateCreateDesc& desc) override;
+    void              destroy_shader_state(const ShaderStateHandle& state) override;
 
     void destroy_texture(const TextureHandle& texture) override;
 };
