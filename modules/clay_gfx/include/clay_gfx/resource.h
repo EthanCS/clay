@@ -52,10 +52,10 @@ struct TextureViewDesc {
 };
 
 struct ShaderStageDesc {
+    ShaderStage::Flag stage;
     const char*       code        = nullptr;
     u32               code_size   = 0;
     const char*       entry_point = nullptr;
-    ShaderStage::Flag stage;
 };
 
 struct ShaderStateCreateDesc {
@@ -65,7 +65,7 @@ struct ShaderStateCreateDesc {
 
     ShaderStateCreateDesc& reset();
     ShaderStateCreateDesc& set_name(const char* name);
-    ShaderStateCreateDesc& add_stage(const ShaderStageDesc& stage);
+    ShaderStateCreateDesc& add_stage(const ShaderStage::Flag& stage, const char* code, u32 code_size, const char* entry);
 };
 } // namespace gfx
 } // namespace clay

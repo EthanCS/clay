@@ -469,6 +469,7 @@ VulkanBackend::~VulkanBackend()
     world.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
     world.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
     world.each([&](VulkanTexture& t) { t.destroy(device); });
+    world.each([&](VulkanShaderState& s) { s.destroy(device); });
     world.each([&](flecs::entity e) { e.destruct(); });
 
     vkDestroyDevice(device, nullptr);
