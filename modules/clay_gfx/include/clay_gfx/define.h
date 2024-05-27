@@ -6,8 +6,9 @@ namespace clay
 {
 namespace gfx
 {
-static const u32 MAX_SWAPCHAIN_IMAGES = 3;
-static const u32 MAX_SHADER_STAGES    = 5;
+static const u32 MAX_SWAPCHAIN_IMAGES  = 3;
+static const u32 MAX_SHADER_STAGES     = 5;
+static const u32 MAX_COLOR_ATTACHMENTS = 8;
 
 struct BackendType {
     enum Enum
@@ -41,7 +42,7 @@ struct ShaderStage {
 struct Format {
     enum Enum
     {
-        Unknown,
+        Undefined,
         D32_SFLOAT,
         D32_SFLOAT_S8_UINT,
         D24_UNORM_S8_UINT,
@@ -57,6 +58,39 @@ struct Format {
         R32G32_SFLOAT,
         R32G32B32_SFLOAT,
         R32G32B32A32_SFLOAT,
+    };
+};
+
+struct ImageLayout {
+    enum Enum
+    {
+        Undefined,
+        General,
+        ColorAttachmentOptimal,
+        DepthStencilAttachmentOptimal,
+        DepthStencilReadOnlyOptimal,
+        ShaderReadOnlyOptimal,
+        TransferSrcOptimal,
+        TransferDstOptimal,
+        Preinitialized,
+        PresentSrc,
+    };
+};
+
+struct RenderPassLoadOp {
+    enum Enum
+    {
+        DontCare,
+        Load,
+        Clear,
+    };
+};
+
+struct RenderPassStoreOp {
+    enum Enum
+    {
+        DontCare,
+        Store,
     };
 };
 

@@ -68,11 +68,74 @@ inline VkShaderStageFlagBits to_vk_shader_stage_flag_bits(const ShaderStage::Fla
     return VK_SHADER_STAGE_ALL;
 }
 
+struct RenderPassOperation {
+    enum Enum
+    {
+        DontCare,
+        Load,
+        Clear,
+    };
+};
+
+inline VkImageLayout to_vk_image_layout(ImageLayout::Enum image_layout)
+{
+    switch (image_layout)
+    {
+        case ImageLayout::Undefined:
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        case ImageLayout::General:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case ImageLayout::ColorAttachmentOptimal:
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        case ImageLayout::DepthStencilAttachmentOptimal:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        case ImageLayout::DepthStencilReadOnlyOptimal:
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        case ImageLayout::ShaderReadOnlyOptimal:
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case ImageLayout::TransferSrcOptimal:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case ImageLayout::TransferDstOptimal:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case ImageLayout::Preinitialized:
+            return VK_IMAGE_LAYOUT_PREINITIALIZED;
+        case ImageLayout::PresentSrc:
+            return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+    return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+inline VkAttachmentLoadOp to_vk_attachment_load_op(RenderPassLoadOp::Enum load_op)
+{
+    switch (load_op)
+    {
+        case RenderPassLoadOp::DontCare:
+            return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        case RenderPassLoadOp::Load:
+            return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case RenderPassLoadOp::Clear:
+            return VK_ATTACHMENT_LOAD_OP_CLEAR;
+    }
+    return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+}
+
+inline VkAttachmentStoreOp to_vk_attachment_store_op(RenderPassStoreOp::Enum store_op)
+{
+    switch (store_op)
+    {
+        case RenderPassStoreOp::DontCare:
+            return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        case RenderPassStoreOp::Store:
+            return VK_ATTACHMENT_STORE_OP_STORE;
+    }
+    return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+}
+
 inline VkFormat to_vk_format(Format::Enum format)
 {
     switch (format)
     {
-        case Format::Unknown:
+        case Format::Undefined:
             return VK_FORMAT_UNDEFINED;
         case Format::D32_SFLOAT:
             return VK_FORMAT_D32_SFLOAT;

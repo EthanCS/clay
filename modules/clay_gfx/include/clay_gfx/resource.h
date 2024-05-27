@@ -67,5 +67,21 @@ struct ShaderStateCreateDesc {
     ShaderStateCreateDesc& set_name(const char* name);
     ShaderStateCreateDesc& add_stage(const ShaderStage::Flag& stage, const char* code, u32 code_size, const char* entry);
 };
+
+struct RenderPassOutput {
+    u32                    num_colors = 0;
+    Format::Enum           color_formats[MAX_COLOR_ATTACHMENTS];
+    ImageLayout::Enum      color_layouts[MAX_COLOR_ATTACHMENTS];
+    RenderPassLoadOp::Enum color_ops[MAX_COLOR_ATTACHMENTS];
+
+    Format::Enum           depth_stencil_format;
+    ImageLayout::Enum      depth_stencil_layout;
+    RenderPassLoadOp::Enum depth_op   = RenderPassLoadOp::DontCare;
+    RenderPassLoadOp::Enum stencil_op = RenderPassLoadOp::DontCare;
+
+    RenderPassOutput& reset();
+    RenderPassOutput& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
+    RenderPassOutput& set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op);
+};
 } // namespace gfx
 } // namespace clay
