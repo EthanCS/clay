@@ -33,6 +33,7 @@ DEFINE_CLAY_GFX_RESOURCE_HANDLE(Buffer)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Texture)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Sampler)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(ShaderState)
+DEFINE_CLAY_GFX_RESOURCE_HANDLE(Shader)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Pipeline)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(RenderPass)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Framebuffer)
@@ -49,6 +50,11 @@ struct TextureViewDesc {
     TextureComponentSwizzle::Enum component_g{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_b{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
+};
+
+struct ShaderCreateDesc {
+    const char* code      = nullptr;
+    u32         code_size = 0;
 };
 
 struct ShaderStageDesc {
@@ -68,7 +74,7 @@ struct ShaderStateCreateDesc {
     ShaderStateCreateDesc& add_stage(const ShaderStage::Flag& stage, const char* code, u32 code_size, const char* entry);
 };
 
-struct RenderPassOutput {
+struct RenderPassLayout {
     u32                    num_colors = 0;
     Format::Enum           color_formats[MAX_COLOR_ATTACHMENTS];
     ImageLayout::Enum      color_layouts[MAX_COLOR_ATTACHMENTS];
@@ -79,15 +85,9 @@ struct RenderPassOutput {
     RenderPassLoadOp::Enum depth_op   = RenderPassLoadOp::DontCare;
     RenderPassLoadOp::Enum stencil_op = RenderPassLoadOp::DontCare;
 
-    RenderPassOutput& reset();
-    RenderPassOutput& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
-    RenderPassOutput& set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op);
-};
-
-struct RasterizerState {
-    CullMode::Enum  cull_mode  = CullMode::None;
-    FrontFace::Enum front_face = FrontFace::CounterClockwise;
-    FillMode::Enum  fill_mode  = FillMode::Solid;
+    RenderPassLayout& reset();
+    RenderPassLayout& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
+    RenderPassLayout& set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op);
 };
 
 struct BlendState {
@@ -105,17 +105,67 @@ struct BlendState {
     bool separate_blend_enabled = false;
 };
 
-struct BlendStates {
-    BlendState blend_states[MAX_COLOR_ATTACHMENTS];
-    u32        num_blend_states = 0;
+struct StencilOperationState {
+    StencilOp::Enum fail_op       = StencilOp::Keep;
+    StencilOp::Enum pass_op       = StencilOp::Keep;
+    StencilOp::Enum depth_fail_op = StencilOp::Keep;
+    CompareOp::Enum compare_op    = CompareOp::Always;
+    u32             compare_mask  = 0xff;
+    u32             write_mask    = 0xff;
+    u32             reference     = 0xff;
+};
 
-    BlendStates& reset();
-    BlendStates& add_blend_state(const BlendState& state);
+struct VertexAttribute {
+    u16          byte_offset = u16_MAX;
+    Format::Enum format      = Format::Undefined;
+};
+
+struct VertexBufferBinding {
+    u16             byte_stride = u16_MAX;
+    VertexAttribute attributes[MAX_VERTEX_ATTRIBUTES];
+};
+
+struct ShaderInfo {
+    ShaderHandle compiled_shader = ShaderHandle::Invalid;
+    const char*  entry_func      = nullptr;
+};
+
+struct GraphicsState {
+    /////// Topology
+    PrimitiveTopology::Enum primitive_topology = PrimitiveTopology::TriangleList;
+
+    /////// Rasterizer
+    CullMode::Enum  cull_mode  = CullMode::None;
+    FrontFace::Enum front_face = FrontFace::CounterClockwise;
+    FillMode::Enum  fill_mode  = FillMode::Solid;
+
+    /////// Depth
+    CompareOp::Enum depth_compare       = CompareOp::Less;
+    bool            depth_test_enabled  = true;
+    bool            depth_write_enabled = true;
+
+    /////// Stencil
+    bool                  stencil_test_enabled = false;
+    StencilOperationState front;
+    StencilOperationState back;
+
+    /////// Blend States
+    BlendState blend_states[MAX_COLOR_ATTACHMENTS];
+
+    /////// Vertex Input
+    VertexBufferBinding vertex_buffer_bindings[MAX_VERTEX_BINDINGS];
+
+    /////// Render Pass Layout
+    RenderPassLayout render_pass_layout;
 };
 
 struct GraphicsPipelineCreateDesc {
-    RasterizerState rasterizer_state;
-    BlendStates     blend_states;
+    const char* name = nullptr;
+
+    ShaderInfo vertex_shader;
+    ShaderInfo pixel_shader;
+
+    GraphicsState graphics_state;
 };
 
 } // namespace gfx

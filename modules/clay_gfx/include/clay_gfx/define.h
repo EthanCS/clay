@@ -6,9 +6,11 @@ namespace clay
 {
 namespace gfx
 {
-static const u32 MAX_SWAPCHAIN_IMAGES  = 3;
-static const u32 MAX_SHADER_STAGES     = 5;
-static const u32 MAX_COLOR_ATTACHMENTS = 8;
+static const u8 MAX_SWAPCHAIN_IMAGES  = 3;
+static const u8 MAX_SHADER_STAGES     = 5;
+static const u8 MAX_COLOR_ATTACHMENTS = 8;
+static const u8 MAX_VERTEX_ATTRIBUTES = 16;
+static const u8 MAX_VERTEX_BINDINGS   = 16;
 
 struct BackendType {
     enum Enum
@@ -192,6 +194,34 @@ struct BlendOp {
     };
 };
 
+struct CompareOp {
+    enum Enum
+    {
+        Never,
+        Less,
+        Equal,
+        LessOrEqual,
+        Greater,
+        NotEqual,
+        GreaterOrEqual,
+        Always,
+    };
+};
+
+struct StencilOp {
+    enum Enum
+    {
+        Keep,
+        Zero,
+        Replace,
+        IncrementAndClamp,
+        DecrementAndClamp,
+        Invert,
+        IncrementAndWrap,
+        DecrementAndWrap,
+    };
+};
+
 struct ColorWriteEnabled {
     enum Flag : char
     {
@@ -200,6 +230,18 @@ struct ColorWriteEnabled {
         Blue  = 1 << 2,
         Alpha = 1 << 3,
         All   = Red | Green | Blue | Alpha,
+    };
+};
+
+struct PrimitiveTopology {
+    enum Enum
+    {
+        PointList,
+        LineList,
+        LineStrip,
+        TriangleList,
+        TriangleStrip,
+        TriangleFan,
     };
 };
 } // namespace gfx

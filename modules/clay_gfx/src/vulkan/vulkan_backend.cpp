@@ -332,12 +332,10 @@ FenceHandle VulkanBackend::create_fence(bool signal)
         CLAY_LOG_ERROR("Failed to create Vulkan fence. ({})", string_VkResult(result));
         return FenceHandle::Invalid;
     }
-    else
-    {
-        flecs::entity fence_entity = world.entity();
-        fence_entity.set<VulkanFence>({ .fence = fence });
-        return FenceHandle{ .id = fence_entity.id() };
-    }
+
+    flecs::entity fence_entity = world.entity();
+    fence_entity.set<VulkanFence>({ .fence = fence });
+    return FenceHandle{ .id = fence_entity.id() };
 }
 
 void VulkanBackend::wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)
@@ -392,12 +390,10 @@ SemaphoreHandle VulkanBackend::create_semaphore()
         CLAY_LOG_ERROR("Failed to create Vulkan semaphore. ({})", string_VkResult(result));
         return SemaphoreHandle::Invalid;
     }
-    else
-    {
-        flecs::entity semaphore_entity = world.entity();
-        semaphore_entity.set<VulkanSemaphore>({ .semaphore = semaphore });
-        return SemaphoreHandle{ .id = semaphore_entity.id() };
-    }
+
+    flecs::entity semaphore_entity = world.entity();
+    semaphore_entity.set<VulkanSemaphore>({ .semaphore = semaphore });
+    return SemaphoreHandle{ .id = semaphore_entity.id() };
 }
 
 void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
@@ -407,6 +403,37 @@ void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
     if (!entity.is_alive() || !entity.has<VulkanSemaphore>()) { return; }
 
     vkDestroySemaphore(device, entity.get<VulkanSemaphore>()->semaphore, nullptr);
+
+    entity.destruct();
+}
+
+ShaderHandle VulkanBackend::create_shader(const ShaderCreateDesc& desc)
+{
+    VkShaderModuleCreateInfo shader_create_info = {};
+    shader_create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_create_info.codeSize                 = desc.code_size;
+    shader_create_info.pCode                    = reinterpret_cast<const u32*>(desc.code);
+
+    VkShaderModule shader_module;
+    VkResult       res = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
+    if (res != VK_SUCCESS)
+    {
+        CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(res));
+        return ShaderHandle::Invalid;
+    }
+
+    flecs::entity shader_entity = world.entity();
+    shader_entity.set<VulkanShader>({ .shader_module = shader_module });
+    return ShaderHandle{ .id = shader_entity.id() };
+}
+
+void VulkanBackend::destroy_shader(const ShaderHandle& shader)
+{
+    if (shader == ShaderHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, shader.id);
+    if (!entity.is_alive() || !entity.has<VulkanShader>()) { return; }
+
+    vkDestroyShaderModule(device, entity.get<VulkanShader>()->shader_module, nullptr);
 
     entity.destruct();
 }
@@ -471,6 +498,7 @@ VulkanBackend::~VulkanBackend()
     world.each([&](VulkanTexture& t) { t.destroy(device); });
     world.each([&](VulkanShaderState& s) { s.destroy(device); });
     world.each([&](VulkanRenderPass& r) { vkDestroyRenderPass(device, r.render_pass, nullptr); });
+    world.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
     world.each([&](flecs::entity e) { e.destruct(); });
 
     vkDestroyDevice(device, nullptr);

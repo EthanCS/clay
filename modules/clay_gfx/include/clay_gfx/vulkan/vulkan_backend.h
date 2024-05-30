@@ -52,6 +52,9 @@ public:
     ShaderStateHandle create_shader_state(const ShaderStateCreateDesc& desc) override;
     void              destroy_shader_state(const ShaderStateHandle& state) override;
 
+    ShaderHandle create_shader(const ShaderCreateDesc& desc) override;
+    void         destroy_shader(const ShaderHandle& shader) override;
+
     void destroy_texture(const TextureHandle& texture) override;
 };
 } // namespace gfx

@@ -52,6 +52,10 @@ public:
     virtual SemaphoreHandle create_semaphore()                                  = 0;
     virtual void            destroy_semaphore(const SemaphoreHandle& semaphore) = 0;
 
+    /////// Shader
+    virtual ShaderHandle create_shader(const ShaderCreateDesc& desc) = 0;
+    virtual void         destroy_shader(const ShaderHandle& shader)  = 0;
+
     /////// Shader State
     virtual ShaderStateHandle create_shader_state(const ShaderStateCreateDesc& desc) = 0;
     virtual void              destroy_shader_state(const ShaderStateHandle& state)   = 0;

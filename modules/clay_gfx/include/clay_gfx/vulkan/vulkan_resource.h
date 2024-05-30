@@ -30,6 +30,10 @@ struct VulkanSemaphore {
     VkSemaphore semaphore;
 };
 
+struct VulkanShader {
+    VkShaderModule shader_module;
+};
+
 struct VulkanShaderState {
     const char*                     name       = nullptr;
     u32                             num_stages = 0;
@@ -134,7 +138,7 @@ struct VulkanTexture {
 
 struct VulkanRenderPass {
     VkRenderPass     render_pass;
-    RenderPassOutput output;
+    RenderPassLayout output;
 };
 } // namespace gfx
 } // namespace clay

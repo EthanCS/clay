@@ -42,7 +42,7 @@ bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevic
 
     VkSurfaceTransformFlagBitsKHR pre_transform = surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : surface_capabilities.currentTransform;
 
-    u32 desired_image_count = std::max(MAX_SWAPCHAIN_IMAGES, surface_capabilities.minImageCount);
+    u32 desired_image_count = std::max(MAX_SWAPCHAIN_IMAGES, (u8)surface_capabilities.minImageCount);
     if (surface_capabilities.maxImageCount != 0)
     {
         desired_image_count = std::min(desired_image_count, surface_capabilities.maxImageCount);

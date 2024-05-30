@@ -42,7 +42,7 @@ ShaderStateCreateDesc& ShaderStateCreateDesc::add_stage(const ShaderStage::Flag&
     return *this;
 }
 
-RenderPassOutput& RenderPassOutput::reset()
+RenderPassLayout& RenderPassLayout::reset()
 {
     num_colors = 0;
     for (u32 i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
@@ -57,7 +57,7 @@ RenderPassOutput& RenderPassOutput::reset()
     return *this;
 }
 
-RenderPassOutput& RenderPassOutput::add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op)
+RenderPassLayout& RenderPassLayout::add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op)
 {
     color_formats[num_colors] = format;
     color_layouts[num_colors] = layout;
@@ -66,7 +66,7 @@ RenderPassOutput& RenderPassOutput::add_color(Format::Enum format, ImageLayout::
     return *this;
 }
 
-RenderPassOutput& RenderPassOutput::set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op)
+RenderPassLayout& RenderPassLayout::set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op)
 {
     depth_stencil_format = format;
     depth_stencil_layout = layout;
@@ -75,15 +75,5 @@ RenderPassOutput& RenderPassOutput::set_depth(Format::Enum format, ImageLayout::
     return *this;
 }
 
-BlendStates& BlendStates::reset()
-{
-    num_blend_states = 0;
-    return *this;
-}
-BlendStates& BlendStates::add_blend_state(const BlendState& state)
-{
-    blend_states[num_blend_states++] = state;
-    return *this;
-}
 } // namespace gfx
 } // namespace clay
