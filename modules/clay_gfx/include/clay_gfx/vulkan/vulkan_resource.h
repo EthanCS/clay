@@ -131,5 +131,10 @@ struct VulkanTexture {
         vkDestroyImage(device, image, nullptr);
     }
 };
+
+struct VulkanRenderPass {
+    VkRenderPass     render_pass;
+    RenderPassOutput output;
+};
 } // namespace gfx
 } // namespace clay

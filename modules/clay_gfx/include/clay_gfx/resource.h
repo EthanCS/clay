@@ -83,5 +83,40 @@ struct RenderPassOutput {
     RenderPassOutput& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
     RenderPassOutput& set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op);
 };
+
+struct RasterizerState {
+    CullMode::Enum  cull_mode  = CullMode::None;
+    FrontFace::Enum front_face = FrontFace::CounterClockwise;
+    FillMode::Enum  fill_mode  = FillMode::Solid;
+};
+
+struct BlendState {
+    BlendFactor::Enum src_color = BlendFactor::One;
+    BlendFactor::Enum dst_color = BlendFactor::One;
+    BlendOp::Enum     color_op  = BlendOp::Add;
+
+    BlendFactor::Enum src_alpha = BlendFactor::One;
+    BlendFactor::Enum dst_alpha = BlendFactor::One;
+    BlendOp::Enum     alpha_op  = BlendOp::Add;
+
+    ColorWriteEnabled::Flag color_write = ColorWriteEnabled::All;
+
+    bool blend_enabled          = false;
+    bool separate_blend_enabled = false;
+};
+
+struct BlendStates {
+    BlendState blend_states[MAX_COLOR_ATTACHMENTS];
+    u32        num_blend_states = 0;
+
+    BlendStates& reset();
+    BlendStates& add_blend_state(const BlendState& state);
+};
+
+struct GraphicsPipelineCreateDesc {
+    RasterizerState rasterizer_state;
+    BlendStates     blend_states;
+};
+
 } // namespace gfx
 } // namespace clay

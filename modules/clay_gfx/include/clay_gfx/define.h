@@ -128,5 +128,79 @@ struct TextureViewType {
         TextureCubeArray,
     };
 };
+
+struct FillMode {
+    enum Enum
+    {
+        Wireframe,
+        Solid,
+        Point,
+    };
+};
+
+struct FrontFace {
+    enum Enum
+    {
+        CounterClockwise,
+        Clockwise,
+    };
+};
+
+struct CullMode {
+    enum Enum
+    {
+        None,
+        Front,
+        Back,
+        FrontAndBack
+    };
+};
+
+struct BlendFactor {
+    enum Enum
+    {
+        Zero,
+        One,
+        SrcColor,
+        OneMinusSrcColor,
+        DstColor,
+        OneMinusDstColor,
+        SrcAlpha,
+        OneMinusSrcAlpha,
+        DstAlpha,
+        OneMinusDstAlpha,
+        ConstantColor,
+        OneMinusConstantColor,
+        ConstantAlpha,
+        OneMinusConstantAlpha,
+        SrcAlphaSaturate,
+        Src1Color,
+        OneMinusSrc1Color,
+        Src1Alpha,
+        OneMinusSrc1Alpha,
+    };
+};
+
+struct BlendOp {
+    enum Enum
+    {
+        Add,
+        Subtract,
+        ReverseSubtract,
+        Min,
+        Max,
+    };
+};
+
+struct ColorWriteEnabled {
+    enum Flag : char
+    {
+        Red   = 1 << 0,
+        Green = 1 << 1,
+        Blue  = 1 << 2,
+        Alpha = 1 << 3,
+        All   = Red | Green | Blue | Alpha,
+    };
+};
 } // namespace gfx
 } // namespace clay

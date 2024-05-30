@@ -74,5 +74,16 @@ RenderPassOutput& RenderPassOutput::set_depth(Format::Enum format, ImageLayout::
     this->stencil_op     = stencil_op;
     return *this;
 }
+
+BlendStates& BlendStates::reset()
+{
+    num_blend_states = 0;
+    return *this;
+}
+BlendStates& BlendStates::add_blend_state(const BlendState& state)
+{
+    blend_states[num_blend_states++] = state;
+    return *this;
+}
 } // namespace gfx
 } // namespace clay
