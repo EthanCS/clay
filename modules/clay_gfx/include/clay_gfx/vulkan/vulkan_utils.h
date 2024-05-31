@@ -170,5 +170,72 @@ inline VkFormat to_vk_format(Format::Enum format)
     }
     return VK_FORMAT_UNDEFINED;
 }
+
+inline VkCompareOp to_vk_compare_op(CompareOp::Enum compare)
+{
+    switch (compare)
+    {
+        case CompareOp::Never:
+            return VK_COMPARE_OP_NEVER;
+        case CompareOp::Less:
+            return VK_COMPARE_OP_LESS;
+        case CompareOp::Equal:
+            return VK_COMPARE_OP_EQUAL;
+        case CompareOp::LessOrEqual:
+            return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case CompareOp::Greater:
+            return VK_COMPARE_OP_GREATER;
+        case CompareOp::NotEqual:
+            return VK_COMPARE_OP_NOT_EQUAL;
+        case CompareOp::GreaterOrEqual:
+            return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case CompareOp::Always:
+            return VK_COMPARE_OP_ALWAYS;
+    }
+    return VK_COMPARE_OP_NEVER;
+}
+
+inline VkPolygonMode to_vk_polygon_mode(FillMode::Enum fill_mode)
+{
+    switch (fill_mode)
+    {
+        case FillMode::Solid:
+            return VK_POLYGON_MODE_FILL;
+        case FillMode::Wireframe:
+            return VK_POLYGON_MODE_LINE;
+        case FillMode::Point:
+            return VK_POLYGON_MODE_POINT;
+    }
+    return VK_POLYGON_MODE_FILL;
+}
+
+inline VkCullModeFlags to_vk_cull_mode(CullMode::Enum cull_mode)
+{
+    switch (cull_mode)
+    {
+        case CullMode::None:
+            return VK_CULL_MODE_NONE;
+        case CullMode::Front:
+            return VK_CULL_MODE_FRONT_BIT;
+        case CullMode::Back:
+            return VK_CULL_MODE_BACK_BIT;
+        case CullMode::FrontAndBack:
+            return VK_CULL_MODE_FRONT_AND_BACK;
+    }
+    return VK_CULL_MODE_NONE;
+}
+
+inline VkFrontFace to_vk_front_face(FrontFace::Enum front_face)
+{
+    switch (front_face)
+    {
+        case FrontFace::Clockwise:
+            return VK_FRONT_FACE_CLOCKWISE;
+        case FrontFace::CounterClockwise:
+            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    }
+    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+}
+
 } // namespace gfx
 } // namespace clay

@@ -56,9 +56,9 @@ public:
     virtual ShaderHandle create_shader(const ShaderCreateDesc& desc) = 0;
     virtual void         destroy_shader(const ShaderHandle& shader)  = 0;
 
-    /////// Shader State
-    virtual ShaderStateHandle create_shader_state(const ShaderStateCreateDesc& desc) = 0;
-    virtual void              destroy_shader_state(const ShaderStateHandle& state)   = 0;
+    /////// Pipeline
+    virtual GraphicsPipelineHandle create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)  = 0;
+    virtual void                   destroy_graphics_pipeline(const GraphicsPipelineHandle& pipeline) = 0;
 
     /////// Texture
     virtual void destroy_texture(const TextureHandle& texture) = 0;

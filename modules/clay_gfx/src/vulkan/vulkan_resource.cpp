@@ -1,3 +1,4 @@
+#include "clay_gfx/resource.h"
 #define NOMINMAX
 #include <vector>
 #include <algorithm>
@@ -154,5 +155,77 @@ VkImageView VulkanTexture::get_view(const VkDevice& device, const VulkanTextureV
 
     return view;
 }
+
+VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const flecs::world* world, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
+{
+    VkPipelineShaderStageCreateInfo shader_stage_info = {};
+
+    flecs::entity entity = flecs::entity(world->m_world, shader_info.compiled_shader.id);
+    if (!entity.is_alive() || !entity.has<VulkanShader>()) { return shader_stage_info; }
+
+    shader_stage_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stage_info.stage  = stage_flag;
+    shader_stage_info.module = entity.get<VulkanShader>()->shader_module;
+    shader_stage_info.pName  = shader_info.entry_func;
+
+    return shader_stage_info;
+}
+
+void VulkanGraphicsPipeline::init(const flecs::world* world, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
+{
+    if (world == nullptr) { return; }
+
+    //// Shader Stages
+    u8                              num_stages = 0;
+    VkPipelineShaderStageCreateInfo shader_stages[MAX_SHADER_STAGES];
+    if (desc.vertex_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(world, desc.vertex_shader, VK_SHADER_STAGE_VERTEX_BIT); }
+    if (desc.pixel_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(world, desc.pixel_shader, VK_SHADER_STAGE_FRAGMENT_BIT); }
+
+    //// Depth Stencil State
+    VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
+    depth_stencil.sType                                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil.depthTestEnable                       = desc.graphics_state.depth_test_enabled ? VK_TRUE : VK_FALSE;
+    depth_stencil.depthWriteEnable                      = desc.graphics_state.depth_write_enabled ? VK_TRUE : VK_FALSE;
+    depth_stencil.depthCompareOp                        = to_vk_compare_op(desc.graphics_state.depth_compare_op);
+    depth_stencil.stencilTestEnable                     = desc.graphics_state.stencil_test_enabled ? VK_TRUE : VK_FALSE;
+
+    //// Rasterizer
+    VkPipelineRasterizationStateCreateInfo rasterizer{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+    rasterizer.depthClampEnable        = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode             = to_vk_polygon_mode(desc.graphics_state.fill_mode);
+    rasterizer.lineWidth               = 1.0f;
+    rasterizer.cullMode                = to_vk_cull_mode(desc.graphics_state.cull_mode);
+    rasterizer.frontFace               = to_vk_front_face(desc.graphics_state.front_face);
+    rasterizer.depthBiasEnable         = VK_FALSE;
+    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+    rasterizer.depthBiasClamp          = 0.0f; // Optional
+    rasterizer.depthBiasSlopeFactor    = 0.0f; // Optional
+
+    VkGraphicsPipelineCreateInfo create_info = {};
+    create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    create_info.stageCount                   = num_stages;
+    create_info.pStages                      = shader_stages;
+    create_info.pVertexInputState            = nullptr;
+    create_info.pInputAssemblyState          = nullptr;
+    create_info.pViewportState               = nullptr;
+    create_info.pRasterizationState          = &rasterizer;
+    create_info.pMultisampleState            = nullptr;
+    create_info.pDepthStencilState           = &depth_stencil;
+    create_info.pColorBlendState             = nullptr;
+    create_info.pDynamicState                = nullptr;
+    create_info.layout                       = VK_NULL_HANDLE;
+    create_info.renderPass                   = VK_NULL_HANDLE;
+    create_info.subpass                      = 0;
+    create_info.basePipelineHandle           = VK_NULL_HANDLE;
+    create_info.basePipelineIndex            = -1;
+
+    VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline);
+    if (res != VK_SUCCESS)
+    {
+        CLAY_LOG_ERROR("Failed to create graphics pipeline! ({})", string_VkResult(res));
+    }
+}
+
 } // namespace gfx
 } // namespace clay

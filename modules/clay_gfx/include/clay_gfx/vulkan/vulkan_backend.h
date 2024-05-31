@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/resource.h"
 #include <clay_gfx/vulkan/vulkan_header.h>
 #include <clay_gfx/backend.h>
 #include <clay_gfx/vulkan/vulkan_resource.h>
@@ -49,11 +50,11 @@ public:
     SemaphoreHandle create_semaphore() override;
     void            destroy_semaphore(const SemaphoreHandle& semaphore) override;
 
-    ShaderStateHandle create_shader_state(const ShaderStateCreateDesc& desc) override;
-    void              destroy_shader_state(const ShaderStateHandle& state) override;
-
     ShaderHandle create_shader(const ShaderCreateDesc& desc) override;
     void         destroy_shader(const ShaderHandle& shader) override;
+
+    GraphicsPipelineHandle create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) override;
+    void                   destroy_graphics_pipeline(const GraphicsPipelineHandle& pipeline) override;
 
     void destroy_texture(const TextureHandle& texture) override;
 };

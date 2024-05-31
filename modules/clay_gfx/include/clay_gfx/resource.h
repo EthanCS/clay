@@ -32,10 +32,9 @@ DEFINE_CLAY_GFX_RESOURCE_HANDLE(Semaphore)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Buffer)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Texture)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Sampler)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(ShaderState)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Shader)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Pipeline)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(RenderPass)
+DEFINE_CLAY_GFX_RESOURCE_HANDLE(GraphicsPipeline)
+DEFINE_CLAY_GFX_RESOURCE_HANDLE(ComputePipeline)
 DEFINE_CLAY_GFX_RESOURCE_HANDLE(Framebuffer)
 
 struct TextureViewDesc {
@@ -55,23 +54,6 @@ struct TextureViewDesc {
 struct ShaderCreateDesc {
     const char* code      = nullptr;
     u32         code_size = 0;
-};
-
-struct ShaderStageDesc {
-    ShaderStage::Flag stage;
-    const char*       code        = nullptr;
-    u32               code_size   = 0;
-    const char*       entry_point = nullptr;
-};
-
-struct ShaderStateCreateDesc {
-    const char*     name       = nullptr;
-    u32             num_stages = 0;
-    ShaderStageDesc stages[MAX_SHADER_STAGES];
-
-    ShaderStateCreateDesc& reset();
-    ShaderStateCreateDesc& set_name(const char* name);
-    ShaderStateCreateDesc& add_stage(const ShaderStage::Flag& stage, const char* code, u32 code_size, const char* entry);
 };
 
 struct RenderPassLayout {
@@ -128,6 +110,8 @@ struct VertexBufferBinding {
 struct ShaderInfo {
     ShaderHandle compiled_shader = ShaderHandle::Invalid;
     const char*  entry_func      = nullptr;
+
+    inline bool is_valid() const { return compiled_shader != ShaderHandle::Invalid && entry_func != nullptr; }
 };
 
 struct GraphicsState {
@@ -140,7 +124,7 @@ struct GraphicsState {
     FillMode::Enum  fill_mode  = FillMode::Solid;
 
     /////// Depth
-    CompareOp::Enum depth_compare       = CompareOp::Less;
+    CompareOp::Enum depth_compare_op    = CompareOp::Less;
     bool            depth_test_enabled  = true;
     bool            depth_write_enabled = true;
 

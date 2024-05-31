@@ -438,30 +438,19 @@ void VulkanBackend::destroy_shader(const ShaderHandle& shader)
     entity.destruct();
 }
 
-ShaderStateHandle VulkanBackend::create_shader_state(const ShaderStateCreateDesc& desc)
+GraphicsPipelineHandle VulkanBackend::create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)
 {
-    VulkanShaderState shader = {};
-    bool              res    = shader.init(device, desc);
-
-    if (res)
-    {
-        flecs::entity shader_state_entity = world.entity();
-        shader_state_entity.set<VulkanShaderState>(shader);
-        return ShaderStateHandle{ .id = shader_state_entity.id() };
-    }
-    else
-    {
-        return ShaderStateHandle::Invalid;
-    }
+    return GraphicsPipelineHandle::Invalid;
 }
 
-void VulkanBackend::destroy_shader_state(const ShaderStateHandle& state)
+void VulkanBackend::destroy_graphics_pipeline(const GraphicsPipelineHandle& pipeline)
 {
-    if (state == ShaderStateHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, state.id);
-    if (!entity.is_alive() || !entity.has<VulkanShaderState>()) { return; }
+    if (pipeline == GraphicsPipelineHandle::Invalid) { return; }
+    flecs::entity entity = flecs::entity(world.m_world, pipeline.id);
+    if (!entity.is_alive() || !entity.has<VulkanGraphicsPipeline>()) { return; }
 
-    entity.get<VulkanShaderState>()->destroy(device);
+    vkDestroyPipeline(device, entity.get<VulkanGraphicsPipeline>()->pipeline, nullptr);
+
     entity.destruct();
 }
 
@@ -496,9 +485,9 @@ VulkanBackend::~VulkanBackend()
     world.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
     world.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
     world.each([&](VulkanTexture& t) { t.destroy(device); });
-    world.each([&](VulkanShaderState& s) { s.destroy(device); });
     world.each([&](VulkanRenderPass& r) { vkDestroyRenderPass(device, r.render_pass, nullptr); });
     world.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
+    world.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
     world.each([&](flecs::entity e) { e.destruct(); });
 
     vkDestroyDevice(device, nullptr);

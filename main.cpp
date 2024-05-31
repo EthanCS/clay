@@ -47,13 +47,8 @@ int main(int argc, char** argv)
 
     gfx::RenderBackend* rb = gfx::backend();
 
-    gfx::ShaderStateCreateDesc shader_desc = {};
-    shader_desc.reset()
-    .set_name("Hello Triangle")
-    .add_stage(gfx::ShaderStage::Vertex, vert_shader_code.data(), (u32)vert_shader_code.size(), "main")
-    .add_stage(gfx::ShaderStage::Fragment, frag_shader_code.data(), (u32)frag_shader_code.size(), "main");
-
-    gfx::ShaderStateHandle shader = rb->create_shader_state(shader_desc);
+    gfx::ShaderHandle hello_vs = rb->create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
+    gfx::ShaderHandle hello_fs = rb->create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
 
     while (!window.requested_exit)
     {

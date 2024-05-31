@@ -1,7 +1,5 @@
 #pragma once
 
-#include "clay_core/log.h"
-#include "vulkan_utils.h"
 #include <vector>
 
 #include <clay_gfx/resource.h>
@@ -32,53 +30,6 @@ struct VulkanSemaphore {
 
 struct VulkanShader {
     VkShaderModule shader_module;
-};
-
-struct VulkanShaderState {
-    const char*                     name       = nullptr;
-    u32                             num_stages = 0;
-    VkPipelineShaderStageCreateInfo shader_stage_info[MAX_SHADER_STAGES];
-
-    inline bool init(const VkDevice& device, const ShaderStateCreateDesc& desc)
-    {
-        name       = desc.name;
-        num_stages = desc.num_stages;
-        for (u32 i = 0; i < num_stages; ++i)
-        {
-            VkShaderModuleCreateInfo shader_create_info = {};
-            shader_create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            shader_create_info.codeSize                 = desc.stages[i].code_size;
-            shader_create_info.pCode                    = reinterpret_cast<const u32*>(desc.stages[i].code);
-
-            VkShaderModule shader_module;
-            VkResult       res = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
-            if (res != VK_SUCCESS)
-            {
-                CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(res));
-                // Destroy created shader modules
-                for (u32 j = 0; j < i; ++j)
-                {
-                    vkDestroyShaderModule(device, shader_stage_info[j].module, nullptr);
-                }
-                return false;
-            }
-
-            shader_stage_info[i].sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shader_stage_info[i].stage               = to_vk_shader_stage_flag_bits(desc.stages[i].stage);
-            shader_stage_info[i].module              = shader_module;
-            shader_stage_info[i].pName               = desc.stages[i].entry_point;
-            shader_stage_info[i].pSpecializationInfo = nullptr;
-        }
-        return true;
-    }
-
-    inline void destroy(const VkDevice& device) const
-    {
-        for (u32 i = 0; i < num_stages; ++i)
-        {
-            vkDestroyShaderModule(device, shader_stage_info[i].module, nullptr);
-        }
-    }
 };
 
 struct VulkanSwapchain {
@@ -139,6 +90,12 @@ struct VulkanTexture {
 struct VulkanRenderPass {
     VkRenderPass     render_pass;
     RenderPassLayout output;
+};
+
+struct VulkanGraphicsPipeline {
+    VkPipeline pipeline = VK_NULL_HANDLE;
+
+    void init(const flecs::world* world, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
 };
 } // namespace gfx
 } // namespace clay
