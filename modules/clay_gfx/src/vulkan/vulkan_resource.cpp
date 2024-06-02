@@ -274,6 +274,45 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
         }
     }
 
+    //// Vertex buffer bindings
+    VkVertexInputBindingDescription   vertex_bindings[MAX_VERTEX_BINDINGS];
+    VkVertexInputAttributeDescription vertex_attributes[MAX_VERTEX_ATTRIBUTES];
+
+    usize num_vertex_bindings   = 0;
+    usize num_vertex_attributes = 0;
+
+    for (usize i = 0; i < MAX_VERTEX_BINDINGS; i++)
+    {
+        const auto& binding = desc.graphics_state.vertex_buffer_bindings[i];
+        if (binding.byte_stride == u16_MAX) { break; }
+
+        vertex_bindings[num_vertex_bindings].binding   = i;
+        vertex_bindings[num_vertex_bindings].stride    = binding.byte_stride;
+        vertex_bindings[num_vertex_bindings].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        for (usize j = 0; j < MAX_VERTEX_ATTRIBUTES; j++)
+        {
+            const auto& attribute = binding.attributes[j];
+            if (attribute.byte_offset == u16_MAX) { break; }
+
+            vertex_attributes[num_vertex_attributes].binding  = i;
+            vertex_attributes[num_vertex_attributes].location = j;
+            vertex_attributes[num_vertex_attributes].format   = to_vk_format(attribute.format);
+            vertex_attributes[num_vertex_attributes].offset   = attribute.byte_offset;
+
+            num_vertex_attributes++;
+        }
+
+        num_vertex_bindings++;
+    }
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_state = {};
+    vertex_input_state.sType                                = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input_state.pVertexBindingDescriptions           = vertex_bindings;
+    vertex_input_state.vertexBindingDescriptionCount        = num_vertex_bindings;
+    vertex_input_state.pVertexAttributeDescriptions         = vertex_attributes;
+    vertex_input_state.vertexAttributeDescriptionCount      = num_vertex_attributes;
+
     //// Shader Stages
     u8                              num_stages = 0;
     VkPipelineShaderStageCreateInfo shader_stages[MAX_SHADER_STAGES];
@@ -344,7 +383,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     create_info.stageCount                   = num_stages;
     create_info.pStages                      = shader_stages;
-    create_info.pVertexInputState            = nullptr;
+    create_info.pVertexInputState            = &vertex_input_state;
     create_info.pInputAssemblyState          = &input_assembly;
     create_info.pViewportState               = &viewport;
     create_info.pRasterizationState          = &rasterizer;
