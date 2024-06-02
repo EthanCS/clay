@@ -19,7 +19,7 @@ VulkanSwapchain::VulkanSwapchain() noexcept
 {
 }
 
-bool VulkanSwapchain::init(VulkanResourcePool* res_pool, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
+bool VulkanSwapchain::init(VulkanResources* resources, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
 {
     u32 format_count;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
@@ -110,7 +110,7 @@ bool VulkanSwapchain::init(VulkanResourcePool* res_pool, VkDevice device, VkPhys
         for (int i = 0; i < image_count; i++)
         {
             VulkanTexture texture{ .image = swapchain_images[i] };
-            images[i] = res_pool->textures.push(texture);
+            images[i] = resources->textures.push(texture);
         }
     }
 
@@ -153,11 +153,26 @@ VkImageView VulkanTexture::get_view(const VkDevice& device, const VulkanTextureV
     return view;
 }
 
-VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResourcePool* res_pool, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
+bool VulkanRenderPass::is_compatible(const RenderPassLayout& layout) const
+{
+    if (output.num_colors != layout.num_colors) { return false; }
+
+    for (u32 i = 0; i < layout.num_colors; i++)
+    {
+        if (output.color_formats[i] != layout.color_formats[i] || output.color_layouts[i] != layout.color_layouts[i] || output.color_ops[i] != layout.color_ops[i])
+        {
+            return false;
+        }
+    }
+
+    return output.depth_stencil_format == layout.depth_stencil_format && output.depth_stencil_layout == layout.depth_stencil_layout && output.depth_op == layout.depth_op && output.stencil_op == layout.stencil_op;
+}
+
+VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResources* resources, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
 {
     VkPipelineShaderStageCreateInfo shader_stage_info = {};
 
-    const VulkanShader* shader = res_pool->shaders.get(shader_info.compiled_shader);
+    const VulkanShader* shader = resources->shaders.get(shader_info.compiled_shader);
     if (shader == nullptr) [[unlikely]] { return shader_stage_info; }
 
     shader_stage_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -168,20 +183,102 @@ VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResource
     return shader_stage_info;
 }
 
-void VulkanGraphicsPipeline::init(VulkanResourcePool* res_pool, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
+bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
 {
-    if (res_pool == nullptr) { return; }
+    if (resources == nullptr) { return false; }
 
     //// Render Pass
     VkRenderPass render_pass = VK_NULL_HANDLE;
     {
+        for (const auto& pass : resources->render_passes)
+        {
+            if (pass.is_compatible(desc.graphics_state.render_pass_layout))
+            {
+                render_pass = pass.render_pass;
+                break;
+            }
+        }
+
+        if (render_pass == VK_NULL_HANDLE)
+        {
+            usize num_colors      = desc.graphics_state.render_pass_layout.num_colors;
+            bool  has_depth       = desc.graphics_state.render_pass_layout.depth_stencil_format != Format::Undefined;
+            usize depth_index     = num_colors;
+            usize num_attachments = num_colors + (has_depth ? 1 : 0);
+
+            VkAttachmentDescription attachments[MAX_COLOR_ATTACHMENTS + 1]; // +1 for depth
+            for (usize i = 0; i < num_colors; i++)
+            {
+                attachments[i].format         = to_vk_format(desc.graphics_state.render_pass_layout.color_formats[i]);
+                attachments[i].samples        = VK_SAMPLE_COUNT_1_BIT;
+                attachments[i].loadOp         = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.color_ops[i]);
+                attachments[i].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+                attachments[i].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                attachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                attachments[i].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+                attachments[i].finalLayout    = to_vk_image_layout(desc.graphics_state.render_pass_layout.color_layouts[i]);
+            }
+
+            if (has_depth)
+            {
+                VkAttachmentDescription depth_attachment = {};
+                depth_attachment.format                  = to_vk_format(desc.graphics_state.render_pass_layout.depth_stencil_format);
+                depth_attachment.samples                 = VK_SAMPLE_COUNT_1_BIT;
+                depth_attachment.loadOp                  = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.depth_op);
+                depth_attachment.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+                depth_attachment.stencilLoadOp           = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.stencil_op);
+                depth_attachment.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
+                depth_attachment.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+                depth_attachment.finalLayout             = to_vk_image_layout(desc.graphics_state.render_pass_layout.depth_stencil_layout);
+
+                attachments[depth_index] = depth_attachment;
+            }
+
+            VkAttachmentReference color_attachment_refs[MAX_COLOR_ATTACHMENTS];
+            for (usize i = 0; i < num_colors; i++)
+            {
+                color_attachment_refs[i].attachment = i;
+                color_attachment_refs[i].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            }
+
+            VkAttachmentReference depth_attachment_ref = {};
+            if (has_depth)
+            {
+                depth_attachment_ref.attachment = depth_index;
+                depth_attachment_ref.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            }
+
+            VkSubpassDescription subpass    = {};
+            subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount    = num_colors;
+            subpass.pColorAttachments       = color_attachment_refs;
+            subpass.pDepthStencilAttachment = has_depth ? &depth_attachment_ref : nullptr;
+
+            VkRenderPassCreateInfo render_pass_info = {};
+            render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            render_pass_info.attachmentCount        = num_attachments;
+            render_pass_info.pAttachments           = attachments;
+            render_pass_info.subpassCount           = 1;
+            render_pass_info.pSubpasses             = &subpass;
+            render_pass_info.dependencyCount        = 0;
+            render_pass_info.pDependencies          = nullptr;
+
+            VkResult res = vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass);
+            if (res != VK_SUCCESS) [[unlikely]]
+            {
+                CLAY_LOG_ERROR("Failed to create render pass! ({})", string_VkResult(res));
+                return false;
+            }
+
+            resources->render_passes.push_back({ .render_pass = render_pass, .output = desc.graphics_state.render_pass_layout });
+        }
     }
 
     //// Shader Stages
     u8                              num_stages = 0;
     VkPipelineShaderStageCreateInfo shader_stages[MAX_SHADER_STAGES];
-    if (desc.vertex_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(res_pool, desc.vertex_shader, VK_SHADER_STAGE_VERTEX_BIT); }
-    if (desc.pixel_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(res_pool, desc.pixel_shader, VK_SHADER_STAGE_FRAGMENT_BIT); }
+    if (desc.vertex_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(resources, desc.vertex_shader, VK_SHADER_STAGE_VERTEX_BIT); }
+    if (desc.pixel_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(resources, desc.pixel_shader, VK_SHADER_STAGE_FRAGMENT_BIT); }
 
     //// Depth Stencil State
     VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
@@ -210,15 +307,48 @@ void VulkanGraphicsPipeline::init(VulkanResourcePool* res_pool, const VkDevice& 
     input_assembly.topology                               = to_vk_primitive_topology(desc.graphics_state.primitive_topology);
     input_assembly.primitiveRestartEnable                 = VK_FALSE;
 
+    // //// Color Blend State
+    // VkPipelineColorBlendAttachmentState color_blend_attachments[MAX_COLOR_ATTACHMENTS];
+    // for (usize i = 0; i < desc.graphics_state.render_pass_layout.num_colors; i++)
+    // {
+    //     color_blend_attachments[i].colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    //     color_blend_attachments[i].blendEnable         = VK_FALSE;
+    //     color_blend_attachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    //     color_blend_attachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    //     color_blend_attachments[i].colorBlendOp        = VK_BLEND_OP_ADD;
+    //     color_blend_attachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    //     color_blend_attachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    //     color_blend_attachments[i].alphaBlendOp        = VK_BLEND_OP_ADD;
+    // }
+
+    // VkPipelineColorBlendStateCreateInfo color_blending = {};
+    // color_blending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    // color_blending.logicOpEnable                       = VK_FALSE;
+    // color_blending.logicOp                             = VK_LOGIC_OP_COPY;
+    // color_blending.attachmentCount                     = desc.graphics_state.render_pass_layout.num_colors;
+    // color_blending.pAttachments                        = color_blend_attachments;
+
+    //// Multi Sample State
+    VkPipelineMultisampleStateCreateInfo multisampling = {};
+    multisampling.sType                                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable                  = VK_FALSE;
+    multisampling.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+    //// Viewport State
+    VkPipelineViewportStateCreateInfo viewport{};
+    viewport.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport.viewportCount = 1;
+    viewport.scissorCount  = 1;
+
     VkGraphicsPipelineCreateInfo create_info = {};
     create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     create_info.stageCount                   = num_stages;
     create_info.pStages                      = shader_stages;
     create_info.pVertexInputState            = nullptr;
     create_info.pInputAssemblyState          = &input_assembly;
-    create_info.pViewportState               = nullptr;
+    create_info.pViewportState               = &viewport;
     create_info.pRasterizationState          = &rasterizer;
-    create_info.pMultisampleState            = nullptr;
+    create_info.pMultisampleState            = &multisampling;
     create_info.pDepthStencilState           = &depth_stencil;
     create_info.pColorBlendState             = nullptr;
     create_info.pDynamicState                = nullptr;
@@ -229,10 +359,32 @@ void VulkanGraphicsPipeline::init(VulkanResourcePool* res_pool, const VkDevice& 
     create_info.basePipelineIndex            = -1;
 
     VkResult res = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline);
-    if (res != VK_SUCCESS)
+    if (res != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create graphics pipeline! ({})", string_VkResult(res));
+        return false;
     }
+
+    return true;
+}
+
+void VulkanResources::destroy(const VkDevice& device)
+{
+    fences.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
+    semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
+    textures.each([&](VulkanTexture& t) { t.destroy(device); });
+    shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
+    graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
+    std::for_each(render_passes.begin(), render_passes.end(), [&](VulkanRenderPass& r) {
+        vkDestroyRenderPass(device, r.render_pass, nullptr);
+    });
+
+    fences.clear();
+    semaphores.clear();
+    shaders.clear();
+    textures.clear();
+    graphics_pipelines.clear();
+    render_passes.clear();
 }
 
 } // namespace gfx

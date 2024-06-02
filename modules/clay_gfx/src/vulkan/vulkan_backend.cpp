@@ -48,7 +48,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 
 VulkanBackend::VulkanBackend(BackendType::Enum type_)
     : RenderBackend(type_)
-    , res_pool()
+    , resources()
     , instance(VK_NULL_HANDLE)
     , device(VK_NULL_HANDLE)
     , physical_device(VK_NULL_HANDLE)
@@ -284,7 +284,7 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
     if (is_surface_support)
     {
-        swapchain.init(&res_pool, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
+        swapchain.init(&resources, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
     }
 
     return true;
@@ -331,12 +331,12 @@ Handle<Fence> VulkanBackend::create_fence(bool signal)
         return Handle<Fence>();
     }
 
-    return res_pool.fences.push(VulkanFence{ .fence = fence });
+    return resources.fences.push(VulkanFence{ .fence = fence });
 }
 
 void VulkanBackend::wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout)
 {
-    const VulkanFence* vulkan_fence = res_pool.fences.get(fence);
+    const VulkanFence* vulkan_fence = resources.fences.get(fence);
     if (vulkan_fence == nullptr) [[unlikely]] { return; }
     vkWaitForFences(device, 1, &vulkan_fence->fence, wait_all, timeout);
 }
@@ -349,7 +349,7 @@ void VulkanBackend::wait_for_fences(const Handle<Fence>* fences, int num_fence, 
     vk_fences.reserve(num_fence);
     for (int i = 0; i < num_fence; i++)
     {
-        const VulkanFence* vulkan_fence = res_pool.fences.get(fences[i]);
+        const VulkanFence* vulkan_fence = resources.fences.get(fences[i]);
         if (vulkan_fence == nullptr) [[unlikely]] { continue; }
         vk_fences.push_back(vulkan_fence->fence);
     }
@@ -362,10 +362,10 @@ void VulkanBackend::wait_for_fences(const Handle<Fence>* fences, int num_fence, 
 
 void VulkanBackend::destroy_fence(const Handle<Fence>& fence)
 {
-    const VulkanFence* vulkan_fence = res_pool.fences.get(fence);
+    const VulkanFence* vulkan_fence = resources.fences.get(fence);
     if (vulkan_fence == nullptr) [[unlikely]] { return; }
     vkDestroyFence(device, vulkan_fence->fence, nullptr);
-    res_pool.fences.free(fence);
+    resources.fences.free(fence);
 }
 
 Handle<Semaphore> VulkanBackend::create_semaphore()
@@ -382,15 +382,15 @@ Handle<Semaphore> VulkanBackend::create_semaphore()
         return Handle<Semaphore>();
     }
 
-    return res_pool.semaphores.push(VulkanSemaphore{ .semaphore = semaphore });
+    return resources.semaphores.push(VulkanSemaphore{ .semaphore = semaphore });
 }
 
 void VulkanBackend::destroy_semaphore(const Handle<Semaphore>& semaphore)
 {
-    const VulkanSemaphore* vulkan_semaphore = res_pool.semaphores.get(semaphore);
+    const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(semaphore);
     if (vulkan_semaphore == nullptr) [[unlikely]] { return; }
     vkDestroySemaphore(device, vulkan_semaphore->semaphore, nullptr);
-    res_pool.semaphores.free(semaphore);
+    resources.semaphores.free(semaphore);
 }
 
 Handle<Shader> VulkanBackend::create_shader(const ShaderCreateDesc& desc)
@@ -401,50 +401,55 @@ Handle<Shader> VulkanBackend::create_shader(const ShaderCreateDesc& desc)
     shader_create_info.pCode                    = reinterpret_cast<const u32*>(desc.code);
 
     VkShaderModule shader_module;
-    VkResult       res = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
-    if (res != VK_SUCCESS) [[unlikely]]
+    VkResult       result = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
+    if (result != VK_SUCCESS) [[unlikely]]
     {
-        CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(res));
+        CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(result));
         return Handle<Shader>();
     }
 
-    return res_pool.shaders.push(VulkanShader{ .shader_module = shader_module });
+    return resources.shaders.push(VulkanShader{ .shader_module = shader_module });
 }
 
 void VulkanBackend::destroy_shader(const Handle<Shader>& shader)
 {
-    const VulkanShader* vulkan_shader = res_pool.shaders.get(shader);
+    const VulkanShader* vulkan_shader = resources.shaders.get(shader);
     if (vulkan_shader == nullptr) [[unlikely]] { return; }
     vkDestroyShaderModule(device, vulkan_shader->shader_module, nullptr);
-    res_pool.shaders.free(shader);
+    resources.shaders.free(shader);
 }
 
 Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)
 {
+    VulkanGraphicsPipeline pipeline;
+    if (pipeline.init(&resources, device, desc)) [[likely]]
+    {
+        return resources.graphics_pipelines.push(pipeline);
+    }
     return Handle<GraphicsPipeline>();
 }
 
 void VulkanBackend::destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline)
 {
-    const VulkanGraphicsPipeline* vulkan_pipeline = res_pool.graphics_pipelines.get(pipeline);
+    const VulkanGraphicsPipeline* vulkan_pipeline = resources.graphics_pipelines.get(pipeline);
     if (vulkan_pipeline == nullptr) [[unlikely]] { return; }
     vkDestroyPipeline(device, vulkan_pipeline->pipeline, nullptr);
-    res_pool.graphics_pipelines.free(pipeline);
+    resources.graphics_pipelines.free(pipeline);
 }
 
 void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
 {
-    const VulkanTexture* vulkan_texture = res_pool.textures.get(texture);
+    const VulkanTexture* vulkan_texture = resources.textures.get(texture);
     if (vulkan_texture == nullptr) [[unlikely]] { return; }
     vulkan_texture->destroy(device);
-    res_pool.textures.free(texture);
+    resources.textures.free(texture);
 }
 
 VulkanBackend::~VulkanBackend()
 {
     for (int i = 0; i < swapchain.image_count; i++)
     {
-        res_pool.textures.free(swapchain.images[i]);
+        resources.textures.free(swapchain.images[i]);
     }
     vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
 
@@ -456,13 +461,7 @@ VulkanBackend::~VulkanBackend()
         vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
     }
 
-    // Destroy resources
-    res_pool.fences.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
-    res_pool.semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
-    res_pool.textures.each([&](VulkanTexture& t) { t.destroy(device); });
-    res_pool.shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
-    res_pool.graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
-    res_pool.clear();
+    resources.destroy(device);
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);

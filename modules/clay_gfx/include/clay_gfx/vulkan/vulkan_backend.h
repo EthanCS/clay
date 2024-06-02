@@ -12,7 +12,7 @@ namespace gfx
 class VulkanBackend final : public RenderBackend
 {
 private:
-    VulkanResourcePool res_pool;
+    VulkanResources resources;
 
     VkInstance       instance;
     VkDevice         device;

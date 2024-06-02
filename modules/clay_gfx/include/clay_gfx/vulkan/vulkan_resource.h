@@ -10,7 +10,7 @@ namespace clay
 {
 namespace gfx
 {
-struct VulkanResourcePool;
+struct VulkanResources;
 
 struct VulkanQueue {
     VkQueue queue;
@@ -36,7 +36,7 @@ struct VulkanSwapchain {
     Handle<Texture> images[MAX_SWAPCHAIN_IMAGES];
 
     VulkanSwapchain() noexcept;
-    bool init(VulkanResourcePool* res_pool, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
+    bool init(VulkanResources* res, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
 };
 
 struct VulkanTextureViewDesc {
@@ -84,25 +84,29 @@ struct VulkanTexture {
     }
 };
 
-struct VulkanRenderPass {
-    VkRenderPass     render_pass;
-    RenderPassLayout output;
-};
-
 struct VulkanGraphicsPipeline {
     VkPipeline pipeline = VK_NULL_HANDLE;
 
-    void init(VulkanResourcePool* res_pool, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
+    bool init(VulkanResources* res, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
 };
 
-struct VulkanResourcePool {
+struct VulkanRenderPass {
+    VkRenderPass     render_pass;
+    RenderPassLayout output;
+
+    bool is_compatible(const RenderPassLayout& layout) const;
+};
+
+struct VulkanResources {
     Pool<Fence, VulkanFence>                       fences;
     Pool<Semaphore, VulkanSemaphore>               semaphores;
     Pool<Shader, VulkanShader>                     shaders;
     Pool<Texture, VulkanTexture>                   textures;
     Pool<GraphicsPipeline, VulkanGraphicsPipeline> graphics_pipelines;
 
-    VulkanResourcePool()
+    std::vector<VulkanRenderPass> render_passes;
+
+    VulkanResources()
         : fences(4)
         , semaphores(16)
         , shaders(32)
@@ -111,14 +115,7 @@ struct VulkanResourcePool {
     {
     }
 
-    void clear()
-    {
-        fences.clear();
-        semaphores.clear();
-        shaders.clear();
-        textures.clear();
-        graphics_pipelines.clear();
-    }
+    void destroy(const VkDevice& device);
 };
 
 } // namespace gfx
