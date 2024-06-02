@@ -47,17 +47,17 @@ int main(int argc, char** argv)
 
     gfx::RenderBackend* rb = gfx::backend();
 
-    gfx::ShaderHandle hello_vs = rb->create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
-    gfx::ShaderHandle hello_fs = rb->create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
+    gfx::Handle<gfx::Shader> hello_vs = rb->create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
+    gfx::Handle<gfx::Shader> hello_fs = rb->create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
 
     while (!window.requested_exit)
     {
 
-        gfx::FenceHandle fence = rb->create_fence(true);
-        // rb->destroy_fence(fence);
+        gfx::Handle<gfx::Fence> fence = rb->create_fence(true);
+        rb->destroy_fence(fence);
 
-        gfx::SemaphoreHandle semaphore = rb->create_semaphore();
-        // rb->destroy_semaphore(semaphore);
+        gfx::Handle<gfx::Semaphore> semaphore = rb->create_semaphore();
+        rb->destroy_semaphore(semaphore);
 
         window.handle_events();
     }

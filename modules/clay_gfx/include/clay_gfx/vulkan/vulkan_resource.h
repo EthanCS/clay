@@ -1,20 +1,17 @@
 #pragma once
 
 #include <vector>
-
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
+#include <clay_gfx/pool.h>
 #include <clay_gfx/vulkan/vulkan_header.h>
-
-namespace flecs
-{
-struct world;
-}
 
 namespace clay
 {
 namespace gfx
 {
+struct VulkanResourcePool;
+
 struct VulkanQueue {
     VkQueue queue;
     u32     family_index;
@@ -35,11 +32,11 @@ struct VulkanShader {
 struct VulkanSwapchain {
     VkSwapchainKHR swapchain;
 
-    u32           image_count;
-    TextureHandle images[MAX_SWAPCHAIN_IMAGES];
+    u32             image_count;
+    Handle<Texture> images[MAX_SWAPCHAIN_IMAGES];
 
     VulkanSwapchain() noexcept;
-    bool init(flecs::world* world, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
+    bool init(VulkanResourcePool* res_pool, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
 };
 
 struct VulkanTextureViewDesc {
@@ -95,7 +92,34 @@ struct VulkanRenderPass {
 struct VulkanGraphicsPipeline {
     VkPipeline pipeline = VK_NULL_HANDLE;
 
-    void init(const flecs::world* world, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
+    void init(VulkanResourcePool* res_pool, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
 };
+
+struct VulkanResourcePool {
+    Pool<Fence, VulkanFence>                       fences;
+    Pool<Semaphore, VulkanSemaphore>               semaphores;
+    Pool<Shader, VulkanShader>                     shaders;
+    Pool<Texture, VulkanTexture>                   textures;
+    Pool<GraphicsPipeline, VulkanGraphicsPipeline> graphics_pipelines;
+
+    VulkanResourcePool()
+        : fences(4)
+        , semaphores(16)
+        , shaders(32)
+        , textures(32)
+        , graphics_pipelines(32)
+    {
+    }
+
+    void clear()
+    {
+        fences.clear();
+        semaphores.clear();
+        shaders.clear();
+        textures.clear();
+        graphics_pipelines.clear();
+    }
+};
+
 } // namespace gfx
 } // namespace clay

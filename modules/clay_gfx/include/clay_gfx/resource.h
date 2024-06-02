@@ -1,41 +1,27 @@
 #pragma once
 
-#include <clay_gfx/define.h>
-#include <clay_core/macro.h>
 #include <optional>
+#include <clay_core/macro.h>
+#include <clay_gfx/handle.h>
+#include <clay_gfx/define.h>
 
-#ifdef __IMPL_INVALID_HANDLE
-    #define DEFINE_CLAY_GFX_RESOURCE_INVALID_HANDLE(name) \
-        const name##Handle name##Handle::Invalid = { u64_MAX };
-#else
-    #define DEFINE_CLAY_GFX_RESOURCE_INVALID_HANDLE(name)
-#endif
-
-#define DEFINE_CLAY_GFX_RESOURCE_HANDLE(name)          \
-    struct name##Handle {                              \
-        u64                       id;                  \
-        static const name##Handle Invalid;             \
-                                                       \
-        bool operator==(const name##Handle& rhs) const \
-        {                                              \
-            return id == rhs.id;                       \
-        }                                              \
-    };                                                 \
-    DEFINE_CLAY_GFX_RESOURCE_INVALID_HANDLE(name)
+#define DEFINE_CLAY_GFX_RESOURCE_TAG(name) \
+    struct name {                          \
+    };
 
 namespace clay
 {
 namespace gfx
 {
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Fence)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Semaphore)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Buffer)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Texture)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Sampler)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Shader)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(GraphicsPipeline)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(ComputePipeline)
-DEFINE_CLAY_GFX_RESOURCE_HANDLE(Framebuffer)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Fence)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Semaphore)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Buffer)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Texture)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Sampler)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Shader)
+DEFINE_CLAY_GFX_RESOURCE_TAG(GraphicsPipeline)
+DEFINE_CLAY_GFX_RESOURCE_TAG(ComputePipeline)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
 
 struct TextureViewDesc {
     std::optional<Format::Enum>   format;
@@ -108,10 +94,10 @@ struct VertexBufferBinding {
 };
 
 struct ShaderInfo {
-    ShaderHandle compiled_shader = ShaderHandle::Invalid;
-    const char*  entry_func      = nullptr;
+    Handle<Shader> compiled_shader = Handle<Shader>();
+    const char*    entry_func      = nullptr;
 
-    inline bool is_valid() const { return compiled_shader != ShaderHandle::Invalid && entry_func != nullptr; }
+    inline bool is_valid() const { return compiled_shader.is_valid() && entry_func != nullptr; }
 };
 
 struct GraphicsState {

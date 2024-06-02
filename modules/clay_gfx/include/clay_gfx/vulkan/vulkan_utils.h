@@ -195,6 +195,26 @@ inline VkCompareOp to_vk_compare_op(CompareOp::Enum compare)
     return VK_COMPARE_OP_NEVER;
 }
 
+inline VkPrimitiveTopology to_vk_primitive_topology(PrimitiveTopology::Enum primitive_topology)
+{
+    switch (primitive_topology)
+    {
+        case PrimitiveTopology::PointList:
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        case PrimitiveTopology::LineList:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        case PrimitiveTopology::LineStrip:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+        case PrimitiveTopology::TriangleList:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        case PrimitiveTopology::TriangleStrip:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        case PrimitiveTopology::TriangleFan:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+    }
+    return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+}
+
 inline VkPolygonMode to_vk_polygon_mode(FillMode::Enum fill_mode)
 {
     switch (fill_mode)

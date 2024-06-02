@@ -1,5 +1,3 @@
-#include "clay_gfx/vulkan/vulkan_resource.h"
-#include <flecs.h>
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -50,7 +48,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 
 VulkanBackend::VulkanBackend(BackendType::Enum type_)
     : RenderBackend(type_)
-    , world(flecs::world())
+    , res_pool()
     , instance(VK_NULL_HANDLE)
     , device(VK_NULL_HANDLE)
     , physical_device(VK_NULL_HANDLE)
@@ -286,7 +284,7 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
     if (is_surface_support)
     {
-        swapchain.init(&world, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
+        swapchain.init(&res_pool, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
     }
 
     return true;
@@ -318,7 +316,7 @@ void VulkanBackend::queue_wait_idle(QueueType::Enum queue_type)
     }
 }
 
-FenceHandle VulkanBackend::create_fence(bool signal)
+Handle<Fence> VulkanBackend::create_fence(bool signal)
 {
     VkFenceCreateInfo create_info = {};
     create_info.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -327,27 +325,23 @@ FenceHandle VulkanBackend::create_fence(bool signal)
     VkFence  fence  = VK_NULL_HANDLE;
     VkResult result = vkCreateFence(device, &create_info, nullptr, &fence);
 
-    if (result != VK_SUCCESS)
+    if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan fence. ({})", string_VkResult(result));
-        return FenceHandle::Invalid;
+        return Handle<Fence>();
     }
 
-    flecs::entity fence_entity = world.entity();
-    fence_entity.set<VulkanFence>({ .fence = fence });
-    return FenceHandle{ .id = fence_entity.id() };
+    return res_pool.fences.push(VulkanFence{ .fence = fence });
 }
 
-void VulkanBackend::wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout)
+void VulkanBackend::wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout)
 {
-    if (fence == FenceHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, fence.id);
-    if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
-
-    vkWaitForFences(device, 1, &entity.get<VulkanFence>()->fence, wait_all, timeout);
+    const VulkanFence* vulkan_fence = res_pool.fences.get(fence);
+    if (vulkan_fence == nullptr) [[unlikely]] { return; }
+    vkWaitForFences(device, 1, &vulkan_fence->fence, wait_all, timeout);
 }
 
-void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout)
+void VulkanBackend::wait_for_fences(const Handle<Fence>* fences, int num_fence, bool wait_all, u64 timeout)
 {
     if (num_fence == 0) { return; }
 
@@ -355,9 +349,9 @@ void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bo
     vk_fences.reserve(num_fence);
     for (int i = 0; i < num_fence; i++)
     {
-        flecs::entity entity = flecs::entity(world.m_world, fences[i].id);
-        if (!entity.is_alive() || !entity.has<VulkanFence>()) { continue; }
-        vk_fences.push_back(entity.get<VulkanFence>()->fence);
+        const VulkanFence* vulkan_fence = res_pool.fences.get(fences[i]);
+        if (vulkan_fence == nullptr) [[unlikely]] { continue; }
+        vk_fences.push_back(vulkan_fence->fence);
     }
 
     if (!vk_fences.empty())
@@ -366,18 +360,15 @@ void VulkanBackend::wait_for_fences(const FenceHandle* fences, int num_fence, bo
     }
 }
 
-void VulkanBackend::destroy_fence(const FenceHandle& fence)
+void VulkanBackend::destroy_fence(const Handle<Fence>& fence)
 {
-    if (fence == FenceHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, fence.id);
-    if (!entity.is_alive() || !entity.has<VulkanFence>()) { return; }
-
-    vkDestroyFence(device, entity.get<VulkanFence>()->fence, nullptr);
-
-    entity.destruct();
+    const VulkanFence* vulkan_fence = res_pool.fences.get(fence);
+    if (vulkan_fence == nullptr) [[unlikely]] { return; }
+    vkDestroyFence(device, vulkan_fence->fence, nullptr);
+    res_pool.fences.free(fence);
 }
 
-SemaphoreHandle VulkanBackend::create_semaphore()
+Handle<Semaphore> VulkanBackend::create_semaphore()
 {
     VkSemaphoreCreateInfo create_info = {};
     create_info.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -385,29 +376,24 @@ SemaphoreHandle VulkanBackend::create_semaphore()
     VkSemaphore semaphore = VK_NULL_HANDLE;
     VkResult    result    = vkCreateSemaphore(device, &create_info, nullptr, &semaphore);
 
-    if (result != VK_SUCCESS)
+    if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan semaphore. ({})", string_VkResult(result));
-        return SemaphoreHandle::Invalid;
+        return Handle<Semaphore>();
     }
 
-    flecs::entity semaphore_entity = world.entity();
-    semaphore_entity.set<VulkanSemaphore>({ .semaphore = semaphore });
-    return SemaphoreHandle{ .id = semaphore_entity.id() };
+    return res_pool.semaphores.push(VulkanSemaphore{ .semaphore = semaphore });
 }
 
-void VulkanBackend::destroy_semaphore(const SemaphoreHandle& semaphore)
+void VulkanBackend::destroy_semaphore(const Handle<Semaphore>& semaphore)
 {
-    if (semaphore == SemaphoreHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, semaphore.id);
-    if (!entity.is_alive() || !entity.has<VulkanSemaphore>()) { return; }
-
-    vkDestroySemaphore(device, entity.get<VulkanSemaphore>()->semaphore, nullptr);
-
-    entity.destruct();
+    const VulkanSemaphore* vulkan_semaphore = res_pool.semaphores.get(semaphore);
+    if (vulkan_semaphore == nullptr) [[unlikely]] { return; }
+    vkDestroySemaphore(device, vulkan_semaphore->semaphore, nullptr);
+    res_pool.semaphores.free(semaphore);
 }
 
-ShaderHandle VulkanBackend::create_shader(const ShaderCreateDesc& desc)
+Handle<Shader> VulkanBackend::create_shader(const ShaderCreateDesc& desc)
 {
     VkShaderModuleCreateInfo shader_create_info = {};
     shader_create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -416,60 +402,49 @@ ShaderHandle VulkanBackend::create_shader(const ShaderCreateDesc& desc)
 
     VkShaderModule shader_module;
     VkResult       res = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
-    if (res != VK_SUCCESS)
+    if (res != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(res));
-        return ShaderHandle::Invalid;
+        return Handle<Shader>();
     }
 
-    flecs::entity shader_entity = world.entity();
-    shader_entity.set<VulkanShader>({ .shader_module = shader_module });
-    return ShaderHandle{ .id = shader_entity.id() };
+    return res_pool.shaders.push(VulkanShader{ .shader_module = shader_module });
 }
 
-void VulkanBackend::destroy_shader(const ShaderHandle& shader)
+void VulkanBackend::destroy_shader(const Handle<Shader>& shader)
 {
-    if (shader == ShaderHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, shader.id);
-    if (!entity.is_alive() || !entity.has<VulkanShader>()) { return; }
-
-    vkDestroyShaderModule(device, entity.get<VulkanShader>()->shader_module, nullptr);
-
-    entity.destruct();
+    const VulkanShader* vulkan_shader = res_pool.shaders.get(shader);
+    if (vulkan_shader == nullptr) [[unlikely]] { return; }
+    vkDestroyShaderModule(device, vulkan_shader->shader_module, nullptr);
+    res_pool.shaders.free(shader);
 }
 
-GraphicsPipelineHandle VulkanBackend::create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)
+Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)
 {
-    return GraphicsPipelineHandle::Invalid;
+    return Handle<GraphicsPipeline>();
 }
 
-void VulkanBackend::destroy_graphics_pipeline(const GraphicsPipelineHandle& pipeline)
+void VulkanBackend::destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline)
 {
-    if (pipeline == GraphicsPipelineHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, pipeline.id);
-    if (!entity.is_alive() || !entity.has<VulkanGraphicsPipeline>()) { return; }
-
-    vkDestroyPipeline(device, entity.get<VulkanGraphicsPipeline>()->pipeline, nullptr);
-
-    entity.destruct();
+    const VulkanGraphicsPipeline* vulkan_pipeline = res_pool.graphics_pipelines.get(pipeline);
+    if (vulkan_pipeline == nullptr) [[unlikely]] { return; }
+    vkDestroyPipeline(device, vulkan_pipeline->pipeline, nullptr);
+    res_pool.graphics_pipelines.free(pipeline);
 }
 
-void VulkanBackend::destroy_texture(const TextureHandle& texture)
+void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
 {
-    if (texture == TextureHandle::Invalid) { return; }
-    flecs::entity entity = flecs::entity(world.m_world, texture.id);
-    if (!entity.is_alive() || !entity.has<VulkanTexture>()) { return; }
-
-    entity.get<VulkanTexture>()->destroy(device);
-    entity.destruct();
+    const VulkanTexture* vulkan_texture = res_pool.textures.get(texture);
+    if (vulkan_texture == nullptr) [[unlikely]] { return; }
+    vulkan_texture->destroy(device);
+    res_pool.textures.free(texture);
 }
 
 VulkanBackend::~VulkanBackend()
 {
     for (int i = 0; i < swapchain.image_count; i++)
     {
-        flecs::entity image_entity = flecs::entity(world.m_world, swapchain.images[i].id);
-        if (image_entity.is_alive()) { image_entity.destruct(); }
+        res_pool.textures.free(swapchain.images[i]);
     }
     vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
 
@@ -481,14 +456,13 @@ VulkanBackend::~VulkanBackend()
         vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
     }
 
-    // Destroy ECS world
-    world.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
-    world.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
-    world.each([&](VulkanTexture& t) { t.destroy(device); });
-    world.each([&](VulkanRenderPass& r) { vkDestroyRenderPass(device, r.render_pass, nullptr); });
-    world.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
-    world.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
-    world.each([&](flecs::entity e) { e.destruct(); });
+    // Destroy resources
+    res_pool.fences.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
+    res_pool.semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
+    res_pool.textures.each([&](VulkanTexture& t) { t.destroy(device); });
+    res_pool.shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
+    res_pool.graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
+    res_pool.clear();
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);

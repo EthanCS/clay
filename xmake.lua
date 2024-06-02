@@ -1,7 +1,6 @@
 set_languages("c99", "cxx20")
 add_rules("mode.debug", "mode.release")
 
-add_requires("flecs 3.2.11")
 add_requires("vulkansdk", "mimalloc", "spdlog", "libsdl 2.30.3")
 
 add_rules("plugin.compile_commands.autoupdate", { outputdir = ".vscode" })

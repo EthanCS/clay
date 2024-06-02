@@ -1,9 +1,7 @@
-#include "clay_gfx/resource.h"
 #define NOMINMAX
 #include <vector>
 #include <algorithm>
 
-#include <flecs.h>
 #include <clay_core/log.h>
 #include <clay_core/macro.h>
 
@@ -17,11 +15,11 @@ namespace gfx
 VulkanSwapchain::VulkanSwapchain() noexcept
     : swapchain(VK_NULL_HANDLE)
     , image_count(0)
-    , images{ TextureHandle::Invalid, TextureHandle::Invalid, TextureHandle::Invalid }
+    , images{ Handle<Texture>(), Handle<Texture>(), Handle<Texture>() }
 {
 }
 
-bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
+bool VulkanSwapchain::init(VulkanResourcePool* res_pool, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync)
 {
     u32 format_count;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
@@ -111,9 +109,8 @@ bool VulkanSwapchain::init(flecs::world* world, VkDevice device, VkPhysicalDevic
 
         for (int i = 0; i < image_count; i++)
         {
-            flecs::entity image_entity = world->entity();
-            images[i]                  = TextureHandle{ .id = image_entity.id() };
-            image_entity.set<VulkanTexture>({ .image = swapchain_images[i] });
+            VulkanTexture texture{ .image = swapchain_images[i] };
+            images[i] = res_pool->textures.push(texture);
         }
     }
 
@@ -156,30 +153,35 @@ VkImageView VulkanTexture::get_view(const VkDevice& device, const VulkanTextureV
     return view;
 }
 
-VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const flecs::world* world, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
+VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResourcePool* res_pool, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
 {
     VkPipelineShaderStageCreateInfo shader_stage_info = {};
 
-    flecs::entity entity = flecs::entity(world->m_world, shader_info.compiled_shader.id);
-    if (!entity.is_alive() || !entity.has<VulkanShader>()) { return shader_stage_info; }
+    const VulkanShader* shader = res_pool->shaders.get(shader_info.compiled_shader);
+    if (shader == nullptr) [[unlikely]] { return shader_stage_info; }
 
     shader_stage_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shader_stage_info.stage  = stage_flag;
-    shader_stage_info.module = entity.get<VulkanShader>()->shader_module;
+    shader_stage_info.module = shader->shader_module;
     shader_stage_info.pName  = shader_info.entry_func;
 
     return shader_stage_info;
 }
 
-void VulkanGraphicsPipeline::init(const flecs::world* world, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
+void VulkanGraphicsPipeline::init(VulkanResourcePool* res_pool, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
 {
-    if (world == nullptr) { return; }
+    if (res_pool == nullptr) { return; }
+
+    //// Render Pass
+    VkRenderPass render_pass = VK_NULL_HANDLE;
+    {
+    }
 
     //// Shader Stages
     u8                              num_stages = 0;
     VkPipelineShaderStageCreateInfo shader_stages[MAX_SHADER_STAGES];
-    if (desc.vertex_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(world, desc.vertex_shader, VK_SHADER_STAGE_VERTEX_BIT); }
-    if (desc.pixel_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(world, desc.pixel_shader, VK_SHADER_STAGE_FRAGMENT_BIT); }
+    if (desc.vertex_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(res_pool, desc.vertex_shader, VK_SHADER_STAGE_VERTEX_BIT); }
+    if (desc.pixel_shader.is_valid()) { shader_stages[num_stages++] = to_shader_stage_create_info(res_pool, desc.pixel_shader, VK_SHADER_STAGE_FRAGMENT_BIT); }
 
     //// Depth Stencil State
     VkPipelineDepthStencilStateCreateInfo depth_stencil = {};
@@ -202,12 +204,18 @@ void VulkanGraphicsPipeline::init(const flecs::world* world, const VkDevice& dev
     rasterizer.depthBiasClamp          = 0.0f; // Optional
     rasterizer.depthBiasSlopeFactor    = 0.0f; // Optional
 
+    //// Input Assembly
+    VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
+    input_assembly.sType                                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly.topology                               = to_vk_primitive_topology(desc.graphics_state.primitive_topology);
+    input_assembly.primitiveRestartEnable                 = VK_FALSE;
+
     VkGraphicsPipelineCreateInfo create_info = {};
     create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     create_info.stageCount                   = num_stages;
     create_info.pStages                      = shader_stages;
     create_info.pVertexInputState            = nullptr;
-    create_info.pInputAssemblyState          = nullptr;
+    create_info.pInputAssemblyState          = &input_assembly;
     create_info.pViewportState               = nullptr;
     create_info.pRasterizationState          = &rasterizer;
     create_info.pMultisampleState            = nullptr;
@@ -215,7 +223,7 @@ void VulkanGraphicsPipeline::init(const flecs::world* world, const VkDevice& dev
     create_info.pColorBlendState             = nullptr;
     create_info.pDynamicState                = nullptr;
     create_info.layout                       = VK_NULL_HANDLE;
-    create_info.renderPass                   = VK_NULL_HANDLE;
+    create_info.renderPass                   = render_pass;
     create_info.subpass                      = 0;
     create_info.basePipelineHandle           = VK_NULL_HANDLE;
     create_info.basePipelineIndex            = -1;

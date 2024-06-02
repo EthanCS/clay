@@ -1,11 +1,9 @@
 #pragma once
 
-#include "clay_gfx/resource.h"
-#include <clay_gfx/vulkan/vulkan_header.h>
+#include <clay_gfx/resource.h>
 #include <clay_gfx/backend.h>
+#include <clay_gfx/vulkan/vulkan_header.h>
 #include <clay_gfx/vulkan/vulkan_resource.h>
-
-#include <flecs.h>
 
 namespace clay
 {
@@ -14,7 +12,7 @@ namespace gfx
 class VulkanBackend final : public RenderBackend
 {
 private:
-    flecs::world world;
+    VulkanResourcePool res_pool;
 
     VkInstance       instance;
     VkDevice         device;
@@ -42,21 +40,21 @@ public:
 
     void queue_wait_idle(QueueType::Enum queue_type) override;
 
-    FenceHandle create_fence(bool signal) override;
-    void        wait_for_fence(const FenceHandle& fence, bool wait_all, u64 timeout) override;
-    void        wait_for_fences(const FenceHandle* fences, int num_fence, bool wait_all, u64 timeout) override;
-    void        destroy_fence(const FenceHandle& fence) override;
+    Handle<Fence> create_fence(bool signal) override;
+    void          wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout) override;
+    void          wait_for_fences(const Handle<Fence>* fences, int num_fence, bool wait_all, u64 timeout) override;
+    void          destroy_fence(const Handle<Fence>& fence) override;
 
-    SemaphoreHandle create_semaphore() override;
-    void            destroy_semaphore(const SemaphoreHandle& semaphore) override;
+    Handle<Semaphore> create_semaphore() override;
+    void              destroy_semaphore(const Handle<Semaphore>& semaphore) override;
 
-    ShaderHandle create_shader(const ShaderCreateDesc& desc) override;
-    void         destroy_shader(const ShaderHandle& shader) override;
+    Handle<Shader> create_shader(const ShaderCreateDesc& desc) override;
+    void           destroy_shader(const Handle<Shader>& shader) override;
 
-    GraphicsPipelineHandle create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) override;
-    void                   destroy_graphics_pipeline(const GraphicsPipelineHandle& pipeline) override;
+    Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) override;
+    void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) override;
 
-    void destroy_texture(const TextureHandle& texture) override;
+    void destroy_texture(const Handle<Texture>& texture) override;
 };
 } // namespace gfx
 } // namespace clay
