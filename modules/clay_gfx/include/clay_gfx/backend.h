@@ -63,6 +63,20 @@ public:
 
     /////// Texture
     virtual void destroy_texture(const Handle<Texture>& texture) = 0;
+
+    /////// Command Pool
+    virtual Handle<CommandPool> create_command_pool(QueueType::Enum queue_type)       = 0;
+    virtual void                destroy_command_pool(const Handle<CommandPool>& pool) = 0;
+
+    /////// Command Buffer
+    virtual Handle<CommandBuffer> allocate_command_buffer(const Handle<CommandPool>& pool) = 0;
+    virtual void                  free_command_buffer(const Handle<CommandBuffer>& buffer) = 0;
+
+    /////// CMDs
+    virtual void cmd_begin(const Handle<CommandBuffer>& buffer)                                               = 0;
+    virtual void cmd_end(const Handle<CommandBuffer>& buffer)                                                 = 0;
+    virtual void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) = 0;
+    virtual void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)    = 0;
 };
 
 static RenderBackend* s_backend = nullptr;

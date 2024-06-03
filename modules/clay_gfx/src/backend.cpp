@@ -12,6 +12,8 @@ bool init(const RenderBackendCreateDesc& desc)
         case BackendType::Vulkan:
             s_backend = new VulkanBackend(desc.type);
             break;
+        default:
+            return false;
     }
 
     if (s_backend != nullptr)

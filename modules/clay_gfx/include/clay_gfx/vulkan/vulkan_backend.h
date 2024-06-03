@@ -55,6 +55,17 @@ public:
     void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) override;
 
     void destroy_texture(const Handle<Texture>& texture) override;
+
+    Handle<CommandPool> create_command_pool(QueueType::Enum queue_type) override;
+    void                destroy_command_pool(const Handle<CommandPool>& pool) override;
+
+    Handle<CommandBuffer> allocate_command_buffer(const Handle<CommandPool>& pool) override;
+    void                  free_command_buffer(const Handle<CommandBuffer>& buffer) override;
+
+    void cmd_begin(const Handle<CommandBuffer>& buffer) override;
+    void cmd_end(const Handle<CommandBuffer>& buffer) override;
+    void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) override;
+    void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor) override;
 };
 } // namespace gfx
 } // namespace clay

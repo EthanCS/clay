@@ -18,7 +18,6 @@ struct BackendType {
         Vulkan,
         DirectX12,
         Metal,
-        Count
     };
 };
 

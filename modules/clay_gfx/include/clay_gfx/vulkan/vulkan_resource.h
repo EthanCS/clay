@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/handle.h"
 #include <vector>
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
@@ -97,12 +98,23 @@ struct VulkanRenderPass {
     bool is_compatible(const RenderPassLayout& layout) const;
 };
 
+struct VulkanCommandPool {
+    VkCommandPool command_pool = VK_NULL_HANDLE;
+};
+
+struct VulkanCommandBuffer {
+    VkCommandBuffer     command_buffer = VK_NULL_HANDLE;
+    Handle<CommandPool> pool;
+};
+
 struct VulkanResources {
     Pool<Fence, VulkanFence>                       fences;
     Pool<Semaphore, VulkanSemaphore>               semaphores;
     Pool<Shader, VulkanShader>                     shaders;
     Pool<Texture, VulkanTexture>                   textures;
     Pool<GraphicsPipeline, VulkanGraphicsPipeline> graphics_pipelines;
+    Pool<CommandPool, VulkanCommandPool>           command_pools;
+    Pool<CommandBuffer, VulkanCommandBuffer>       command_buffers;
 
     std::vector<VulkanRenderPass> render_passes;
 
@@ -112,6 +124,8 @@ struct VulkanResources {
         , shaders(32)
         , textures(32)
         , graphics_pipelines(32)
+        , command_pools(4)
+        , command_buffers(8)
     {
     }
 

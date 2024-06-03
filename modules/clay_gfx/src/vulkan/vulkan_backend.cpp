@@ -56,6 +56,28 @@ VulkanBackend::VulkanBackend(BackendType::Enum type_)
 {
 }
 
+VulkanBackend::~VulkanBackend()
+{
+    for (int i = 0; i < swapchain.image_count; i++)
+    {
+        resources.textures.free(swapchain.images[i]);
+    }
+    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+
+    vkDestroySurfaceKHR(instance, surface, nullptr);
+
+    if (debug_utils_messenger != VK_NULL_HANDLE)
+    {
+        auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
+    }
+
+    resources.destroy(device);
+
+    vkDestroyDevice(device, nullptr);
+    vkDestroyInstance(instance, nullptr);
+}
+
 bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
 {
     CLAY_LOG_INFO("Initializing Vulkan backend...");
@@ -445,26 +467,127 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
     resources.textures.free(texture);
 }
 
-VulkanBackend::~VulkanBackend()
+Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_type)
 {
-    for (int i = 0; i < swapchain.image_count; i++)
+    u32 family_index = 0;
+    switch (queue_type)
     {
-        resources.textures.free(swapchain.images[i]);
+        case QueueType::Graphics:
+            family_index = graphics_queue.family_index;
+            break;
+        case QueueType::Transfer:
+            family_index = transfer_queue.family_index;
+            break;
+        case QueueType::Compute:
+            family_index = compute_queue.family_index;
+            break;
+        case QueueType::Present:
+            family_index = present_queue.family_index;
+            break;
     }
-    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
 
-    vkDestroySurfaceKHR(instance, surface, nullptr);
+    VkCommandPoolCreateInfo create_info = {};
+    create_info.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    create_info.flags                   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    create_info.queueFamilyIndex        = family_index;
 
-    if (debug_utils_messenger != VK_NULL_HANDLE)
+    VkCommandPool command_pool = VK_NULL_HANDLE;
+    VkResult      result       = vkCreateCommandPool(device, &create_info, nullptr, &command_pool);
+    if (result != VK_SUCCESS) [[unlikely]]
     {
-        auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
+        CLAY_LOG_ERROR("Failed to create Vulkan command pool. ({})", string_VkResult(result));
+        return Handle<CommandPool>();
     }
 
-    resources.destroy(device);
-
-    vkDestroyDevice(device, nullptr);
-    vkDestroyInstance(instance, nullptr);
+    return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool });
 }
+
+void VulkanBackend::destroy_command_pool(const Handle<CommandPool>& pool)
+{
+    const VulkanCommandPool* vulkan_pool = resources.command_pools.get(pool);
+    if (vulkan_pool == nullptr) [[unlikely]] { return; }
+    vkDestroyCommandPool(device, vulkan_pool->command_pool, nullptr);
+    resources.command_pools.free(pool);
+}
+
+Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<CommandPool>& pool)
+{
+    const VulkanCommandPool* vulkan_pool = resources.command_pools.get(pool);
+    if (vulkan_pool == nullptr) [[unlikely]] { return Handle<CommandBuffer>(); }
+
+    VkCommandBufferAllocateInfo allocate_info = {};
+    allocate_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocate_info.commandPool                 = vulkan_pool->command_pool;
+    allocate_info.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocate_info.commandBufferCount          = 1;
+
+    VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+    VkResult        result         = vkAllocateCommandBuffers(device, &allocate_info, &command_buffer);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to allocate Vulkan command buffer. ({})", string_VkResult(result));
+        return Handle<CommandBuffer>();
+    }
+
+    return resources.command_buffers.push(VulkanCommandBuffer{ .command_buffer = command_buffer, .pool = pool });
+}
+
+void VulkanBackend::free_command_buffer(const Handle<CommandBuffer>& buffer)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandPool*   vulkan_pool   = resources.command_pools.get(vulkan_buffer->pool);
+    if (vulkan_buffer == nullptr || vulkan_pool == nullptr) [[unlikely]] { return; }
+    vkFreeCommandBuffers(device, vulkan_pool->command_pool, 1, &vulkan_buffer->command_buffer);
+    resources.command_buffers.free(buffer);
+}
+
+void VulkanBackend::cmd_begin(const Handle<CommandBuffer>& buffer)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    // begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(vulkan_buffer->command_buffer, &begin_info);
+}
+
+void VulkanBackend::cmd_end(const Handle<CommandBuffer>& buffer)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+
+    vkEndCommandBuffer(vulkan_buffer->command_buffer);
+}
+
+void VulkanBackend::cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+
+    VkViewport vk_viewport = {};
+    vk_viewport.x          = viewport.x;
+    vk_viewport.y          = viewport.y;
+    vk_viewport.width      = viewport.width;
+    vk_viewport.height     = viewport.height;
+    vk_viewport.minDepth   = viewport.min_depth;
+    vk_viewport.maxDepth   = viewport.max_depth;
+
+    vkCmdSetViewport(vulkan_buffer->command_buffer, 0, 1, &vk_viewport);
+}
+
+void VulkanBackend::cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+
+    VkRect2D vk_scissor = {};
+    vk_scissor.offset   = { scissor.offset[0], scissor.offset[1] };
+    vk_scissor.extent   = { scissor.extent[0], scissor.extent[1] };
+
+    vkCmdSetScissor(vulkan_buffer->command_buffer, 0, 1, &vk_scissor);
+}
+
 } // namespace gfx
 } // namespace clay

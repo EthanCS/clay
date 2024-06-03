@@ -22,6 +22,8 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(Shader)
 DEFINE_CLAY_GFX_RESOURCE_TAG(GraphicsPipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(ComputePipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
+DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
+DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
 
 struct TextureViewDesc {
     std::optional<Format::Enum>   format;
@@ -135,6 +137,20 @@ struct GraphicsPipelineCreateDesc {
     ShaderInfo pixel_shader;
 
     GraphicsState graphics_state;
+};
+
+struct CmdSetViewportOptions {
+    u32 x         = 0;
+    u32 y         = 0;
+    u32 width     = 0;
+    u32 height    = 0;
+    f32 min_depth = 0.0f;
+    f32 max_depth = 1.0f;
+};
+
+struct CmdSetScissorOptions {
+    i32 offset[2] = { 0, 0 };
+    u32 extent[2] = { 0, 0 };
 };
 
 } // namespace gfx
