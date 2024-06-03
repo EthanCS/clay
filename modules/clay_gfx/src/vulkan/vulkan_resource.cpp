@@ -329,17 +329,18 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     depth_stencil.stencilTestEnable                     = desc.graphics_state.stencil_test_enabled ? VK_TRUE : VK_FALSE;
 
     //// Rasterizer
-    VkPipelineRasterizationStateCreateInfo rasterizer{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-    rasterizer.depthClampEnable        = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode             = to_vk_polygon_mode(desc.graphics_state.fill_mode);
-    rasterizer.lineWidth               = 1.0f;
-    rasterizer.cullMode                = to_vk_cull_mode(desc.graphics_state.cull_mode);
-    rasterizer.frontFace               = to_vk_front_face(desc.graphics_state.front_face);
-    rasterizer.depthBiasEnable         = VK_FALSE;
-    rasterizer.depthBiasConstantFactor = 0.0f; // Optional
-    rasterizer.depthBiasClamp          = 0.0f; // Optional
-    rasterizer.depthBiasSlopeFactor    = 0.0f; // Optional
+    VkPipelineRasterizationStateCreateInfo rasterizer = {};
+    rasterizer.sType                                  = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable                       = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable                = VK_FALSE;
+    rasterizer.polygonMode                            = to_vk_polygon_mode(desc.graphics_state.fill_mode);
+    rasterizer.lineWidth                              = 1.0f;
+    rasterizer.cullMode                               = to_vk_cull_mode(desc.graphics_state.cull_mode);
+    rasterizer.frontFace                              = to_vk_front_face(desc.graphics_state.front_face);
+    rasterizer.depthBiasEnable                        = VK_FALSE;
+    rasterizer.depthBiasConstantFactor                = 0.0f; // Optional
+    rasterizer.depthBiasClamp                         = 0.0f; // Optional
+    rasterizer.depthBiasSlopeFactor                   = 0.0f; // Optional
 
     //// Input Assembly
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
@@ -376,11 +377,20 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     multisampling.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
 
     //// Viewport State
-    VkPipelineViewportStateCreateInfo viewport{};
-    viewport.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport.viewportCount = 1;
-    viewport.scissorCount  = 1;
+    VkPipelineViewportStateCreateInfo viewport = {};
+    viewport.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport.viewportCount                     = 1;
+    viewport.scissorCount                      = 1;
 
+    //// Dynamic State
+    VkDynamicState dynamic_states[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+    VkPipelineDynamicStateCreateInfo dynamic_state = {};
+    dynamic_state.sType                            = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamic_state.dynamicStateCount                = 2;
+    dynamic_state.pDynamicStates                   = dynamic_states;
+
+    //// Create Pipeline
     VkGraphicsPipelineCreateInfo create_info = {};
     create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     create_info.stageCount                   = num_stages;
@@ -392,7 +402,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     create_info.pMultisampleState            = &multisampling;
     create_info.pDepthStencilState           = &depth_stencil;
     create_info.pColorBlendState             = &color_blending;
-    create_info.pDynamicState                = nullptr;
+    create_info.pDynamicState                = &dynamic_state;
     create_info.layout                       = VK_NULL_HANDLE;
     create_info.renderPass                   = render_pass;
     create_info.subpass                      = 0;
