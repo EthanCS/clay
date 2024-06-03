@@ -59,6 +59,8 @@ struct RenderPassLayout {
 };
 
 struct BlendState {
+    bool blend_enabled = false;
+
     BlendFactor::Enum src_color = BlendFactor::One;
     BlendFactor::Enum dst_color = BlendFactor::One;
     BlendOp::Enum     color_op  = BlendOp::Add;
@@ -68,9 +70,6 @@ struct BlendState {
     BlendOp::Enum     alpha_op  = BlendOp::Add;
 
     ColorWriteEnabled::Flag color_write = ColorWriteEnabled::All;
-
-    bool blend_enabled          = false;
-    bool separate_blend_enabled = false;
 };
 
 struct StencilOperationState {

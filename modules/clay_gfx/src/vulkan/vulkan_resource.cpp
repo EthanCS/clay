@@ -1,3 +1,4 @@
+#include "clay_gfx/resource.h"
 #define NOMINMAX
 #include <vector>
 #include <algorithm>
@@ -346,26 +347,27 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     input_assembly.topology                               = to_vk_primitive_topology(desc.graphics_state.primitive_topology);
     input_assembly.primitiveRestartEnable                 = VK_FALSE;
 
-    // //// Color Blend State
-    // VkPipelineColorBlendAttachmentState color_blend_attachments[MAX_COLOR_ATTACHMENTS];
-    // for (usize i = 0; i < desc.graphics_state.render_pass_layout.num_colors; i++)
-    // {
-    //     color_blend_attachments[i].colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //     color_blend_attachments[i].blendEnable         = VK_FALSE;
-    //     color_blend_attachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    //     color_blend_attachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    //     color_blend_attachments[i].colorBlendOp        = VK_BLEND_OP_ADD;
-    //     color_blend_attachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    //     color_blend_attachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    //     color_blend_attachments[i].alphaBlendOp        = VK_BLEND_OP_ADD;
-    // }
+    //// Color Blend State
+    VkPipelineColorBlendAttachmentState color_blend_attachments[MAX_COLOR_ATTACHMENTS];
+    for (usize i = 0; i < desc.graphics_state.render_pass_layout.num_colors; i++)
+    {
+        const BlendState& blend_state                  = desc.graphics_state.blend_states[i];
+        color_blend_attachments[i].colorWriteMask      = to_vk_color_component_flags(blend_state.color_write);
+        color_blend_attachments[i].blendEnable         = blend_state.blend_enabled ? VK_TRUE : VK_FALSE;
+        color_blend_attachments[i].srcColorBlendFactor = to_vk_blend_factor(blend_state.src_color);
+        color_blend_attachments[i].dstColorBlendFactor = to_vk_blend_factor(blend_state.dst_color);
+        color_blend_attachments[i].colorBlendOp        = to_vk_blend_op(blend_state.color_op);
+        color_blend_attachments[i].srcAlphaBlendFactor = to_vk_blend_factor(blend_state.src_alpha);
+        color_blend_attachments[i].dstAlphaBlendFactor = to_vk_blend_factor(blend_state.dst_alpha);
+        color_blend_attachments[i].alphaBlendOp        = to_vk_blend_op(blend_state.alpha_op);
+    }
 
-    // VkPipelineColorBlendStateCreateInfo color_blending = {};
-    // color_blending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    // color_blending.logicOpEnable                       = VK_FALSE;
-    // color_blending.logicOp                             = VK_LOGIC_OP_COPY;
-    // color_blending.attachmentCount                     = desc.graphics_state.render_pass_layout.num_colors;
-    // color_blending.pAttachments                        = color_blend_attachments;
+    VkPipelineColorBlendStateCreateInfo color_blending = {};
+    color_blending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blending.logicOpEnable                       = VK_FALSE;
+    color_blending.logicOp                             = VK_LOGIC_OP_COPY;
+    color_blending.attachmentCount                     = desc.graphics_state.render_pass_layout.num_colors;
+    color_blending.pAttachments                        = color_blend_attachments;
 
     //// Multi Sample State
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -389,7 +391,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     create_info.pRasterizationState          = &rasterizer;
     create_info.pMultisampleState            = &multisampling;
     create_info.pDepthStencilState           = &depth_stencil;
-    create_info.pColorBlendState             = nullptr;
+    create_info.pColorBlendState             = &color_blending;
     create_info.pDynamicState                = nullptr;
     create_info.layout                       = VK_NULL_HANDLE;
     create_info.renderPass                   = render_pass;

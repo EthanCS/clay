@@ -257,5 +257,91 @@ inline VkFrontFace to_vk_front_face(FrontFace::Enum front_face)
     return VK_FRONT_FACE_COUNTER_CLOCKWISE;
 }
 
+inline VkBlendFactor to_vk_blend_factor(BlendFactor::Enum factor)
+{
+    switch (factor)
+    {
+        case BlendFactor::Zero:
+            return VK_BLEND_FACTOR_ZERO;
+        case BlendFactor::One:
+            return VK_BLEND_FACTOR_ONE;
+        case BlendFactor::SrcColor:
+            return VK_BLEND_FACTOR_SRC_COLOR;
+        case BlendFactor::OneMinusSrcColor:
+            return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+        case BlendFactor::DstColor:
+            return VK_BLEND_FACTOR_DST_COLOR;
+        case BlendFactor::OneMinusDstColor:
+            return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+        case BlendFactor::SrcAlpha:
+            return VK_BLEND_FACTOR_SRC_ALPHA;
+        case BlendFactor::OneMinusSrcAlpha:
+            return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        case BlendFactor::DstAlpha:
+            return VK_BLEND_FACTOR_DST_ALPHA;
+        case BlendFactor::OneMinusDstAlpha:
+            return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+        case BlendFactor::ConstantColor:
+            return VK_BLEND_FACTOR_CONSTANT_COLOR;
+        case BlendFactor::OneMinusConstantColor:
+            return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+        case BlendFactor::ConstantAlpha:
+            return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+        case BlendFactor::OneMinusConstantAlpha:
+            return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+        case BlendFactor::SrcAlphaSaturate:
+            return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+        case BlendFactor::Src1Color:
+            return VK_BLEND_FACTOR_SRC1_COLOR;
+        case BlendFactor::OneMinusSrc1Color:
+            return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+        case BlendFactor::Src1Alpha:
+            return VK_BLEND_FACTOR_SRC1_ALPHA;
+        case BlendFactor::OneMinusSrc1Alpha:
+            return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+    }
+    return VK_BLEND_FACTOR_ZERO;
+}
+
+inline VkBlendOp to_vk_blend_op(BlendOp::Enum op)
+{
+    switch (op)
+    {
+        case BlendOp::Add:
+            return VK_BLEND_OP_ADD;
+        case BlendOp::Subtract:
+            return VK_BLEND_OP_SUBTRACT;
+        case BlendOp::ReverseSubtract:
+            return VK_BLEND_OP_REVERSE_SUBTRACT;
+        case BlendOp::Min:
+            return VK_BLEND_OP_MIN;
+        case BlendOp::Max:
+            return VK_BLEND_OP_MAX;
+    }
+    return VK_BLEND_OP_ADD;
+}
+
+inline VkColorComponentFlags to_vk_color_component_flags(ColorWriteEnabled::Flag color_write)
+{
+    VkColorComponentFlags flags = 0;
+    if (color_write & ColorWriteEnabled::Red)
+    {
+        flags |= VK_COLOR_COMPONENT_R_BIT;
+    }
+    if (color_write & ColorWriteEnabled::Green)
+    {
+        flags |= VK_COLOR_COMPONENT_G_BIT;
+    }
+    if (color_write & ColorWriteEnabled::Blue)
+    {
+        flags |= VK_COLOR_COMPONENT_B_BIT;
+    }
+    if (color_write & ColorWriteEnabled::Alpha)
+    {
+        flags |= VK_COLOR_COMPONENT_A_BIT;
+    }
+    return flags;
+}
+
 } // namespace gfx
 } // namespace clay
