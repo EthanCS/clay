@@ -64,6 +64,10 @@ public:
     /////// Texture
     virtual void destroy_texture(const Handle<Texture>& texture) = 0;
 
+    /////// Framebuffer
+    virtual Handle<Framebuffer> create_framebuffer(const FramebufferCreateDesc& desc)  = 0;
+    virtual void                destroy_framebuffer(const Handle<Framebuffer>& buffer) = 0;
+
     /////// Command Pool
     virtual Handle<CommandPool> create_command_pool(QueueType::Enum queue_type)       = 0;
     virtual void                destroy_command_pool(const Handle<CommandPool>& pool) = 0;

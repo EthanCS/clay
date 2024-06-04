@@ -1,5 +1,7 @@
 #pragma once
 
+#include "clay_gfx/resource.h"
+#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <vector>
 #include <clay_gfx/define.h>
 #include <clay_gfx/vulkan/vulkan_header.h>
@@ -341,6 +343,85 @@ inline VkColorComponentFlags to_vk_color_component_flags(ColorWriteEnabled::Flag
         flags |= VK_COLOR_COMPONENT_A_BIT;
     }
     return flags;
+}
+
+inline VkComponentSwizzle to_vk_component_swizzle(TextureComponentSwizzle::Enum swizzle)
+{
+    switch (swizzle)
+    {
+        case TextureComponentSwizzle::Identity:
+            return VK_COMPONENT_SWIZZLE_IDENTITY;
+        case TextureComponentSwizzle::Zero:
+            return VK_COMPONENT_SWIZZLE_ZERO;
+        case TextureComponentSwizzle::One:
+            return VK_COMPONENT_SWIZZLE_ONE;
+        case TextureComponentSwizzle::R:
+            return VK_COMPONENT_SWIZZLE_R;
+        case TextureComponentSwizzle::G:
+            return VK_COMPONENT_SWIZZLE_G;
+        case TextureComponentSwizzle::B:
+            return VK_COMPONENT_SWIZZLE_B;
+        case TextureComponentSwizzle::A:
+            return VK_COMPONENT_SWIZZLE_A;
+    }
+    return VK_COMPONENT_SWIZZLE_IDENTITY;
+}
+
+inline VkImageViewType to_vk_image_view_type(TextureViewType::Enum view_type)
+{
+    switch (view_type)
+    {
+        case TextureViewType::Texture1D:
+            return VK_IMAGE_VIEW_TYPE_1D;
+        case TextureViewType::Texture2D:
+            return VK_IMAGE_VIEW_TYPE_2D;
+        case TextureViewType::Texture3D:
+            return VK_IMAGE_VIEW_TYPE_3D;
+        case TextureViewType::TextureCube:
+            return VK_IMAGE_VIEW_TYPE_CUBE;
+        case TextureViewType::Texture1DArray:
+            return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+        case TextureViewType::Texture2DArray:
+            return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        case TextureViewType::TextureCubeArray:
+            return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+    }
+    return VK_IMAGE_VIEW_TYPE_2D;
+}
+
+inline VkImageAspectFlags to_vk_image_aspect_flags(const TextureAspect::Flag& aspect_flags)
+{
+    VkImageAspectFlags flags = 0;
+    if (aspect_flags & TextureAspect::Color)
+    {
+        flags |= VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    if (aspect_flags & TextureAspect::Depth)
+    {
+        flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    if (aspect_flags & TextureAspect::Stencil)
+    {
+        flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    return flags;
+}
+
+inline VulkanTextureViewDesc to_vulkan_texture_view_desc(const TextureViewDesc& desc)
+{
+    VulkanTextureViewDesc view_desc = {};
+    view_desc.view_type             = to_vk_image_view_type(desc.view_type);
+    view_desc.format                = to_vk_format(desc.format);
+    view_desc.component_r           = to_vk_component_swizzle(desc.component_r);
+    view_desc.component_g           = to_vk_component_swizzle(desc.component_g);
+    view_desc.component_b           = to_vk_component_swizzle(desc.component_b);
+    view_desc.component_a           = to_vk_component_swizzle(desc.component_a);
+    view_desc.aspect_flags          = to_vk_image_aspect_flags(desc.aspect_flags);
+    view_desc.base_mip_level        = desc.base_mip_level;
+    view_desc.level_count           = desc.level_count;
+    view_desc.base_array_layer      = desc.base_array_layer;
+    view_desc.layer_count           = desc.layer_count;
+    return view_desc;
 }
 
 } // namespace gfx

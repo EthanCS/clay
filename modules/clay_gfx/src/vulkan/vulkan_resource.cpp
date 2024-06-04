@@ -110,7 +110,7 @@ bool VulkanSwapchain::init(VulkanResources* resources, VkDevice device, VkPhysic
 
         for (int i = 0; i < image_count; i++)
         {
-            VulkanTexture texture{ .image = swapchain_images[i] };
+            VulkanTexture texture{ .image = swapchain_images[i], .format = surface_format.format };
             images[i] = resources->textures.push(texture);
         }
     }
@@ -118,8 +118,10 @@ bool VulkanSwapchain::init(VulkanResources* resources, VkDevice device, VkPhysic
     return true;
 }
 
-VkImageView VulkanTexture::get_view(const VkDevice& device, const VulkanTextureViewDesc& desc)
+VkImageView VulkanTexture::get_view(const VkDevice& device, VulkanTextureViewDesc desc)
 {
+    if (desc.format == VK_FORMAT_UNDEFINED) { desc.format = format; }
+
     auto it = std::find(view_descs.begin(), view_descs.end(), desc);
     if (it != view_descs.end())
     {

@@ -71,10 +71,11 @@ struct VulkanTextureViewDesc {
 
 struct VulkanTexture {
     VkImage                            image;
+    VkFormat                           format;
     std::vector<VkImageView>           views;
     std::vector<VulkanTextureViewDesc> view_descs;
 
-    VkImageView get_view(const VkDevice& device, const VulkanTextureViewDesc& desc);
+    VkImageView get_view(const VkDevice& device, VulkanTextureViewDesc desc);
     inline void destroy(const VkDevice& device) const
     {
         for (const auto& view : views)

@@ -25,20 +25,6 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
 
-struct TextureViewDesc {
-    std::optional<Format::Enum>   format;
-    TextureViewType::Enum         view_type;
-    TextureAspect::Flag           aspect_flags;
-    u8                            base_mip_level{ 0 };
-    u8                            level_count{ 1 };
-    u8                            base_array_layer{ 0 };
-    u8                            layer_count{ 1 };
-    TextureComponentSwizzle::Enum component_r{ TextureComponentSwizzle::Identity };
-    TextureComponentSwizzle::Enum component_g{ TextureComponentSwizzle::Identity };
-    TextureComponentSwizzle::Enum component_b{ TextureComponentSwizzle::Identity };
-    TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
-};
-
 struct ShaderCreateDesc {
     const char* code      = nullptr;
     u32         code_size = 0;
@@ -139,6 +125,31 @@ struct GraphicsPipelineCreateDesc {
     ShaderInfo pixel_shader;
 
     GraphicsState graphics_state;
+};
+
+struct TextureViewDesc {
+    Handle<Texture>               texture;
+    TextureViewType::Enum         view_type;
+    TextureAspect::Flag           aspect_flags;
+    Format::Enum                  format = Format::Undefined; // means use the format of the texture
+    u8                            base_mip_level{ 0 };
+    u8                            level_count{ 1 };
+    u8                            base_array_layer{ 0 };
+    u8                            layer_count{ 1 };
+    TextureComponentSwizzle::Enum component_r{ TextureComponentSwizzle::Identity };
+    TextureComponentSwizzle::Enum component_g{ TextureComponentSwizzle::Identity };
+    TextureComponentSwizzle::Enum component_b{ TextureComponentSwizzle::Identity };
+    TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
+};
+
+struct FramebufferCreateDesc {
+    RenderPassLayout render_pass_layout;
+
+    TextureViewDesc color_attachments[MAX_COLOR_ATTACHMENTS];
+    TextureViewDesc depth_stencil_attachment;
+
+    u32 width  = 0;
+    u32 height = 0;
 };
 
 struct CmdBeginRenderPassOptions {

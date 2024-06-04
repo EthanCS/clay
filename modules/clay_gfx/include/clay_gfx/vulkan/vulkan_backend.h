@@ -56,6 +56,9 @@ public:
 
     void destroy_texture(const Handle<Texture>& texture) override;
 
+    Handle<Framebuffer> create_framebuffer(const FramebufferCreateDesc& desc) override;
+    void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer) override;
+
     Handle<CommandPool> create_command_pool(QueueType::Enum queue_type) override;
     void                destroy_command_pool(const Handle<CommandPool>& pool) override;
 

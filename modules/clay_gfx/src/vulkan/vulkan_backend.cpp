@@ -1,5 +1,4 @@
 #include "clay_gfx/define.h"
-#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -467,6 +466,57 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
     if (vulkan_texture == nullptr) [[unlikely]] { return; }
     vulkan_texture->destroy(device);
     resources.textures.free(texture);
+}
+
+Handle<Framebuffer> VulkanBackend::create_framebuffer(const FramebufferCreateDesc& desc)
+{
+    u32         num_attachments              = 0;
+    VkImageView attachments[MAX_ATTACHMENTS] = {};
+
+    for (u32 i = 0; i < desc.render_pass_layout.num_colors; i++)
+    {
+        VulkanTexture* vulkan_texture = resources.textures.get_mut(desc.color_attachments[i].texture);
+        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>(); }
+        attachments[num_attachments++] = vulkan_texture->get_view(device, to_vulkan_texture_view_desc(desc.color_attachments[i]));
+    }
+
+    if (desc.render_pass_layout.has_depth_stencil())
+    {
+        VulkanTexture* vulkan_texture = resources.textures.get_mut(desc.depth_stencil_attachment.texture);
+        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>(); }
+        attachments[num_attachments++] = vulkan_texture->get_view(device, to_vulkan_texture_view_desc(desc.depth_stencil_attachment));
+    }
+
+    VkFramebufferCreateInfo create_info = {};
+    create_info.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    create_info.renderPass              = resources.get_or_create_render_pass(device, desc.render_pass_layout);
+    create_info.attachmentCount         = num_attachments;
+    create_info.pAttachments            = attachments;
+    create_info.width                   = desc.width;
+    create_info.height                  = desc.height;
+    create_info.layers                  = 1;
+
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
+    VkResult      result      = vkCreateFramebuffer(device, &create_info, nullptr, &framebuffer);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan framebuffer. ({})", string_VkResult(result));
+        return Handle<Framebuffer>();
+    }
+
+    return resources.framebuffers.push(VulkanFramebuffer{ .framebuffer = framebuffer });
+}
+
+void VulkanBackend::destroy_framebuffer(const Handle<Framebuffer>& framebuffer)
+{
+    const VulkanFramebuffer* vulkan_framebuffer = resources.framebuffers.get(framebuffer);
+    if (vulkan_framebuffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find framebuffer.");
+        return;
+    }
+    vkDestroyFramebuffer(device, vulkan_framebuffer->framebuffer, nullptr);
+    resources.framebuffers.free(framebuffer);
 }
 
 Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_type)
