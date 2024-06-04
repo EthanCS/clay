@@ -260,5 +260,16 @@ struct PrimitiveTopology {
         TriangleFan,
     };
 };
+
+struct SwapchainAcquireStatus {
+    enum Enum
+    {
+        Success = 0,
+        OutOfDate,
+        Suboptimal,
+        Error,
+    };
+};
+
 } // namespace gfx
 } // namespace clay

@@ -382,12 +382,50 @@ void VulkanBackend::wait_for_fences(const Handle<Fence>* fences, int num_fence, 
     }
 }
 
+void VulkanBackend::reset_fences(const Handle<Fence>* fences, int num_fence)
+{
+    if (num_fence == 0) { return; }
+
+    std::vector<VkFence> vk_fences;
+    vk_fences.reserve(num_fence);
+    for (int i = 0; i < num_fence; i++)
+    {
+        const VulkanFence* vulkan_fence = resources.fences.get(fences[i]);
+        if (vulkan_fence == nullptr) [[unlikely]] { continue; }
+        vk_fences.push_back(vulkan_fence->fence);
+    }
+
+    if (!vk_fences.empty())
+    {
+        vkResetFences(device, vk_fences.size(), vk_fences.data());
+    }
+}
+
 void VulkanBackend::destroy_fence(const Handle<Fence>& fence)
 {
     const VulkanFence* vulkan_fence = resources.fences.get(fence);
     if (vulkan_fence == nullptr) [[unlikely]] { return; }
     vkDestroyFence(device, vulkan_fence->fence, nullptr);
     resources.fences.free(fence);
+}
+
+SwapchainAcquireResult VulkanBackend::acquire_next_image(u64 time_out, Handle<Semaphore> semaphore, Handle<Fence> fence)
+{
+    const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(semaphore);
+    const VulkanFence*     vulkan_fence     = resources.fences.get(fence);
+
+    u32      image_index = 0;
+    VkResult result      = vkAcquireNextImageKHR(device, swapchain.swapchain, time_out, vulkan_semaphore != nullptr ? vulkan_semaphore->semaphore : VK_NULL_HANDLE, vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE, &image_index);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::OutOfDate }; }
+    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Suboptimal }; }
+    else if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to acquire Vulkan swapchain image. ({})", string_VkResult(result));
+        return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Error };
+    }
+
+    return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Success };
 }
 
 Handle<Semaphore> VulkanBackend::create_semaphore()
@@ -582,6 +620,18 @@ Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<Comman
     }
 
     return resources.command_buffers.push(VulkanCommandBuffer{ .command_buffer = command_buffer, .pool = pool });
+}
+
+void VulkanBackend::reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    vkResetCommandBuffer(vulkan_buffer->command_buffer, release_resource ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0);
 }
 
 void VulkanBackend::free_command_buffer(const Handle<CommandBuffer>& buffer)

@@ -173,6 +173,11 @@ struct FramebufferCreateDesc {
     u32 height = 0;
 };
 
+struct SwapchainAcquireResult {
+    u8                           image_index;
+    SwapchainAcquireStatus::Enum status;
+};
+
 struct CmdBeginRenderPassOptions {
     Handle<Framebuffer> framebuffer;
     RenderPassLayout    render_pass_layout;
