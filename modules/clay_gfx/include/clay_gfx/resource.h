@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <clay_core/macro.h>
 #include <clay_gfx/handle.h>
 #include <clay_gfx/define.h>
@@ -30,22 +29,44 @@ struct ShaderCreateDesc {
     u32         code_size = 0;
 };
 
+struct ColorAttachmentDesc {
+    Format::Enum           format  = Format::Undefined;
+    ImageLayout::Enum      layout  = ImageLayout::Undefined;
+    RenderPassLoadOp::Enum load_op = RenderPassLoadOp::DontCare;
+
+    bool operator==(const ColorAttachmentDesc& rhs) const
+    {
+        return format == rhs.format && layout == rhs.layout && load_op == rhs.load_op;
+    }
+};
+
+struct DepthStencilAttachmentDesc {
+    Format::Enum           format     = Format::Undefined;
+    ImageLayout::Enum      layout     = ImageLayout::Undefined;
+    RenderPassLoadOp::Enum depth_op   = RenderPassLoadOp::DontCare;
+    RenderPassLoadOp::Enum stencil_op = RenderPassLoadOp::DontCare;
+
+    bool operator==(const DepthStencilAttachmentDesc& rhs) const
+    {
+        return format == rhs.format && layout == rhs.layout && depth_op == rhs.depth_op && stencil_op == rhs.stencil_op;
+    }
+};
+
 struct RenderPassLayout {
-    u32                    num_colors = 0;
-    Format::Enum           color_formats[MAX_COLOR_ATTACHMENTS];
-    ImageLayout::Enum      color_layouts[MAX_COLOR_ATTACHMENTS];
-    RenderPassLoadOp::Enum color_ops[MAX_COLOR_ATTACHMENTS];
+    ColorAttachmentDesc        colors[MAX_COLOR_ATTACHMENTS] = {};
+    DepthStencilAttachmentDesc depth_stencil                 = {};
 
-    Format::Enum           depth_stencil_format = Format::Undefined;
-    ImageLayout::Enum      depth_stencil_layout = ImageLayout::Undefined;
-    RenderPassLoadOp::Enum depth_op             = RenderPassLoadOp::DontCare;
-    RenderPassLoadOp::Enum stencil_op           = RenderPassLoadOp::DontCare;
-
-    bool has_depth_stencil() const { return depth_stencil_format != Format::Undefined; }
-
-    RenderPassLayout& reset();
-    RenderPassLayout& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
-    RenderPassLayout& set_depth(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum depth_op, RenderPassLoadOp::Enum stencil_op);
+    constexpr bool has_depth_stencil() const { return depth_stencil.format != Format::Undefined; }
+    constexpr u8   num_colors() const
+    {
+        u8 count = 0;
+        for (u8 i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
+        {
+            if (colors[i].format == Format::Undefined) [[unlikely]] { break; }
+            else { ++count; }
+        }
+        return count;
+    }
 };
 
 struct BlendState {
@@ -158,7 +179,7 @@ struct CmdBeginRenderPassOptions {
     i32                 offset[2] = { 0, 0 };
     u32                 extent[2] = { 0, 0 };
     bool                clear     = true;
-    ClearValue          clear_values[MAX_COLOR_ATTACHMENTS + 1];
+    ClearValue          clear_values[MAX_ATTACHMENTS];
 };
 
 struct CmdSetViewportOptions {

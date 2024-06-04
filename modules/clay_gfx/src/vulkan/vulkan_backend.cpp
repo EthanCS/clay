@@ -1,4 +1,3 @@
-#include "clay_gfx/define.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -473,7 +472,8 @@ Handle<Framebuffer> VulkanBackend::create_framebuffer(const FramebufferCreateDes
     u32         num_attachments              = 0;
     VkImageView attachments[MAX_ATTACHMENTS] = {};
 
-    for (u32 i = 0; i < desc.render_pass_layout.num_colors; i++)
+    u8 num_colors = desc.render_pass_layout.num_colors();
+    for (u8 i = 0; i < num_colors; i++)
     {
         VulkanTexture* vulkan_texture = resources.textures.get_mut(desc.color_attachments[i].texture);
         if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>(); }
@@ -644,8 +644,9 @@ void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, c
     if (options.clear)
     {
         u32          num_clear_values = 0;
-        VkClearValue clear_values[MAX_COLOR_ATTACHMENTS + 1];
-        for (u32 i = 0; i < options.render_pass_layout.num_colors; i++)
+        VkClearValue clear_values[MAX_ATTACHMENTS];
+        u8           num_colors = options.render_pass_layout.num_colors();
+        for (u8 i = 0; i < num_colors; i++)
         {
             clear_values[num_clear_values].color = {
                 options.clear_values[num_clear_values].color.r,

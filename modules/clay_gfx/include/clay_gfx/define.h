@@ -60,7 +60,7 @@ struct ShaderStage {
 struct Format {
     enum Enum
     {
-        Undefined,
+        Undefined = 0,
         D32_SFLOAT,
         D32_SFLOAT_S8_UINT,
         D24_UNORM_S8_UINT,
@@ -82,7 +82,7 @@ struct Format {
 struct ImageLayout {
     enum Enum
     {
-        Undefined,
+        Undefined = 0,
         General,
         ColorAttachmentOptimal,
         DepthStencilAttachmentOptimal,
@@ -98,7 +98,7 @@ struct ImageLayout {
 struct RenderPassLoadOp {
     enum Enum
     {
-        DontCare,
+        DontCare = 0,
         Load,
         Clear,
     };

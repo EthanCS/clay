@@ -1,5 +1,5 @@
-#include "clay_gfx/resource.h"
 #define NOMINMAX
+
 #include <vector>
 #include <algorithm>
 
@@ -158,17 +158,18 @@ VkImageView VulkanTexture::get_view(const VkDevice& device, VulkanTextureViewDes
 
 bool VulkanRenderPass::is_compatible(const RenderPassLayout& layout) const
 {
-    if (output.num_colors != layout.num_colors) { return false; }
+    u8 num_colors       = output.num_colors();
+    u8 other_num_colors = layout.num_colors();
+    if (num_colors != other_num_colors) { return false; }
 
-    for (u32 i = 0; i < layout.num_colors; i++)
+    for (u32 i = 0; i < num_colors; i++)
     {
-        if (output.color_formats[i] != layout.color_formats[i] || output.color_layouts[i] != layout.color_layouts[i] || output.color_ops[i] != layout.color_ops[i])
-        {
-            return false;
-        }
+        ColorAttachmentDesc output_color = output.colors[i];
+        ColorAttachmentDesc other_color  = layout.colors[i];
+        if (output_color != other_color) { return false; }
     }
 
-    return output.depth_stencil_format == layout.depth_stencil_format && output.depth_stencil_layout == layout.depth_stencil_layout && output.depth_op == layout.depth_op && output.stencil_op == layout.stencil_op;
+    return output.depth_stencil == layout.depth_stencil;
 }
 
 VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResources* resources, const ShaderInfo& shader_info, VkShaderStageFlagBits stage_flag)
@@ -269,7 +270,8 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
 
     //// Color Blend State
     VkPipelineColorBlendAttachmentState color_blend_attachments[MAX_COLOR_ATTACHMENTS];
-    for (usize i = 0; i < desc.graphics_state.render_pass_layout.num_colors; i++)
+    u8                                  num_color = desc.graphics_state.render_pass_layout.num_colors();
+    for (usize i = 0; i < num_color; i++)
     {
         const BlendState& blend_state                  = desc.graphics_state.blend_states[i];
         color_blend_attachments[i].colorWriteMask      = to_vk_color_component_flags(blend_state.color_write);
@@ -286,7 +288,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     color_blending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     color_blending.logicOpEnable                       = VK_FALSE;
     color_blending.logicOp                             = VK_LOGIC_OP_COPY;
-    color_blending.attachmentCount                     = desc.graphics_state.render_pass_layout.num_colors;
+    color_blending.attachmentCount                     = num_color;
     color_blending.pAttachments                        = color_blend_attachments;
 
     //// Multi Sample State
@@ -348,34 +350,34 @@ VkRenderPass VulkanResources::get_or_create_render_pass(const VkDevice& device, 
         }
     }
 
-    usize num_colors      = layout.num_colors;
+    usize num_colors      = layout.num_colors();
     usize depth_index     = num_colors;
     usize num_attachments = num_colors + (layout.has_depth_stencil() ? 1 : 0);
 
-    VkAttachmentDescription attachments[MAX_COLOR_ATTACHMENTS + 1]; // +1 for depth
+    VkAttachmentDescription attachments[MAX_ATTACHMENTS];
     for (usize i = 0; i < num_colors; i++)
     {
-        attachments[i].format         = to_vk_format(layout.color_formats[i]);
+        attachments[i].format         = to_vk_format(layout.colors[i].format);
         attachments[i].samples        = VK_SAMPLE_COUNT_1_BIT;
-        attachments[i].loadOp         = to_vk_attachment_load_op(layout.color_ops[i]);
+        attachments[i].loadOp         = to_vk_attachment_load_op(layout.colors[i].load_op);
         attachments[i].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
         attachments[i].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[i].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[i].finalLayout    = to_vk_image_layout(layout.color_layouts[i]);
+        attachments[i].finalLayout    = to_vk_image_layout(layout.colors[i].layout);
     }
 
     if (layout.has_depth_stencil())
     {
         VkAttachmentDescription depth_attachment = {};
-        depth_attachment.format                  = to_vk_format(layout.depth_stencil_format);
+        depth_attachment.format                  = to_vk_format(layout.depth_stencil.format);
         depth_attachment.samples                 = VK_SAMPLE_COUNT_1_BIT;
-        depth_attachment.loadOp                  = to_vk_attachment_load_op(layout.depth_op);
+        depth_attachment.loadOp                  = to_vk_attachment_load_op(layout.depth_stencil.depth_op);
         depth_attachment.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
-        depth_attachment.stencilLoadOp           = to_vk_attachment_load_op(layout.stencil_op);
+        depth_attachment.stencilLoadOp           = to_vk_attachment_load_op(layout.depth_stencil.stencil_op);
         depth_attachment.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
         depth_attachment.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-        depth_attachment.finalLayout             = to_vk_image_layout(layout.depth_stencil_layout);
+        depth_attachment.finalLayout             = to_vk_image_layout(layout.depth_stencil.layout);
 
         attachments[depth_index] = depth_attachment;
     }
