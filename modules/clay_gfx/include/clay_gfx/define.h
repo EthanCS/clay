@@ -12,6 +12,22 @@ static const u8 MAX_COLOR_ATTACHMENTS = 8;
 static const u8 MAX_VERTEX_ATTRIBUTES = 16;
 static const u8 MAX_VERTEX_BINDINGS   = 16;
 
+struct ClearValue {
+    union
+    {
+        struct {
+            f32 r;
+            f32 g;
+            f32 b;
+            f32 a;
+        } color;
+        struct {
+            f32 depth;
+            u32 stencil;
+        } depth_stencil;
+    };
+};
+
 struct BackendType {
     enum Enum
     {

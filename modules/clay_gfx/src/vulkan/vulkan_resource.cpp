@@ -189,91 +189,8 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     if (resources == nullptr) { return false; }
 
     //// Render Pass
-    VkRenderPass render_pass = VK_NULL_HANDLE;
-    {
-        for (const auto& pass : resources->render_passes)
-        {
-            if (pass.is_compatible(desc.graphics_state.render_pass_layout))
-            {
-                render_pass = pass.render_pass;
-                break;
-            }
-        }
-
-        if (render_pass == VK_NULL_HANDLE)
-        {
-            usize num_colors      = desc.graphics_state.render_pass_layout.num_colors;
-            bool  has_depth       = desc.graphics_state.render_pass_layout.depth_stencil_format != Format::Undefined;
-            usize depth_index     = num_colors;
-            usize num_attachments = num_colors + (has_depth ? 1 : 0);
-
-            VkAttachmentDescription attachments[MAX_COLOR_ATTACHMENTS + 1]; // +1 for depth
-            for (usize i = 0; i < num_colors; i++)
-            {
-                attachments[i].format         = to_vk_format(desc.graphics_state.render_pass_layout.color_formats[i]);
-                attachments[i].samples        = VK_SAMPLE_COUNT_1_BIT;
-                attachments[i].loadOp         = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.color_ops[i]);
-                attachments[i].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-                attachments[i].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                attachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-                attachments[i].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-                attachments[i].finalLayout    = to_vk_image_layout(desc.graphics_state.render_pass_layout.color_layouts[i]);
-            }
-
-            if (has_depth)
-            {
-                VkAttachmentDescription depth_attachment = {};
-                depth_attachment.format                  = to_vk_format(desc.graphics_state.render_pass_layout.depth_stencil_format);
-                depth_attachment.samples                 = VK_SAMPLE_COUNT_1_BIT;
-                depth_attachment.loadOp                  = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.depth_op);
-                depth_attachment.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
-                depth_attachment.stencilLoadOp           = to_vk_attachment_load_op(desc.graphics_state.render_pass_layout.stencil_op);
-                depth_attachment.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
-                depth_attachment.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
-                depth_attachment.finalLayout             = to_vk_image_layout(desc.graphics_state.render_pass_layout.depth_stencil_layout);
-
-                attachments[depth_index] = depth_attachment;
-            }
-
-            VkAttachmentReference color_attachment_refs[MAX_COLOR_ATTACHMENTS];
-            for (usize i = 0; i < num_colors; i++)
-            {
-                color_attachment_refs[i].attachment = i;
-                color_attachment_refs[i].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            }
-
-            VkAttachmentReference depth_attachment_ref = {};
-            if (has_depth)
-            {
-                depth_attachment_ref.attachment = depth_index;
-                depth_attachment_ref.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            }
-
-            VkSubpassDescription subpass    = {};
-            subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subpass.colorAttachmentCount    = num_colors;
-            subpass.pColorAttachments       = color_attachment_refs;
-            subpass.pDepthStencilAttachment = has_depth ? &depth_attachment_ref : nullptr;
-
-            VkRenderPassCreateInfo render_pass_info = {};
-            render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-            render_pass_info.attachmentCount        = num_attachments;
-            render_pass_info.pAttachments           = attachments;
-            render_pass_info.subpassCount           = 1;
-            render_pass_info.pSubpasses             = &subpass;
-            render_pass_info.dependencyCount        = 0;
-            render_pass_info.pDependencies          = nullptr;
-
-            VkResult res = vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass);
-            if (res != VK_SUCCESS) [[unlikely]]
-            {
-                CLAY_LOG_ERROR("Failed to create render pass! ({})", string_VkResult(res));
-                return false;
-            }
-
-            resources->render_passes.push_back({ .render_pass = render_pass, .output = desc.graphics_state.render_pass_layout });
-        }
-    }
+    VkRenderPass render_pass = resources->get_or_create_render_pass(device, desc.graphics_state.render_pass_layout);
+    if (render_pass == VK_NULL_HANDLE) [[unlikely]] { return false; }
 
     //// Vertex buffer bindings
     VkVertexInputBindingDescription   vertex_bindings[MAX_VERTEX_BINDINGS];
@@ -417,6 +334,89 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     }
 
     return true;
+}
+
+VkRenderPass VulkanResources::get_or_create_render_pass(const VkDevice& device, const RenderPassLayout& layout)
+{
+    for (const auto& pass : render_passes)
+    {
+        if (pass.is_compatible(layout))
+        {
+            return pass.render_pass;
+        }
+    }
+
+    usize num_colors      = layout.num_colors;
+    usize depth_index     = num_colors;
+    usize num_attachments = num_colors + (layout.has_depth_stencil() ? 1 : 0);
+
+    VkAttachmentDescription attachments[MAX_COLOR_ATTACHMENTS + 1]; // +1 for depth
+    for (usize i = 0; i < num_colors; i++)
+    {
+        attachments[i].format         = to_vk_format(layout.color_formats[i]);
+        attachments[i].samples        = VK_SAMPLE_COUNT_1_BIT;
+        attachments[i].loadOp         = to_vk_attachment_load_op(layout.color_ops[i]);
+        attachments[i].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+        attachments[i].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[i].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[i].finalLayout    = to_vk_image_layout(layout.color_layouts[i]);
+    }
+
+    if (layout.has_depth_stencil())
+    {
+        VkAttachmentDescription depth_attachment = {};
+        depth_attachment.format                  = to_vk_format(layout.depth_stencil_format);
+        depth_attachment.samples                 = VK_SAMPLE_COUNT_1_BIT;
+        depth_attachment.loadOp                  = to_vk_attachment_load_op(layout.depth_op);
+        depth_attachment.storeOp                 = VK_ATTACHMENT_STORE_OP_STORE;
+        depth_attachment.stencilLoadOp           = to_vk_attachment_load_op(layout.stencil_op);
+        depth_attachment.stencilStoreOp          = VK_ATTACHMENT_STORE_OP_STORE;
+        depth_attachment.initialLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+        depth_attachment.finalLayout             = to_vk_image_layout(layout.depth_stencil_layout);
+
+        attachments[depth_index] = depth_attachment;
+    }
+
+    VkAttachmentReference color_attachment_refs[MAX_COLOR_ATTACHMENTS];
+    for (usize i = 0; i < num_colors; i++)
+    {
+        color_attachment_refs[i].attachment = i;
+        color_attachment_refs[i].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+
+    VkAttachmentReference depth_attachment_ref = {};
+    if (layout.has_depth_stencil())
+    {
+        depth_attachment_ref.attachment = depth_index;
+        depth_attachment_ref.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
+    VkSubpassDescription subpass    = {};
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = num_colors;
+    subpass.pColorAttachments       = color_attachment_refs;
+    subpass.pDepthStencilAttachment = layout.has_depth_stencil() ? &depth_attachment_ref : nullptr;
+
+    VkRenderPassCreateInfo render_pass_info = {};
+    render_pass_info.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount        = num_attachments;
+    render_pass_info.pAttachments           = attachments;
+    render_pass_info.subpassCount           = 1;
+    render_pass_info.pSubpasses             = &subpass;
+    render_pass_info.dependencyCount        = 0;
+    render_pass_info.pDependencies          = nullptr;
+
+    VkRenderPass render_pass;
+    VkResult     res = vkCreateRenderPass(device, &render_pass_info, nullptr, &render_pass);
+    if (res != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create render pass! ({})", string_VkResult(res));
+        return VK_NULL_HANDLE;
+    }
+
+    render_passes.push_back({ .render_pass = render_pass, .output = layout });
+    return render_pass;
 }
 
 void VulkanResources::destroy(const VkDevice& device)

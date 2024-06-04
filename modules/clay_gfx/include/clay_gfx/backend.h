@@ -73,10 +73,14 @@ public:
     virtual void                  free_command_buffer(const Handle<CommandBuffer>& buffer) = 0;
 
     /////// CMDs
-    virtual void cmd_begin(const Handle<CommandBuffer>& buffer)                                               = 0;
-    virtual void cmd_end(const Handle<CommandBuffer>& buffer)                                                 = 0;
-    virtual void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) = 0;
-    virtual void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)    = 0;
+    virtual void cmd_begin(const Handle<CommandBuffer>& buffer)                                                            = 0;
+    virtual void cmd_end(const Handle<CommandBuffer>& buffer)                                                              = 0;
+    virtual void cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options)      = 0;
+    virtual void cmd_end_render_pass(const Handle<CommandBuffer>& buffer)                                                  = 0;
+    virtual void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline) = 0;
+    virtual void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport)              = 0;
+    virtual void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)                 = 0;
+    virtual void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw)                                 = 0;
 };
 
 static RenderBackend* s_backend = nullptr;

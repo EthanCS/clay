@@ -107,6 +107,10 @@ struct VulkanCommandBuffer {
     Handle<CommandPool> pool;
 };
 
+struct VulkanFramebuffer {
+    VkFramebuffer framebuffer = VK_NULL_HANDLE;
+};
+
 struct VulkanResources {
     Pool<Fence, VulkanFence>                       fences;
     Pool<Semaphore, VulkanSemaphore>               semaphores;
@@ -115,6 +119,7 @@ struct VulkanResources {
     Pool<GraphicsPipeline, VulkanGraphicsPipeline> graphics_pipelines;
     Pool<CommandPool, VulkanCommandPool>           command_pools;
     Pool<CommandBuffer, VulkanCommandBuffer>       command_buffers;
+    Pool<Framebuffer, VulkanFramebuffer>           framebuffers;
 
     std::vector<VulkanRenderPass> render_passes;
 
@@ -126,10 +131,12 @@ struct VulkanResources {
         , graphics_pipelines(32)
         , command_pools(4)
         , command_buffers(8)
+        , framebuffers(4)
     {
     }
 
-    void destroy(const VkDevice& device);
+    VkRenderPass get_or_create_render_pass(const VkDevice& device, const RenderPassLayout& layout);
+    void         destroy(const VkDevice& device);
 };
 
 } // namespace gfx

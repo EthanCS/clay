@@ -50,10 +50,12 @@ struct RenderPassLayout {
     ImageLayout::Enum      color_layouts[MAX_COLOR_ATTACHMENTS];
     RenderPassLoadOp::Enum color_ops[MAX_COLOR_ATTACHMENTS];
 
-    Format::Enum           depth_stencil_format;
-    ImageLayout::Enum      depth_stencil_layout;
-    RenderPassLoadOp::Enum depth_op   = RenderPassLoadOp::DontCare;
-    RenderPassLoadOp::Enum stencil_op = RenderPassLoadOp::DontCare;
+    Format::Enum           depth_stencil_format = Format::Undefined;
+    ImageLayout::Enum      depth_stencil_layout = ImageLayout::Undefined;
+    RenderPassLoadOp::Enum depth_op             = RenderPassLoadOp::DontCare;
+    RenderPassLoadOp::Enum stencil_op           = RenderPassLoadOp::DontCare;
+
+    bool has_depth_stencil() const { return depth_stencil_format != Format::Undefined; }
 
     RenderPassLayout& reset();
     RenderPassLayout& add_color(Format::Enum format, ImageLayout::Enum layout, RenderPassLoadOp::Enum load_op);
@@ -139,6 +141,15 @@ struct GraphicsPipelineCreateDesc {
     GraphicsState graphics_state;
 };
 
+struct CmdBeginRenderPassOptions {
+    Handle<Framebuffer> framebuffer;
+    RenderPassLayout    render_pass_layout;
+    i32                 offset[2] = { 0, 0 };
+    u32                 extent[2] = { 0, 0 };
+    bool                clear     = true;
+    ClearValue          clear_values[MAX_COLOR_ATTACHMENTS + 1];
+};
+
 struct CmdSetViewportOptions {
     u32 x         = 0;
     u32 y         = 0;
@@ -151,6 +162,13 @@ struct CmdSetViewportOptions {
 struct CmdSetScissorOptions {
     i32 offset[2] = { 0, 0 };
     u32 extent[2] = { 0, 0 };
+};
+
+struct CmdDrawOptions {
+    u32 vertex_count   = 0;
+    u32 instance_count = 1;
+    u32 first_vertex   = 0;
+    u32 first_instance = 0;
 };
 
 } // namespace gfx

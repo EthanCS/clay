@@ -1,3 +1,5 @@
+#include "clay_gfx/define.h"
+#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -544,27 +546,119 @@ void VulkanBackend::free_command_buffer(const Handle<CommandBuffer>& buffer)
 void VulkanBackend::cmd_begin(const Handle<CommandBuffer>& buffer)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
-    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     // begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
     vkBeginCommandBuffer(vulkan_buffer->command_buffer, &begin_info);
 }
 
 void VulkanBackend::cmd_end(const Handle<CommandBuffer>& buffer)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
-    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
 
     vkEndCommandBuffer(vulkan_buffer->command_buffer);
+}
+
+void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    const VulkanFramebuffer* vulkan_framebuffer = resources.framebuffers.get(options.framebuffer);
+    if (vulkan_framebuffer == nullptr) [[unlikely]] { return; }
+
+    VkRenderPassBeginInfo begin_info = {};
+    begin_info.sType                 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    begin_info.renderPass            = resources.get_or_create_render_pass(device, options.render_pass_layout);
+    begin_info.framebuffer           = vulkan_framebuffer->framebuffer;
+    begin_info.renderArea.offset     = { options.offset[0], options.offset[1] };
+    begin_info.renderArea.extent     = { options.extent[0], options.extent[1] };
+    begin_info.clearValueCount       = 0;
+    begin_info.pClearValues          = nullptr;
+
+    if (options.clear)
+    {
+        u32          num_clear_values = 0;
+        VkClearValue clear_values[MAX_COLOR_ATTACHMENTS + 1];
+        for (u32 i = 0; i < options.render_pass_layout.num_colors; i++)
+        {
+            clear_values[num_clear_values].color = {
+                options.clear_values[num_clear_values].color.r,
+                options.clear_values[num_clear_values].color.g,
+                options.clear_values[num_clear_values].color.b,
+                options.clear_values[num_clear_values].color.a
+            };
+            num_clear_values++;
+        }
+        if (options.render_pass_layout.has_depth_stencil())
+        {
+            clear_values[num_clear_values].depthStencil = {
+                options.clear_values[num_clear_values].depth_stencil.depth,
+                options.clear_values[num_clear_values].depth_stencil.stencil
+            };
+            num_clear_values++;
+        }
+        begin_info.clearValueCount = num_clear_values;
+        begin_info.pClearValues    = clear_values;
+    }
+
+    vkCmdBeginRenderPass(vulkan_buffer->command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void VulkanBackend::cmd_end_render_pass(const Handle<CommandBuffer>& buffer)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    vkCmdEndRenderPass(vulkan_buffer->command_buffer);
+}
+
+void VulkanBackend::cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    const VulkanGraphicsPipeline* vulkan_pipeline = resources.graphics_pipelines.get(pipeline);
+    if (vulkan_pipeline == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find graphics pipeline.");
+        return;
+    }
+
+    vkCmdBindPipeline(vulkan_buffer->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->pipeline);
 }
 
 void VulkanBackend::cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
-    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
 
     VkViewport vk_viewport = {};
     vk_viewport.x          = viewport.x;
@@ -573,21 +667,34 @@ void VulkanBackend::cmd_set_viewport(const Handle<CommandBuffer>& buffer, const 
     vk_viewport.height     = viewport.height;
     vk_viewport.minDepth   = viewport.min_depth;
     vk_viewport.maxDepth   = viewport.max_depth;
-
     vkCmdSetViewport(vulkan_buffer->command_buffer, 0, 1, &vk_viewport);
 }
 
 void VulkanBackend::cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
-    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
 
     VkRect2D vk_scissor = {};
     vk_scissor.offset   = { scissor.offset[0], scissor.offset[1] };
     vk_scissor.extent   = { scissor.extent[0], scissor.extent[1] };
-
     vkCmdSetScissor(vulkan_buffer->command_buffer, 0, 1, &vk_scissor);
 }
 
+void VulkanBackend::cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    vkCmdDraw(vulkan_buffer->command_buffer, draw.vertex_count, draw.instance_count, draw.first_vertex, draw.first_instance);
+}
 } // namespace gfx
 } // namespace clay

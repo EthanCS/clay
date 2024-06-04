@@ -64,8 +64,12 @@ public:
 
     void cmd_begin(const Handle<CommandBuffer>& buffer) override;
     void cmd_end(const Handle<CommandBuffer>& buffer) override;
+    void cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options) override;
+    void cmd_end_render_pass(const Handle<CommandBuffer>& buffer) override;
+    void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline) override;
     void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) override;
     void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor) override;
+    void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw) override;
 };
 } // namespace gfx
 } // namespace clay
