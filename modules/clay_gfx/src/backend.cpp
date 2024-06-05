@@ -8,7 +8,7 @@ namespace gfx
 {
 pro::proxy<spec::IRenderBackend> g_backend_proxy;
 
-bool init(const RenderBackendCreateDesc& desc)
+bool init(const InitBackendOptions& desc)
 {
     if (g_backend_proxy.has_value())
     {

@@ -1,4 +1,5 @@
 #include "clay_gfx/define.h"
+#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -48,7 +49,7 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
     return creation_info;
 }
 
-bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
+bool VulkanBackend::init(const InitBackendOptions& desc)
 {
     CLAY_LOG_INFO("Initializing Vulkan backend...");
 
@@ -270,25 +271,12 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
         CLAY_ASSERT(false, "Failed to create Vulkan surface.");
     }
 
-    //////// Create swapchain
-    VkBool32 is_surface_support = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, graphics_queue.family_index, surface, &is_surface_support);
-    CLAY_ASSERT(is_surface_support, "Surface is not supported by the selected physical device.");
-    if (is_surface_support)
-    {
-        swapchain.init(&resources, device, physical_device, surface, desc.width, desc.height, desc.format, desc.vsync);
-    }
-
     return true;
 }
 
 void VulkanBackend::shutdown()
 {
-    for (int i = 0; i < swapchain.image_count; i++)
-    {
-        resources.textures.free(swapchain.images[i]);
-    }
-    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+    resources.destroy(device);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
@@ -298,10 +286,10 @@ void VulkanBackend::shutdown()
         vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
     }
 
-    resources.destroy(device);
-
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
+
+    CLAY_LOG_INFO("Vulkan backend shutdown.");
 }
 
 void VulkanBackend::queue_submit(QueueType::Enum queue_type, const QueueSubmitOptions options)
@@ -371,7 +359,10 @@ SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& op
     present_info.waitSemaphoreCount = wait_semaphores.size();
     present_info.pWaitSemaphores    = wait_semaphores.data();
 
-    VkSwapchainKHR swapchains[] = { swapchain.swapchain };
+    const VulkanSwapchain* swapchain = resources.swapchains.get(options.swapchain);
+    if (swapchain == nullptr) [[unlikely]] { return SwapchainStatus::Error; }
+
+    VkSwapchainKHR swapchains[] = { swapchain->swapchain };
     present_info.swapchainCount = 1;
     present_info.pSwapchains    = swapchains;
     present_info.pImageIndices  = &options.image_index;
@@ -387,6 +378,181 @@ SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& op
         CLAY_LOG_ERROR("Failed to present Vulkan swapchain image. ({})", string_VkResult(result));
         return SwapchainStatus::Error;
     }
+}
+
+Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& options)
+{
+    VkBool32 is_surface_support = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, graphics_queue.family_index, surface, &is_surface_support);
+
+    if (!is_surface_support)
+    {
+        CLAY_LOG_ERROR("Surface is not supported by the selected physical device.");
+        return Handle<Swapchain>();
+    }
+
+    u32 format_count;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
+    std::vector<VkSurfaceFormatKHR> formats = std::vector<VkSurfaceFormatKHR>(format_count);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, formats.data());
+
+    VkSurfaceFormatKHR surface_format = VkSurfaceFormatKHR{ .format = VK_FORMAT_B8G8R8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+    for (const auto& f : formats)
+    {
+        if (f.format == to_vk_format(options.format))
+        {
+            surface_format = f;
+            break;
+        }
+    }
+
+    VkSurfaceCapabilitiesKHR surface_capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities);
+
+    VkSurfaceTransformFlagBitsKHR pre_transform = surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : surface_capabilities.currentTransform;
+
+    u32 desired_image_count = std::max(MAX_SWAPCHAIN_IMAGES, (u8)surface_capabilities.minImageCount);
+    if (surface_capabilities.maxImageCount != 0)
+    {
+        desired_image_count = std::min(desired_image_count, surface_capabilities.maxImageCount);
+    }
+
+    VkExtent2D extent = surface_capabilities.currentExtent;
+    if (surface_capabilities.currentExtent.width == u32_MAX)
+    {
+        extent.width  = options.width;
+        extent.height = options.height;
+    }
+
+    std::vector<VkPresentModeKHR> present_mode_preference;
+    if (options.vsync)
+    {
+        present_mode_preference.push_back(VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+        present_mode_preference.push_back(VK_PRESENT_MODE_FIFO_KHR);
+    }
+    else
+    {
+        present_mode_preference.push_back(VK_PRESENT_MODE_MAILBOX_KHR);
+        present_mode_preference.push_back(VK_PRESENT_MODE_IMMEDIATE_KHR);
+    }
+
+    u32 present_mode_count;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, nullptr);
+    std::vector<VkPresentModeKHR> present_modes = std::vector<VkPresentModeKHR>(present_mode_count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &present_mode_count, present_modes.data());
+
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR;
+    for (const auto& p : present_mode_preference)
+    {
+        if (std::find(present_modes.begin(), present_modes.end(), p) != present_modes.end())
+        {
+            present_mode = p;
+            break;
+        }
+    }
+
+    VkSwapchainCreateInfoKHR create_info = {};
+    create_info.sType                    = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.imageSharingMode         = VK_SHARING_MODE_EXCLUSIVE;
+    create_info.clipped                  = VK_TRUE;
+    create_info.imageArrayLayers         = 1;
+    create_info.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    create_info.surface                  = surface;
+    create_info.imageFormat              = surface_format.format;
+    create_info.imageColorSpace          = surface_format.colorSpace;
+    create_info.imageExtent              = extent;
+    create_info.minImageCount            = desired_image_count;
+    create_info.preTransform             = pre_transform;
+    create_info.presentMode              = present_mode;
+    create_info.oldSwapchain             = VK_NULL_HANDLE;
+
+    VulkanSwapchain swapchain = {};
+
+    VkResult result = vkCreateSwapchainKHR(device, &create_info, nullptr, &swapchain.swapchain);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create swapchain! ({})", string_VkResult(result));
+        return Handle<Swapchain>();
+    }
+
+    // Fetch swapchain images and create image views
+    u32 image_count = 0;
+    {
+        vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.image_count, nullptr);
+        std::vector<VkImage> swapchain_images = std::vector<VkImage>(image_count);
+        vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.image_count, swapchain_images.data());
+
+        for (int i = 0; i < image_count; i++)
+        {
+            VulkanTexture texture{ .image = swapchain_images[i], .format = surface_format.format };
+            swapchain.images[i] = resources.textures.push(texture);
+        }
+    }
+
+    return resources.swapchains.push(swapchain);
+}
+
+SwapchainAcquireResult VulkanBackend::acquire_next_image(const AcquireNextImageOptions& options)
+{
+    const VulkanSwapchain* swapchain = resources.swapchains.get(options.swapchain);
+    if (swapchain == nullptr) [[unlikely]] { return SwapchainAcquireResult{ .image_index = 0, .status = SwapchainStatus::Error }; }
+
+    const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(options.semaphore);
+    const VulkanFence*     vulkan_fence     = resources.fences.get(options.fence);
+
+    u32      image_index = 0;
+    VkResult result      = vkAcquireNextImageKHR(device, swapchain->swapchain, options.time_out, vulkan_semaphore != nullptr ? vulkan_semaphore->semaphore : VK_NULL_HANDLE, vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE, &image_index);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::OutOfDate }; }
+    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Suboptimal }; }
+    else if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to acquire Vulkan swapchain image. ({})", string_VkResult(result));
+        return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Error };
+    }
+
+    return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Success };
+}
+
+u32 VulkanBackend::get_swapchain_image_count(const Handle<Swapchain>& swapchain)
+{
+    const VulkanSwapchain* vulkan_swapchain = resources.swapchains.get(swapchain);
+    if (vulkan_swapchain == nullptr) [[unlikely]] { return 0; }
+
+    return vulkan_swapchain->image_count;
+}
+
+Handle<Texture> VulkanBackend::get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index)
+{
+    const VulkanSwapchain* vulkan_swapchain = resources.swapchains.get(swapchain);
+    if (vulkan_swapchain == nullptr) [[unlikely]] { return Handle<Texture>(); }
+
+    return vulkan_swapchain->images[index];
+}
+
+void VulkanBackend::destroy_swapchain(const Handle<Swapchain>& swapchain)
+{
+    const VulkanSwapchain* vulkan_swapchain = resources.swapchains.get(swapchain);
+    if (vulkan_swapchain == nullptr) [[unlikely]] { return; }
+
+    for (int i = 0; i < vulkan_swapchain->image_count; i++)
+    {
+        VulkanTexture* texture = resources.textures.get_mut(vulkan_swapchain->images[i]);
+        if (texture == nullptr) [[unlikely]] { continue; }
+
+        for (VkImageView view : texture->views)
+        {
+            vkDestroyImageView(device, view, nullptr);
+        }
+        texture->views.clear();
+        texture->view_descs.clear();
+
+        resources.textures.free(vulkan_swapchain->images[i]);
+    }
+
+    vkDestroySwapchainKHR(device, vulkan_swapchain->swapchain, nullptr);
+    resources.swapchains.free(swapchain);
 }
 
 Handle<Fence> VulkanBackend::create_fence(bool signal)
@@ -458,25 +624,6 @@ void VulkanBackend::destroy_fence(const Handle<Fence>& fence)
     if (vulkan_fence == nullptr) [[unlikely]] { return; }
     vkDestroyFence(device, vulkan_fence->fence, nullptr);
     resources.fences.free(fence);
-}
-
-SwapchainAcquireResult VulkanBackend::acquire_next_image(u64 time_out, Handle<Semaphore> semaphore, Handle<Fence> fence)
-{
-    const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(semaphore);
-    const VulkanFence*     vulkan_fence     = resources.fences.get(fence);
-
-    u32      image_index = 0;
-    VkResult result      = vkAcquireNextImageKHR(device, swapchain.swapchain, time_out, vulkan_semaphore != nullptr ? vulkan_semaphore->semaphore : VK_NULL_HANDLE, vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE, &image_index);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::OutOfDate }; }
-    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Suboptimal }; }
-    else if (result != VK_SUCCESS) [[unlikely]]
-    {
-        CLAY_LOG_ERROR("Failed to acquire Vulkan swapchain image. ({})", string_VkResult(result));
-        return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Error };
-    }
-
-    return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Success };
 }
 
 Handle<Semaphore> VulkanBackend::create_semaphore()
@@ -556,7 +703,7 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
     resources.textures.free(texture);
 }
 
-Handle<Framebuffer> VulkanBackend::create_framebuffer(const FramebufferCreateDesc& desc)
+Handle<Framebuffer> VulkanBackend::create_framebuffer(const CreateFramebufferOptions& desc)
 {
     u32         num_attachments              = 0;
     VkImageView attachments[MAX_ATTACHMENTS] = {};

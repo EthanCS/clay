@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/handle.h"
 #include <clay_gfx/resource.h>
 #include <clay_gfx/backend.h>
 #include <clay_gfx/vulkan/vulkan_header.h>
@@ -18,7 +19,6 @@ private:
     VkDevice         device          = VK_NULL_HANDLE;
     VkPhysicalDevice physical_device = VK_NULL_HANDLE;
     VkSurfaceKHR     surface         = VK_NULL_HANDLE;
-    VulkanSwapchain  swapchain;
 
     VulkanQueue graphics_queue;
     VulkanQueue present_queue;
@@ -32,7 +32,7 @@ private:
     PFN_vkCmdEndDebugUtilsLabelEXT   pfn_CmdEndDebugUtilsLabelEXT;
 
 public:
-    bool              init(const RenderBackendCreateDesc& desc);
+    bool              init(const InitBackendOptions& desc);
     void              shutdown();
     BackendType::Enum get_type() noexcept { return BackendType::Vulkan; }
 
@@ -46,7 +46,11 @@ public:
     void                  queue_submit(QueueType::Enum, const QueueSubmitOptions options);
     SwapchainStatus::Enum queue_present(const QueuePresentOptions& options);
 
-    SwapchainAcquireResult acquire_next_image(u64 time_out, Handle<Semaphore> semaphore, Handle<Fence> fence);
+    Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc);
+    SwapchainAcquireResult acquire_next_image(const AcquireNextImageOptions& options);
+    u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain);
+    Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index);
+    void                   destroy_swapchain(const Handle<Swapchain>& swapchain);
 
     Handle<Fence> create_fence(bool signal);
     void          wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout);
@@ -65,7 +69,7 @@ public:
 
     void destroy_texture(const Handle<Texture>& texture);
 
-    Handle<Framebuffer> create_framebuffer(const FramebufferCreateDesc& desc);
+    Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc);
     void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer);
 
     Handle<CommandPool> create_command_pool(QueueType::Enum queue_type);

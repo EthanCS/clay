@@ -31,13 +31,9 @@ struct VulkanShader {
 };
 
 struct VulkanSwapchain {
-    VkSwapchainKHR swapchain;
-
-    u32             image_count;
+    VkSwapchainKHR  swapchain   = VK_NULL_HANDLE;
+    u32             image_count = 0;
     Handle<Texture> images[MAX_SWAPCHAIN_IMAGES];
-
-    VulkanSwapchain() noexcept;
-    bool init(VulkanResources* res, VkDevice device, VkPhysicalDevice physical_device, VkSurfaceKHR surface, u32 width, u32 height, Format::Enum format, bool vsync);
 };
 
 struct VulkanTextureViewDesc {
@@ -113,6 +109,7 @@ struct VulkanFramebuffer {
 };
 
 struct VulkanResources {
+    Pool<Swapchain, VulkanSwapchain>               swapchains;
     Pool<Fence, VulkanFence>                       fences;
     Pool<Semaphore, VulkanSemaphore>               semaphores;
     Pool<Shader, VulkanShader>                     shaders;
@@ -125,7 +122,8 @@ struct VulkanResources {
     std::vector<VulkanRenderPass> render_passes;
 
     VulkanResources()
-        : fences(4)
+        : swapchains(2)
+        , fences(4)
         , semaphores(16)
         , shaders(32)
         , textures(32)

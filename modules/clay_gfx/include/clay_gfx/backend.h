@@ -4,6 +4,7 @@
 #include <clay_gfx/handle.h>
 #include <clay_gfx/define.h>
 #include <clay_gfx/resource.h>
+#include <clay_gfx/options.h>
 
 #include <proxy.h>
 
@@ -14,7 +15,7 @@ namespace gfx
 namespace spec
 {
 /////// General
-PRO_DEF_MEMBER_DISPATCH(init, bool(const RenderBackendCreateDesc&));
+PRO_DEF_MEMBER_DISPATCH(init, bool(const InitBackendOptions&));
 PRO_DEF_MEMBER_DISPATCH(shutdown, void());
 PRO_DEF_MEMBER_DISPATCH(get_type, BackendType::Enum() noexcept);
 
@@ -27,7 +28,11 @@ PRO_DEF_MEMBER_DISPATCH(queue_submit, void(QueueType::Enum, const QueueSubmitOpt
 PRO_DEF_MEMBER_DISPATCH(queue_present, SwapchainStatus::Enum(const QueuePresentOptions&));
 
 /////// Swapchain
-PRO_DEF_MEMBER_DISPATCH(acquire_next_image, SwapchainAcquireResult(u64, const Handle<Semaphore>&, const Handle<Fence>&));
+PRO_DEF_MEMBER_DISPATCH(create_swapchain, Handle<Swapchain>(const CreateSwapchainOptions&));
+PRO_DEF_MEMBER_DISPATCH(acquire_next_image, SwapchainAcquireResult(const AcquireNextImageOptions&));
+PRO_DEF_MEMBER_DISPATCH(get_swapchain_image_count, u32(const Handle<Swapchain>&));
+PRO_DEF_MEMBER_DISPATCH(get_swapchain_back_buffer, Handle<Texture>(const Handle<Swapchain>&, u32));
+PRO_DEF_MEMBER_DISPATCH(destroy_swapchain, void(const Handle<Swapchain>&));
 
 /////// Fence
 PRO_DEF_MEMBER_DISPATCH(create_fence, Handle<Fence>(bool));
@@ -52,7 +57,7 @@ PRO_DEF_MEMBER_DISPATCH(destroy_graphics_pipeline, void(const Handle<GraphicsPip
 PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
 
 /////// Framebuffer
-PRO_DEF_MEMBER_DISPATCH(create_framebuffer, Handle<Framebuffer>(const FramebufferCreateDesc&));
+PRO_DEF_MEMBER_DISPATCH(create_framebuffer, Handle<Framebuffer>(const CreateFramebufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_framebuffer, void(const Handle<Framebuffer>&));
 
 /////// CommandPool
@@ -82,7 +87,11 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                queue_wait_idle,
                                queue_submit,
                                queue_present,
+                               create_swapchain,
                                acquire_next_image,
+                               get_swapchain_image_count,
+                               get_swapchain_back_buffer,
+                               destroy_swapchain,
                                create_fence,
                                wait_for_fence,
                                wait_for_fences,
@@ -114,7 +123,7 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
 
 extern pro::proxy<spec::IRenderBackend> g_backend_proxy;
 
-bool                     init(const RenderBackendCreateDesc& desc);
+bool                     init(const InitBackendOptions& desc);
 void                     shutdown();
 inline BackendType::Enum get_type() noexcept { return g_backend_proxy.get_type(); }
 
@@ -124,7 +133,11 @@ inline void                  queue_wait_idle(QueueType::Enum queue_type) { g_bac
 inline void                  queue_submit(QueueType::Enum queue_type, const QueueSubmitOptions& options) { g_backend_proxy.queue_submit(queue_type, options); }
 inline SwapchainStatus::Enum queue_present(const QueuePresentOptions& options) { return g_backend_proxy.queue_present(options); }
 
-inline SwapchainAcquireResult acquire_next_image(u64 time_out, const Handle<Semaphore>& semaphore, const Handle<Fence>& fence) { return g_backend_proxy.acquire_next_image(time_out, semaphore, fence); }
+inline Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc) { return g_backend_proxy.create_swapchain(desc); }
+inline SwapchainAcquireResult acquire_next_image(const AcquireNextImageOptions& desc) { return g_backend_proxy.acquire_next_image(desc); }
+inline u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain) { return g_backend_proxy.get_swapchain_image_count(swapchain); }
+inline Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index) { return g_backend_proxy.get_swapchain_back_buffer(swapchain, index); }
+inline void                   destroy_swapchain(const Handle<Swapchain>& swapchain) { g_backend_proxy.destroy_swapchain(swapchain); }
 
 inline Handle<Fence> create_fence(bool signal) { return g_backend_proxy.create_fence(signal); }
 inline void          wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout) { g_backend_proxy.wait_for_fence(fence, wait_all, timeout); }
@@ -143,7 +156,7 @@ inline void                     destroy_graphics_pipeline(const Handle<GraphicsP
 
 inline void destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
 
-inline Handle<Framebuffer> create_framebuffer(const FramebufferCreateDesc& desc) { return g_backend_proxy.create_framebuffer(desc); }
+inline Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc) { return g_backend_proxy.create_framebuffer(desc); }
 inline void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer) { g_backend_proxy.destroy_framebuffer(framebuffer); }
 
 inline Handle<CommandPool> create_command_pool(QueueType::Enum queue_type) { return g_backend_proxy.create_command_pool(queue_type); }
