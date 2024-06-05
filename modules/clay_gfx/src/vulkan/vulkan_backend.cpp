@@ -1,3 +1,4 @@
+#include "clay_gfx/define.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <clay_core/log.h>
@@ -6,6 +7,7 @@
 #include <clay_gfx/resource.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
+#include <vector>
 
 namespace clay
 {
@@ -302,24 +304,88 @@ void VulkanBackend::shutdown()
     vkDestroyInstance(instance, nullptr);
 }
 
-void VulkanBackend::queue_wait_idle(QueueType::Enum queue_type)
+void VulkanBackend::queue_submit(QueueType::Enum queue_type, const QueueSubmitOptions options)
 {
-    switch (queue_type)
+    VkQueue queue = get_queue(queue_type);
+    if (queue == VK_NULL_HANDLE) [[unlikely]] { return; }
+
+    std::vector<VkCommandBuffer> command_buffers;
+    command_buffers.reserve(options.num_command_buffers);
+    for (int i = 0; i < options.num_command_buffers; i++)
     {
-        case QueueType::Graphics:
-            vkQueueWaitIdle(graphics_queue.queue);
-            break;
-        case QueueType::Present:
-            vkQueueWaitIdle(present_queue.queue);
-            break;
-        case QueueType::Compute:
-            vkQueueWaitIdle(compute_queue.queue);
-            break;
-        case QueueType::Transfer:
-            vkQueueWaitIdle(transfer_queue.queue);
-            break;
-        default:
-            break;
+        const VulkanCommandBuffer* vulkan_command_buffer = resources.command_buffers.get(options.command_buffers[i]);
+        if (vulkan_command_buffer == nullptr) [[unlikely]] { continue; }
+        command_buffers.push_back(vulkan_command_buffer->command_buffer);
+    }
+
+    std::vector<VkSemaphore> signal_semaphores;
+    signal_semaphores.reserve(options.num_signal_semaphores);
+    for (int i = 0; i < options.num_signal_semaphores; i++)
+    {
+        const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(options.signal_semaphores[i]);
+        if (vulkan_semaphore == nullptr) [[unlikely]] { continue; }
+        signal_semaphores.push_back(vulkan_semaphore->semaphore);
+    }
+
+    std::vector<VkSemaphore> wait_semaphores;
+    wait_semaphores.reserve(options.num_wait_semaphores);
+    for (int i = 0; i < options.num_wait_semaphores; i++)
+    {
+        const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(options.wait_semaphores[i]);
+        if (vulkan_semaphore == nullptr) [[unlikely]] { continue; }
+        wait_semaphores.push_back(vulkan_semaphore->semaphore);
+    }
+
+    VkPipelineStageFlags waitStages[] = { to_vk_pipeline_stage_flags(options.wait_dst_stage) };
+
+    VkSubmitInfo submit_info         = {};
+    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount   = command_buffers.size();
+    submit_info.pCommandBuffers      = command_buffers.data();
+    submit_info.signalSemaphoreCount = signal_semaphores.size();
+    submit_info.pSignalSemaphores    = signal_semaphores.data();
+    submit_info.waitSemaphoreCount   = wait_semaphores.size();
+    submit_info.pWaitSemaphores      = wait_semaphores.data();
+    submit_info.pWaitDstStageMask    = waitStages;
+
+    const VulkanFence* vulkan_fence = resources.fences.get(options.fence);
+    VkFence            fence        = vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE;
+
+    vkQueueSubmit(queue, 1, &submit_info, fence);
+}
+
+SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& options)
+{
+    VkPresentInfoKHR present_info = {};
+    present_info.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    std::vector<VkSemaphore> wait_semaphores;
+    wait_semaphores.reserve(options.num_wait_semaphores);
+    for (int i = 0; i < options.num_wait_semaphores; i++)
+    {
+        const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(options.wait_semaphores[i]);
+        if (vulkan_semaphore == nullptr) [[unlikely]] { continue; }
+        wait_semaphores.push_back(vulkan_semaphore->semaphore);
+    }
+
+    present_info.waitSemaphoreCount = wait_semaphores.size();
+    present_info.pWaitSemaphores    = wait_semaphores.data();
+
+    VkSwapchainKHR swapchains[] = { swapchain.swapchain };
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains    = swapchains;
+    present_info.pImageIndices  = &options.image_index;
+
+    VkQueue  queue  = get_queue(QueueType::Present);
+    VkResult result = vkQueuePresentKHR(queue, &present_info);
+
+    if (result == VK_SUCCESS) [[likely]] { return SwapchainStatus::Success; }
+    else if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainStatus::OutOfDate; }
+    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainStatus::Suboptimal; }
+    else
+    {
+        CLAY_LOG_ERROR("Failed to present Vulkan swapchain image. ({})", string_VkResult(result));
+        return SwapchainStatus::Error;
     }
 }
 
@@ -402,15 +468,15 @@ SwapchainAcquireResult VulkanBackend::acquire_next_image(u64 time_out, Handle<Se
     u32      image_index = 0;
     VkResult result      = vkAcquireNextImageKHR(device, swapchain.swapchain, time_out, vulkan_semaphore != nullptr ? vulkan_semaphore->semaphore : VK_NULL_HANDLE, vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE, &image_index);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::OutOfDate }; }
-    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Suboptimal }; }
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::OutOfDate }; }
+    else if (result == VK_SUBOPTIMAL_KHR) { return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Suboptimal }; }
     else if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to acquire Vulkan swapchain image. ({})", string_VkResult(result));
-        return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Error };
+        return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Error };
     }
 
-    return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainAcquireStatus::Success };
+    return SwapchainAcquireResult{ .image_index = (u8)image_index, .status = SwapchainStatus::Success };
 }
 
 Handle<Semaphore> VulkanBackend::create_semaphore()

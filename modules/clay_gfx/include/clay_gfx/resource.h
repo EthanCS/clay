@@ -186,8 +186,25 @@ struct FramebufferCreateDesc {
 };
 
 struct SwapchainAcquireResult {
-    u8                           image_index;
-    SwapchainAcquireStatus::Enum status;
+    u8                    image_index;
+    SwapchainStatus::Enum status;
+};
+
+struct QueueSubmitOptions {
+    Handle<CommandBuffer>* command_buffers       = nullptr;
+    u32                    num_command_buffers   = 0;
+    Handle<Semaphore>*     wait_semaphores       = nullptr;
+    u32                    num_wait_semaphores   = 0;
+    Handle<Semaphore>*     signal_semaphores     = nullptr;
+    u32                    num_signal_semaphores = 0;
+    PipelineStage::Flag    wait_dst_stage        = PipelineStage::TopOfPipe;
+    Handle<Fence>          fence                 = Handle<Fence>();
+};
+
+struct QueuePresentOptions {
+    u32                image_index         = 0;
+    Handle<Semaphore>* wait_semaphores     = nullptr;
+    u32                num_wait_semaphores = 0;
 };
 
 struct CmdBeginRenderPassOptions {

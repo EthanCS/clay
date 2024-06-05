@@ -11,7 +11,6 @@ namespace clay
 {
 namespace gfx
 {
-
 namespace spec
 {
 /////// General
@@ -24,6 +23,8 @@ PRO_DEF_MEMBER_DISPATCH(device_wait_idle, void());
 
 /////// Queue
 PRO_DEF_MEMBER_DISPATCH(queue_wait_idle, void(QueueType::Enum));
+PRO_DEF_MEMBER_DISPATCH(queue_submit, void(QueueType::Enum, const QueueSubmitOptions&));
+PRO_DEF_MEMBER_DISPATCH(queue_present, SwapchainStatus::Enum(const QueuePresentOptions&));
 
 /////// Swapchain
 PRO_DEF_MEMBER_DISPATCH(acquire_next_image, SwapchainAcquireResult(u64, const Handle<Semaphore>&, const Handle<Fence>&));
@@ -79,6 +80,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                get_type,
                                device_wait_idle,
                                queue_wait_idle,
+                               queue_submit,
+                               queue_present,
                                acquire_next_image,
                                create_fence,
                                wait_for_fence,
@@ -117,7 +120,9 @@ inline BackendType::Enum get_type() noexcept { return g_backend_proxy.get_type()
 
 inline void device_wait_idle() { g_backend_proxy.device_wait_idle(); }
 
-inline void queue_wait_idle(QueueType::Enum queue_type) { g_backend_proxy.queue_wait_idle(queue_type); }
+inline void                  queue_wait_idle(QueueType::Enum queue_type) { g_backend_proxy.queue_wait_idle(queue_type); }
+inline void                  queue_submit(QueueType::Enum queue_type, const QueueSubmitOptions& options) { g_backend_proxy.queue_submit(queue_type, options); }
+inline SwapchainStatus::Enum queue_present(const QueuePresentOptions& options) { return g_backend_proxy.queue_present(options); }
 
 inline SwapchainAcquireResult acquire_next_image(u64 time_out, const Handle<Semaphore>& semaphore, const Handle<Fence>& fence) { return g_backend_proxy.acquire_next_image(time_out, semaphore, fence); }
 

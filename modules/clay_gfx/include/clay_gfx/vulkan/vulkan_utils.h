@@ -424,5 +424,79 @@ inline VulkanTextureViewDesc to_vulkan_texture_view_desc(const TextureViewDesc& 
     return view_desc;
 }
 
+inline VkPipelineStageFlags to_vk_pipeline_stage_flags(PipelineStage::Flag stage)
+{
+    VkPipelineStageFlags flags = 0;
+    if (stage & PipelineStage::TopOfPipe)
+    {
+        flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    }
+    if (stage & PipelineStage::DrawIndirect)
+    {
+        flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+    }
+    if (stage & PipelineStage::VertexInput)
+    {
+        flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+    }
+    if (stage & PipelineStage::VertexShader)
+    {
+        flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+    }
+    if (stage & PipelineStage::TessellationControlShader)
+    {
+        flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+    }
+    if (stage & PipelineStage::TessellationEvaluationShader)
+    {
+        flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+    }
+    if (stage & PipelineStage::GeometryShader)
+    {
+        flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+    }
+    if (stage & PipelineStage::FragmentShader)
+    {
+        flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+    if (stage & PipelineStage::EarlyFragmentTests)
+    {
+        flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
+    if (stage & PipelineStage::LateFragmentTests)
+    {
+        flags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    }
+    if (stage & PipelineStage::ColorAttachmentOutput)
+    {
+        flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    }
+    if (stage & PipelineStage::ComputeShader)
+    {
+        flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    }
+    if (stage & PipelineStage::Transfer)
+    {
+        flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    if (stage & PipelineStage::BottomOfPipe)
+    {
+        flags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    }
+    if (stage & PipelineStage::Host)
+    {
+        flags |= VK_PIPELINE_STAGE_HOST_BIT;
+    }
+    if (stage & PipelineStage::AllGraphics)
+    {
+        flags |= VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    }
+    if (stage & PipelineStage::AllCommands)
+    {
+        flags |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    }
+    return flags;
+}
+
 } // namespace gfx
 } // namespace clay

@@ -38,7 +38,13 @@ public:
 
     void device_wait_idle() { vkDeviceWaitIdle(device); }
 
-    void queue_wait_idle(QueueType::Enum queue_type);
+    void queue_wait_idle(QueueType::Enum queue_type)
+    {
+        VkQueue queue = get_queue(queue_type);
+        if (queue != VK_NULL_HANDLE) [[likely]] { vkQueueWaitIdle(get_queue(queue_type)); }
+    }
+    void                  queue_submit(QueueType::Enum, const QueueSubmitOptions options);
+    SwapchainStatus::Enum queue_present(const QueuePresentOptions& options);
 
     SwapchainAcquireResult acquire_next_image(u64 time_out, Handle<Semaphore> semaphore, Handle<Fence> fence);
 
@@ -77,6 +83,23 @@ public:
     void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport);
     void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor);
     void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw);
+
+private:
+    VkQueue get_queue(QueueType::Enum queue_type)
+    {
+        switch (queue_type)
+        {
+            case QueueType::Graphics:
+                return graphics_queue.queue;
+            case QueueType::Present:
+                return present_queue.queue;
+            case QueueType::Compute:
+                return compute_queue.queue;
+            case QueueType::Transfer:
+                return transfer_queue.queue;
+        }
+        return VK_NULL_HANDLE;
+    }
 };
 } // namespace gfx
 } // namespace clay
