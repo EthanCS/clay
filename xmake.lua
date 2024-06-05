@@ -5,6 +5,7 @@ add_requires("vulkansdk", "mimalloc", "spdlog", "libsdl 2.30.3")
 
 add_rules("plugin.compile_commands.autoupdate", { outputdir = ".vscode" })
 
+includes("thirdparty")
 includes("modules")
 
 target("test")

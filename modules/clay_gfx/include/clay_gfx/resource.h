@@ -24,6 +24,18 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
 
+struct RenderBackendCreateDesc {
+    BackendType::Enum type;
+    void*             window; // Maybe SDL_Window* or any other window handle
+    u32               width;
+    u32               height;
+    bool              vsync;
+    Format::Enum      format;
+    const char*       app_name{ nullptr };
+    u32               device_id{ u32_MAX };
+    bool              debug{ false };
+};
+
 struct ShaderCreateDesc {
     const char* code      = nullptr;
     u32         code_size = 0;

@@ -1,4 +1,3 @@
-#include "clay_gfx/resource.h"
 #include <fstream>
 #include <vector>
 #include <string>
@@ -45,19 +44,16 @@ int main(int argc, char** argv)
                              .app_name = "Clay Test",
                              .debug    = true });
 
-    gfx::RenderBackend* rb = gfx::backend();
-
-    gfx::Handle<gfx::Shader> hello_vs = rb->create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
-    gfx::Handle<gfx::Shader> hello_fs = rb->create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
+    gfx::Handle<gfx::Shader> hello_vs = gfx::create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
+    gfx::Handle<gfx::Shader> hello_fs = gfx::create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
 
     while (!window.requested_exit)
     {
+        gfx::Handle<gfx::Fence> fence = gfx::create_fence(true);
+        gfx::destroy_fence(fence);
 
-        gfx::Handle<gfx::Fence> fence = rb->create_fence(true);
-        rb->destroy_fence(fence);
-
-        gfx::Handle<gfx::Semaphore> semaphore = rb->create_semaphore();
-        rb->destroy_semaphore(semaphore);
+        gfx::Handle<gfx::Semaphore> semaphore = gfx::create_semaphore();
+        gfx::destroy_semaphore(semaphore);
 
         window.handle_events();
     }

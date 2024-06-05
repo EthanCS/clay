@@ -1,0 +1,24 @@
+name: Proxy-CI
+
+on:
+  push:
+    branches: [ main, release/** ]
+  pull_request:
+    branches: [ main, release/** ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  run-bvt-gcc:
+    uses: ./.github/workflows/bvt-gcc.yml
+    name: run bvt with g++
+
+  run-bvt-clang:
+    uses: ./.github/workflows/bvt-clang.yml
+    name: run bvt with clang
+
+  run-bvt-msvc:
+    uses: ./.github/workflows/bvt-msvc.yml
+    name: run bvt with msvc

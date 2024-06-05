@@ -46,38 +46,6 @@ VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
     return creation_info;
 }
 
-VulkanBackend::VulkanBackend(BackendType::Enum type_)
-    : RenderBackend(type_)
-    , resources()
-    , instance(VK_NULL_HANDLE)
-    , device(VK_NULL_HANDLE)
-    , physical_device(VK_NULL_HANDLE)
-    , surface(VK_NULL_HANDLE)
-{
-}
-
-VulkanBackend::~VulkanBackend()
-{
-    for (int i = 0; i < swapchain.image_count; i++)
-    {
-        resources.textures.free(swapchain.images[i]);
-    }
-    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
-
-    vkDestroySurfaceKHR(instance, surface, nullptr);
-
-    if (debug_utils_messenger != VK_NULL_HANDLE)
-    {
-        auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
-    }
-
-    resources.destroy(device);
-
-    vkDestroyDevice(device, nullptr);
-    vkDestroyInstance(instance, nullptr);
-}
-
 bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
 {
     CLAY_LOG_INFO("Initializing Vulkan backend...");
@@ -312,9 +280,26 @@ bool VulkanBackend::init(const RenderBackendCreateDesc& desc)
     return true;
 }
 
-void VulkanBackend::device_wait_idle()
+void VulkanBackend::shutdown()
 {
-    vkDeviceWaitIdle(device);
+    for (int i = 0; i < swapchain.image_count; i++)
+    {
+        resources.textures.free(swapchain.images[i]);
+    }
+    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+
+    vkDestroySurfaceKHR(instance, surface, nullptr);
+
+    if (debug_utils_messenger != VK_NULL_HANDLE)
+    {
+        auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
+    }
+
+    resources.destroy(device);
+
+    vkDestroyDevice(device, nullptr);
+    vkDestroyInstance(instance, nullptr);
 }
 
 void VulkanBackend::queue_wait_idle(QueueType::Enum queue_type)
