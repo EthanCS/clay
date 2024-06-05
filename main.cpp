@@ -1,8 +1,3 @@
-#include "clay_core/macro.h"
-#include "clay_gfx/define.h"
-#include "clay_gfx/handle.h"
-#include "clay_gfx/resource.h"
-#include "modules/clay_gfx/include/clay_gfx/define.h"
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
