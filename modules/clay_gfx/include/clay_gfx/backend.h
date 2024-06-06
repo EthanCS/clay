@@ -29,7 +29,7 @@ PRO_DEF_MEMBER_DISPATCH(queue_present, SwapchainStatus::Enum(const QueuePresentO
 
 /////// Swapchain
 PRO_DEF_MEMBER_DISPATCH(create_swapchain, Handle<Swapchain>(const CreateSwapchainOptions&));
-PRO_DEF_MEMBER_DISPATCH(acquire_next_image, SwapchainAcquireResult(const AcquireNextImageOptions&));
+PRO_DEF_MEMBER_DISPATCH(acquire_next_image, SwapchainAcquireResult(const Handle<Swapchain>&, const AcquireNextImageOptions&));
 PRO_DEF_MEMBER_DISPATCH(get_swapchain_image_count, u32(const Handle<Swapchain>&));
 PRO_DEF_MEMBER_DISPATCH(get_swapchain_back_buffer, Handle<Texture>(const Handle<Swapchain>&, u32));
 PRO_DEF_MEMBER_DISPATCH(destroy_swapchain, void(const Handle<Swapchain>&));
@@ -54,6 +54,8 @@ PRO_DEF_MEMBER_DISPATCH(create_graphics_pipeline, Handle<GraphicsPipeline>(const
 PRO_DEF_MEMBER_DISPATCH(destroy_graphics_pipeline, void(const Handle<GraphicsPipeline>&));
 
 /////// Texture
+PRO_DEF_MEMBER_DISPATCH(get_texture_width, u32(const Handle<Texture>&));
+PRO_DEF_MEMBER_DISPATCH(get_texture_height, u32(const Handle<Texture>&));
 PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
 
 /////// Framebuffer
@@ -103,6 +105,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                destroy_shader,
                                create_graphics_pipeline,
                                destroy_graphics_pipeline,
+                               get_texture_width,
+                               get_texture_height,
                                destroy_texture,
                                create_framebuffer,
                                destroy_framebuffer,
@@ -134,7 +138,7 @@ inline void                  queue_submit(QueueType::Enum queue_type, const Queu
 inline SwapchainStatus::Enum queue_present(const QueuePresentOptions& options) { return g_backend_proxy.queue_present(options); }
 
 inline Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc) { return g_backend_proxy.create_swapchain(desc); }
-inline SwapchainAcquireResult acquire_next_image(const AcquireNextImageOptions& desc) { return g_backend_proxy.acquire_next_image(desc); }
+inline SwapchainAcquireResult acquire_next_image(const Handle<Swapchain>& swapchain, const AcquireNextImageOptions& desc) { return g_backend_proxy.acquire_next_image(swapchain, desc); }
 inline u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain) { return g_backend_proxy.get_swapchain_image_count(swapchain); }
 inline Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index) { return g_backend_proxy.get_swapchain_back_buffer(swapchain, index); }
 inline void                   destroy_swapchain(const Handle<Swapchain>& swapchain) { g_backend_proxy.destroy_swapchain(swapchain); }
@@ -154,6 +158,8 @@ inline void           destroy_shader(const Handle<Shader>& shader) { g_backend_p
 inline Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }
 inline void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.destroy_graphics_pipeline(pipeline); }
 
+inline u32  get_texture_width(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_width(texture); }
+inline u32  get_texture_height(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_height(texture); }
 inline void destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
 
 inline Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc) { return g_backend_proxy.create_framebuffer(desc); }

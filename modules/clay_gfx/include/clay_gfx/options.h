@@ -28,7 +28,6 @@ struct CreateShaderOptions {
 };
 
 struct AcquireNextImageOptions {
-    Handle<Swapchain> swapchain = Handle<Swapchain>();
     u64               time_out  = u64_MAX;
     Handle<Semaphore> semaphore = Handle<Semaphore>();
     Handle<Fence>     fence     = Handle<Fence>();

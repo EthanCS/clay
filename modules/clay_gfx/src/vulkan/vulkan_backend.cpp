@@ -484,7 +484,7 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
 
         for (int i = 0; i < swapchain.image_count; i++)
         {
-            VulkanTexture texture{ .image = swapchain_images[i], .format = surface_format.format };
+            VulkanTexture texture{ .image = swapchain_images[i], .format = surface_format.format, .width = extent.width, .height = extent.height };
             swapchain.images[i] = resources.textures.push(texture);
         }
     }
@@ -492,10 +492,14 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
     return resources.swapchains.push(swapchain);
 }
 
-SwapchainAcquireResult VulkanBackend::acquire_next_image(const AcquireNextImageOptions& options)
+SwapchainAcquireResult VulkanBackend::acquire_next_image(const Handle<Swapchain>& h, const AcquireNextImageOptions& options)
 {
-    const VulkanSwapchain* swapchain = resources.swapchains.get(options.swapchain);
-    if (swapchain == nullptr) [[unlikely]] { return SwapchainAcquireResult{ .image_index = 0, .status = SwapchainStatus::Error }; }
+    const VulkanSwapchain* swapchain = resources.swapchains.get(h);
+    if (swapchain == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to acquire Vulkan swapchain image. Swapchain not found.");
+        return SwapchainAcquireResult{ .image_index = 0, .status = SwapchainStatus::Error };
+    }
 
     const VulkanSemaphore* vulkan_semaphore = resources.semaphores.get(options.semaphore);
     const VulkanFence*     vulkan_fence     = resources.fences.get(options.fence);
@@ -692,6 +696,20 @@ void VulkanBackend::destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pi
     if (vulkan_pipeline == nullptr) [[unlikely]] { return; }
     vkDestroyPipeline(device, vulkan_pipeline->pipeline, nullptr);
     resources.graphics_pipelines.free(pipeline);
+}
+
+u32 VulkanBackend::get_texture_width(const Handle<Texture>& texture)
+{
+    const VulkanTexture* vulkan_texture = resources.textures.get(texture);
+    if (vulkan_texture == nullptr) [[unlikely]] { return 0; }
+    return vulkan_texture->width;
+}
+
+u32 VulkanBackend::get_texture_height(const Handle<Texture>& texture)
+{
+    const VulkanTexture* vulkan_texture = resources.textures.get(texture);
+    if (vulkan_texture == nullptr) [[unlikely]] { return 0; }
+    return vulkan_texture->height;
 }
 
 void VulkanBackend::destroy_texture(const Handle<Texture>& texture)

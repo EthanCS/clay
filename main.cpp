@@ -47,6 +47,9 @@ private:
     gfx::Handle<gfx::CommandPool>                command_pool;
     std::vector<gfx::Handle<gfx::CommandBuffer>> command_buffers;
 
+    u32 swapchain_width  = 0;
+    u32 swapchain_height = 0;
+
     void init()
     {
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
@@ -95,7 +98,7 @@ private:
             render_finished_semaphores[i] = gfx::create_semaphore();
         }
 
-        create_swapchain(WIDTH, HEIGHT);
+        create_swapchain(window.width, window.height);
     }
 
     void main_loop()
@@ -112,7 +115,7 @@ private:
     {
         gfx::wait_for_fence(in_flight_fences[current_frame], true, u64_MAX);
 
-        gfx::SwapchainAcquireResult acquire_swapchain = gfx::acquire_next_image({ .swapchain = swapchain, .semaphore = image_available_semaphores[current_frame] });
+        gfx::SwapchainAcquireResult acquire_swapchain = gfx::acquire_next_image(swapchain, { .semaphore = image_available_semaphores[current_frame] });
         if (acquire_swapchain.status == gfx::SwapchainStatus::OutOfDate)
         {
             recreate_swapchain();
@@ -137,8 +140,9 @@ private:
 
         gfx::SwapchainStatus::Enum present_status = gfx::queue_present({ .swapchain = swapchain, .image_index = acquire_swapchain.image_index, .wait_semaphores = &render_finished_semaphores[current_frame], .num_wait_semaphores = 1 });
 
-        if (present_status == gfx::SwapchainStatus::OutOfDate || present_status == gfx::SwapchainStatus::Suboptimal)
+        if (present_status == gfx::SwapchainStatus::OutOfDate || present_status == gfx::SwapchainStatus::Suboptimal || window.resized)
         {
+            window.resized = false;
             recreate_swapchain();
         }
         else if (present_status != gfx::SwapchainStatus::Success)
@@ -159,7 +163,7 @@ private:
         }
         gfx::destroy_swapchain(swapchain);
 
-        create_swapchain(WIDTH, HEIGHT);
+        create_swapchain(window.width, window.height);
     }
 
     void create_swapchain(u32 width, u32 height)
@@ -170,11 +174,14 @@ private:
         for (u32 i = 0; i < num_images; i++)
         {
             swapchain_framebuffers[i] = gfx::create_framebuffer(
-            { .width              = WIDTH,
-              .height             = HEIGHT,
+            { .width              = width,
+              .height             = height,
               .color_attachments  = { { .texture = gfx::get_swapchain_back_buffer(swapchain, i), .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Color } },
               .render_pass_layout = { .colors = { { .format = gfx::Format::B8G8R8A8_UNORM, .layout = gfx::ImageLayout::PresentSrc, .load_op = gfx::RenderPassLoadOp::Clear } } } });
         }
+
+        swapchain_width  = width;
+        swapchain_height = height;
     }
 
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
@@ -184,13 +191,13 @@ private:
             gfx::cmd_begin_render_pass(cmd,
                                        { .framebuffer        = swapchain_framebuffers[image_index],
                                          .render_pass_layout = render_pass_layout,
-                                         .extent             = { WIDTH, HEIGHT },
+                                         .extent             = { swapchain_width, swapchain_height },
                                          .clear              = true,
-                                         .clear_values       = { { .color = { .r = 0.0f, .g = 0.0f, .b = 0.0f, .a = 1.0f } } } });
+                                         .clear_values       = { { .color = { .r = 0.0f, .g = 0.0f, .b = 1.0f, .a = 1.0f } } } });
             {
                 gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
-                gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)WIDTH, .height = (f32)HEIGHT, .min_depth = 0.0f, .max_depth = 1.0f });
-                gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { WIDTH, HEIGHT } });
+                gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+                gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
                 gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
             }
             gfx::cmd_end_render_pass(cmd);

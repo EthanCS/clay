@@ -26,6 +26,11 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
 
+struct SwapchainAcquireResult {
+    u8                    image_index;
+    SwapchainStatus::Enum status;
+};
+
 struct ColorAttachmentDesc {
     Format::Enum           format  = Format::Undefined;
     ImageLayout::Enum      layout  = ImageLayout::Undefined;
@@ -158,11 +163,6 @@ struct TextureViewDesc {
     TextureComponentSwizzle::Enum component_g{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_b{ TextureComponentSwizzle::Identity };
     TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
-};
-
-struct SwapchainAcquireResult {
-    u8                    image_index;
-    SwapchainStatus::Enum status;
 };
 
 } // namespace gfx

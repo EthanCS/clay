@@ -47,7 +47,7 @@ public:
     SwapchainStatus::Enum queue_present(const QueuePresentOptions& options);
 
     Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc);
-    SwapchainAcquireResult acquire_next_image(const AcquireNextImageOptions& options);
+    SwapchainAcquireResult acquire_next_image(const Handle<Swapchain>& swapchain, const AcquireNextImageOptions& options);
     u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain);
     Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index);
     void                   destroy_swapchain(const Handle<Swapchain>& swapchain);
@@ -67,6 +67,8 @@ public:
     Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc);
     void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline);
 
+    u32  get_texture_width(const Handle<Texture>& texture);
+    u32  get_texture_height(const Handle<Texture>& texture);
     void destroy_texture(const Handle<Texture>& texture);
 
     Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc);

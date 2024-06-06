@@ -68,6 +68,8 @@ struct VulkanTextureViewDesc {
 struct VulkanTexture {
     VkImage                            image;
     VkFormat                           format;
+    u32                                width;
+    u32                                height;
     std::vector<VkImageView>           views;
     std::vector<VulkanTextureViewDesc> view_descs;
 

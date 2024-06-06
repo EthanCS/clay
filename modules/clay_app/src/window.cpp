@@ -20,6 +20,8 @@ void Window::init(const WindowConfig& config)
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
     platform_handle = SDL_CreateWindow(config.title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, config.width, config.height, window_flags);
+    width           = config.width;
+    height          = config.height;
 
     CLAY_LOG_INFO("Window initialized successfully!");
 }
