@@ -61,7 +61,7 @@ public:
     Handle<Semaphore> create_semaphore();
     void              destroy_semaphore(const Handle<Semaphore>& semaphore);
 
-    Handle<Shader> create_shader(const ShaderCreateDesc& desc);
+    Handle<Shader> create_shader(const CreateShaderOptions& desc);
     void           destroy_shader(const Handle<Shader>& shader);
 
     Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc);

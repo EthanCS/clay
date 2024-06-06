@@ -19,16 +19,12 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(Buffer)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Texture)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Sampler)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Shader)
+DEFINE_CLAY_GFX_RESOURCE_TAG(PipelineLayout)
 DEFINE_CLAY_GFX_RESOURCE_TAG(GraphicsPipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(ComputePipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
-
-struct ShaderCreateDesc {
-    const char* code      = nullptr;
-    u32         code_size = 0;
-};
 
 struct ColorAttachmentDesc {
     Format::Enum           format  = Format::Undefined;

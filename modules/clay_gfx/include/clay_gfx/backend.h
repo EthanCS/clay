@@ -46,7 +46,7 @@ PRO_DEF_MEMBER_DISPATCH(create_semaphore, Handle<Semaphore>());
 PRO_DEF_MEMBER_DISPATCH(destroy_semaphore, void(const Handle<Semaphore>&));
 
 /////// Shader
-PRO_DEF_MEMBER_DISPATCH(create_shader, Handle<Shader>(const ShaderCreateDesc&));
+PRO_DEF_MEMBER_DISPATCH(create_shader, Handle<Shader>(const CreateShaderOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_shader, void(const Handle<Shader>&));
 
 /////// GraphicsPipeline
@@ -148,7 +148,7 @@ inline void          destroy_fence(const Handle<Fence>& fence) { g_backend_proxy
 inline Handle<Semaphore> create_semaphore() { return g_backend_proxy.create_semaphore(); }
 inline void              destroy_semaphore(const Handle<Semaphore>& semaphore) { g_backend_proxy.destroy_semaphore(semaphore); }
 
-inline Handle<Shader> create_shader(const ShaderCreateDesc& desc) { return g_backend_proxy.create_shader(desc); }
+inline Handle<Shader> create_shader(const CreateShaderOptions& desc) { return g_backend_proxy.create_shader(desc); }
 inline void           destroy_shader(const Handle<Shader>& shader) { g_backend_proxy.destroy_shader(shader); }
 
 inline Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }

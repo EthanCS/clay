@@ -22,6 +22,11 @@ struct CreateSwapchainOptions {
     Format::Enum format = Format::Undefined;
 };
 
+struct CreateShaderOptions {
+    const char* code      = nullptr;
+    u32         code_size = 0;
+};
+
 struct AcquireNextImageOptions {
     Handle<Swapchain> swapchain = Handle<Swapchain>();
     u64               time_out  = u64_MAX;
@@ -65,10 +70,10 @@ struct CmdBeginRenderPassOptions {
 };
 
 struct CmdSetViewportOptions {
-    u32 x         = 0;
-    u32 y         = 0;
-    u32 width     = 0;
-    u32 height    = 0;
+    f32 x         = 0.0f;
+    f32 y         = 0.0f;
+    f32 width     = 0.0f;
+    f32 height    = 0.0f;
     f32 min_depth = 0.0f;
     f32 max_depth = 1.0f;
 };

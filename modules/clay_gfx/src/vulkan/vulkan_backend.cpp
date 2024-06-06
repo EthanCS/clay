@@ -411,10 +411,10 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
 
     VkSurfaceTransformFlagBitsKHR pre_transform = surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR : surface_capabilities.currentTransform;
 
-    u32 desired_image_count = std::max(MAX_SWAPCHAIN_IMAGES, (u8)surface_capabilities.minImageCount);
-    if (surface_capabilities.maxImageCount != 0)
+    u32 desired_image_count = surface_capabilities.minImageCount + 1;
+    if (surface_capabilities.maxImageCount > 0 && desired_image_count > surface_capabilities.maxImageCount)
     {
-        desired_image_count = std::min(desired_image_count, surface_capabilities.maxImageCount);
+        desired_image_count = surface_capabilities.maxImageCount;
     }
 
     VkExtent2D extent = surface_capabilities.currentExtent;
@@ -453,7 +453,7 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
 
     VkSwapchainCreateInfoKHR create_info = {};
     create_info.sType                    = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     create_info.imageSharingMode         = VK_SHARING_MODE_EXCLUSIVE;
     create_info.clipped                  = VK_TRUE;
     create_info.imageArrayLayers         = 1;
@@ -477,13 +477,12 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
     }
 
     // Fetch swapchain images and create image views
-    u32 image_count = 0;
     {
         vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.image_count, nullptr);
-        std::vector<VkImage> swapchain_images = std::vector<VkImage>(image_count);
+        std::vector<VkImage> swapchain_images = std::vector<VkImage>(swapchain.image_count);
         vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.image_count, swapchain_images.data());
 
-        for (int i = 0; i < image_count; i++)
+        for (int i = 0; i < swapchain.image_count; i++)
         {
             VulkanTexture texture{ .image = swapchain_images[i], .format = surface_format.format };
             swapchain.images[i] = resources.textures.push(texture);
@@ -651,7 +650,7 @@ void VulkanBackend::destroy_semaphore(const Handle<Semaphore>& semaphore)
     resources.semaphores.free(semaphore);
 }
 
-Handle<Shader> VulkanBackend::create_shader(const ShaderCreateDesc& desc)
+Handle<Shader> VulkanBackend::create_shader(const CreateShaderOptions& desc)
 {
     VkShaderModuleCreateInfo shader_create_info = {};
     shader_create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -878,7 +877,11 @@ void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, c
     }
 
     const VulkanFramebuffer* vulkan_framebuffer = resources.framebuffers.get(options.framebuffer);
-    if (vulkan_framebuffer == nullptr) [[unlikely]] { return; }
+    if (vulkan_framebuffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find framebuffer.");
+        return;
+    }
 
     VkRenderPassBeginInfo begin_info = {};
     begin_info.sType                 = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

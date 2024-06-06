@@ -207,6 +207,25 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     dynamic_state.dynamicStateCount                = 2;
     dynamic_state.pDynamicStates                   = dynamic_states;
 
+    //// Dummy pipeline layout
+    VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+    pipeline_layout_info.sType                      = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_info.setLayoutCount             = 0;
+    pipeline_layout_info.pSetLayouts                = nullptr;
+    pipeline_layout_info.pushConstantRangeCount     = 0;
+    pipeline_layout_info.pPushConstantRanges        = nullptr;
+
+    VkPipelineLayout pipeline_layout;
+    {
+        VkResult res = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout);
+        if (res != VK_SUCCESS) [[unlikely]]
+        {
+            CLAY_LOG_ERROR("Failed to create pipeline layout! ({})", string_VkResult(res));
+            return false;
+        }
+        resources->pipeline_layouts.push({ .pipeline_layout = pipeline_layout });
+    }
+
     //// Create Pipeline
     VkGraphicsPipelineCreateInfo create_info = {};
     create_info.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -220,7 +239,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     create_info.pDepthStencilState           = &depth_stencil;
     create_info.pColorBlendState             = &color_blending;
     create_info.pDynamicState                = &dynamic_state;
-    create_info.layout                       = VK_NULL_HANDLE;
+    create_info.layout                       = pipeline_layout;
     create_info.renderPass                   = render_pass;
     create_info.subpass                      = 0;
     create_info.basePipelineHandle           = VK_NULL_HANDLE;
@@ -332,6 +351,7 @@ void VulkanResources::destroy(const VkDevice& device)
                     vkDestroyImageView(device, view, nullptr);
                 }
             }
+            textures.free(image);
         }
         vkDestroySwapchainKHR(device, s.swapchain, nullptr);
     });
@@ -340,8 +360,10 @@ void VulkanResources::destroy(const VkDevice& device)
     semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
     textures.each([&](VulkanTexture& t) { t.destroy(device); });
     shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
+    pipeline_layouts.each([&](VulkanPipelineLayout& p) { vkDestroyPipelineLayout(device, p.pipeline_layout, nullptr); });
     graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
     command_pools.each([&](VulkanCommandPool& p) { vkDestroyCommandPool(device, p.command_pool, nullptr); });
+    framebuffers.each([&](VulkanFramebuffer& f) { vkDestroyFramebuffer(device, f.framebuffer, nullptr); });
 
     std::for_each(render_passes.begin(), render_passes.end(), [&](VulkanRenderPass& r) {
         vkDestroyRenderPass(device, r.render_pass, nullptr);
@@ -351,9 +373,11 @@ void VulkanResources::destroy(const VkDevice& device)
     semaphores.clear();
     shaders.clear();
     textures.clear();
+    pipeline_layouts.clear();
     graphics_pipelines.clear();
     command_pools.clear();
     command_buffers.clear();
+    framebuffers.clear();
 
     render_passes.clear();
 }
