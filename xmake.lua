@@ -15,4 +15,8 @@ target("test")
     add_files("main.cpp")
     add_deps("clay_core", "clay_app", "clay_gfx", "clay_js")
     set_toolchains("clang-cl")
+    after_build(function (target)
+        -- Copy assets folder to build directory
+        os.cp("assets", target:targetdir())
+    end)
 target_end()
