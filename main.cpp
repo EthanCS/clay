@@ -1,16 +1,13 @@
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
 #include <vector>
-#include <cstring>
 #include <cstdlib>
 
 #include <clay_gfx/backend.h>
+#include <clay_core/file.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
 #include <clay_js/clay_js.h>
-
-std::vector<char> read_file(const std::string& filename);
 
 using namespace clay;
 
@@ -72,8 +69,8 @@ private:
         };
 
         // Create pipeline
-        auto vert_shader_code = read_file("assets/shader/vert.spv");
-        auto frag_shader_code = read_file("assets/shader/frag.spv");
+        auto vert_shader_code = core::read_file("../../../../assets/shader/vert.spv");
+        auto frag_shader_code = core::read_file("../../../../assets/shader/frag.spv");
         hello_vs              = gfx::create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
         hello_fs              = gfx::create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
         pipeline              = gfx::create_graphics_pipeline(
@@ -228,23 +225,4 @@ int main(int argc, char** argv)
     }
 
     return EXIT_SUCCESS;
-}
-
-std::vector<char> read_file(const std::string& filename)
-{
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open())
-    {
-        throw std::runtime_error("failed to open file!");
-    }
-
-    size_t            fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-
-    return buffer;
 }
