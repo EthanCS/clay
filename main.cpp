@@ -8,6 +8,7 @@
 #include <clay_gfx/backend.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
+#include <clay_js/clay_js.h>
 
 std::vector<char> read_file(const std::string& filename);
 
@@ -52,6 +53,8 @@ private:
 
     void init()
     {
+        clay::js::init();
+
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
         bool bInit = gfx::init({ .type     = gfx::BackendType::Vulkan,
