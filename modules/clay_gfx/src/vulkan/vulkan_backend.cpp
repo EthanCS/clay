@@ -73,10 +73,11 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
     create_info.enabledLayerCount       = static_cast<uint32_t>(layers.size());
     create_info.ppEnabledLayerNames     = layers.data();
 
+    VkDebugUtilsMessengerCreateInfoEXT debug_info = {};
     if (desc.debug)
     {
-        VkDebugUtilsMessengerCreateInfoEXT debug_info = create_debug_utils_messenger_info();
-        create_info.pNext                             = &debug_info;
+        debug_info        = create_debug_utils_messenger_info();
+        create_info.pNext = &debug_info;
     }
 
     VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
