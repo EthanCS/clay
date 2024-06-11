@@ -23,10 +23,16 @@ namespace clay
 {
 namespace js
 {
+void* g_qjs_runtime = nullptr;
+void* g_qjs_context = nullptr;
+
 void init()
 {
-    qjs::Runtime runtime;
-    qjs::Context context(runtime);
+    g_qjs_runtime = new qjs::Runtime();
+    g_qjs_context = new qjs::Context(*static_cast<qjs::Runtime*>(g_qjs_runtime));
+
+    auto& context = *static_cast<qjs::Context*>(g_qjs_context);
+
     try
     {
         // export classes as a module
@@ -64,6 +70,19 @@ void init()
             std::cerr << (std::string)exc["stack"] << std::endl;
     }
 }
-void shutdown() {}
+void shutdown()
+{
+    if (g_qjs_context != nullptr)
+    {
+        delete static_cast<qjs::Context*>(g_qjs_context);
+        g_qjs_context = nullptr;
+    }
+
+    if (g_qjs_runtime != nullptr)
+    {
+        delete static_cast<qjs::Runtime*>(g_qjs_runtime);
+        g_qjs_runtime = nullptr;
+    }
+}
 } // namespace js
 } // namespace clay

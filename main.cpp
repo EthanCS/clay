@@ -207,6 +207,7 @@ private:
 
     void shutdown()
     {
+        js::shutdown();
         gfx::shutdown();
         window.shutdown();
     }
