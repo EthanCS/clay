@@ -1,13 +1,21 @@
 #pragma once
 
+#include <string_view>
+#include <clay_js/quickjspp.hpp>
+
 namespace clay
 {
 namespace js
 {
-extern void* g_qjs_runtime;
-extern void* g_qjs_context;
+extern qjs::Runtime* g_qjs_runtime;
+extern qjs::Context* g_qjs_context;
 
 void init();
+void eval(std::string_view buffer, const char* filename = "<eval>", int flags = 0);
 void shutdown();
+
+////// Module Binding //////
+qjs::Context::Module& add_module(const char* name);
+
 } // namespace js
 } // namespace clay

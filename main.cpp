@@ -16,6 +16,11 @@ const u32   WIDTH                = 1280;
 const u32   HEIGHT               = 720;
 const char* TITLE                = "Hello Clay!";
 
+void println()
+{
+    std::cout << "Hello, JS!" << std::endl;
+}
+
 class HelloTriangleApplication
 {
 public:
@@ -50,7 +55,21 @@ private:
 
     void init()
     {
-        clay::js::init();
+        js::init();
+        js::add_module("MyModule").function<&println>("println");
+
+        // import module
+        js::eval(R"xxx(
+            import * as my from 'MyModule';
+            globalThis.my = my;
+        )xxx",
+                 "<import>", 1 << 0);
+        // evaluate js code
+        js::eval(R"xxx(
+            my.println();
+        )xxx");
+
+        js::shutdown();
 
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
