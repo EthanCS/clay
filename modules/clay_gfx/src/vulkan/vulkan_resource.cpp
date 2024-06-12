@@ -272,6 +272,7 @@ VkRenderPass VulkanResources::get_or_create_render_pass(const VkDevice& device, 
     VkAttachmentDescription attachments[MAX_ATTACHMENTS];
     for (usize i = 0; i < num_colors; i++)
     {
+        attachments[i]                = {};
         attachments[i].format         = to_vk_format(layout.colors[i].format);
         attachments[i].samples        = VK_SAMPLE_COUNT_1_BIT;
         attachments[i].loadOp         = to_vk_attachment_load_op(layout.colors[i].load_op);
@@ -300,6 +301,7 @@ VkRenderPass VulkanResources::get_or_create_render_pass(const VkDevice& device, 
     VkAttachmentReference color_attachment_refs[MAX_COLOR_ATTACHMENTS];
     for (usize i = 0; i < num_colors; i++)
     {
+        color_attachment_refs[i]            = {};
         color_attachment_refs[i].attachment = i;
         color_attachment_refs[i].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
