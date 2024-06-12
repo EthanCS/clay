@@ -13,13 +13,16 @@ void init()
     g_qjs_context = new qjs::Context(*(g_qjs_runtime));
 }
 
-void eval(std::string_view buffer, const char* filename, int flags)
+qjs::Value eval(std::string_view buffer, const char* filename, int flags)
 {
-    if (g_qjs_context != nullptr)
-    {
-        auto& context = *(g_qjs_context);
-        context.eval(buffer, filename, flags);
-    }
+    auto& context = *(g_qjs_context);
+    return context.eval(buffer, filename, flags);
+}
+
+qjs::Value eval_file(const char* filename, int flags)
+{
+    auto& context = *(g_qjs_context);
+    return context.evalFile(filename, flags);
 }
 
 qjs::Context::Module& add_module(const char* name)
