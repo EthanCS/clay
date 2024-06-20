@@ -1,4 +1,3 @@
-#include "clay_gfx/options.h"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -8,7 +7,6 @@
 #include <clay_core/file.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
-#include <clay_js/clay_js.h>
 
 using namespace clay;
 
@@ -16,8 +14,6 @@ const int   MAX_FRAMES_IN_FLIGHT = 2;
 const u32   WIDTH                = 1280;
 const u32   HEIGHT               = 720;
 const char* TITLE                = "Hello Clay!";
-
-void bind_js_clay_gfx();
 
 class HelloTriangleApplication
 {
@@ -53,8 +49,6 @@ private:
 
     void init()
     {
-        js::init();
-
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
         bool bInit = gfx::init({ .type     = gfx::BackendType::Vulkan,
@@ -62,8 +56,6 @@ private:
                                  .app_name = TITLE,
                                  .debug    = true });
         if (!bInit) { throw std::runtime_error("failed to initialize clay gfx!"); }
-
-        bind_js_clay_gfx();
 
         // Render pass layout
         render_pass_layout           = {};
@@ -191,9 +183,6 @@ private:
 
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
-        js::eval_file("../../../../assets/script/hello_triangle.js");
-        auto record_commands = (std::function<void(gfx::Handle<gfx::CommandBuffer>*)>)js::eval("recordCommands");
-
         gfx::cmd_begin(cmd);
         gfx::cmd_begin_render_pass(cmd,
                                    { .framebuffer        = swapchain_framebuffers[image_index],
@@ -204,16 +193,13 @@ private:
         gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
         gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
         gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
-        // gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
-        // gfx::cmd_end_render_pass(cmd);
-        // gfx::cmd_end(cmd);
-
-        record_commands(&cmd);
+        gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
+        gfx::cmd_end_render_pass(cmd);
+        gfx::cmd_end(cmd);
     }
 
     void shutdown()
     {
-        js::shutdown();
         gfx::shutdown();
         window.shutdown();
     }
@@ -221,6 +207,8 @@ private:
 
 int main(int argc, char** argv)
 {
+    // test_das();
+
     HelloTriangleApplication app;
     try
     {
@@ -232,32 +220,4 @@ int main(int argc, char** argv)
     }
 
     return EXIT_SUCCESS;
-}
-
-void bind_js_clay_gfx()
-{
-    auto& module = js::add_module("clay_gfx");
-
-    module.class_<gfx::CmdDrawOptions>("CmdDrawOptions")
-    .constructor<>()
-    .fun<&gfx::CmdDrawOptions::first_instance>("firstInstance")
-    .fun<&gfx::CmdDrawOptions::first_vertex>("firstVertex")
-    .fun<&gfx::CmdDrawOptions::instance_count>("instanceCount")
-    .fun<&gfx::CmdDrawOptions::vertex_count>("vertexCount");
-
-    module.function("cmdBegin", [](gfx::Handle<gfx::CommandBuffer>* cmd) { gfx::cmd_begin(*cmd); });
-    module.function("cmdEnd", [](gfx::Handle<gfx::CommandBuffer>* cmd) { gfx::cmd_end(*cmd); });
-    module.function("cmdBeginRenderPass", [](gfx::Handle<gfx::CommandBuffer>* cmd, gfx::CmdBeginRenderPassOptions* options) { gfx::cmd_begin_render_pass(*cmd, *options); });
-    module.function("cmdEndRenderPass", [](gfx::Handle<gfx::CommandBuffer>* cmd) { gfx::cmd_end_render_pass(*cmd); });
-    module.function("cmdBindGraphicsPipeline", [](gfx::Handle<gfx::CommandBuffer>* cmd, gfx::Handle<gfx::GraphicsPipeline>* pipeline) { gfx::cmd_bind_graphics_pipeline(*cmd, *pipeline); });
-    module.function("cmdSetViewport", [](gfx::Handle<gfx::CommandBuffer>* cmd, gfx::CmdSetViewportOptions* viewport) { gfx::cmd_set_viewport(*cmd, *viewport); });
-    module.function("cmdSetScissor", [](gfx::Handle<gfx::CommandBuffer>* cmd, gfx::CmdSetScissorOptions* scissor) { gfx::cmd_set_scissor(*cmd, *scissor); });
-    module.function("cmdDraw", [](gfx::Handle<gfx::CommandBuffer>* cmd, gfx::CmdDrawOptions* draw) { gfx::cmd_draw(*cmd, *draw); });
-
-    // import module
-    js::eval(R"xxx(
-            import * as gfx from 'clay_gfx';
-            globalThis.gfx = gfx;
-        )xxx",
-             "<import>", 1 << 0);
 }

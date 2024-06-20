@@ -1,8 +1,0 @@
-target("clay_js")
-    set_kind("static")
-    add_files("src/**.cpp")
-    add_includedirs("include/", {public = true})
-    add_deps("clay_core")
-    set_toolchains("clang-cl")
-    add_packages("quickjs-clay")
-target_end()
