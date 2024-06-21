@@ -3,8 +3,8 @@ package("daScript")
     set_description("daScript - high-performance statically strong typed scripting language")
     set_license("BSD-3-Clause")
 
-    add_urls("https://github.com/GaijinEntertainment/daScript.git")
-    add_versions("0.4.9", "2ded4ac42970171b14aff6b28ffb974fc10a18f0")
+    add_urls("https://github.com/EthanCS/daScript.git")
+    add_versions("0.4.9", "4a50d568e6c1ef033ca24ed5b6c5690b17b5c9f1")
 
     add_deps("cmake")
     

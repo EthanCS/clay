@@ -1,14 +1,33 @@
 #include <cstdio>
+#include <cstddef>
 
 #include <clay_das/clay_das.h>
 
 const char* TUTORIAL_SOURCE_CODE = R""""(
 require clay_test
 
+def twice(var a: int&)
+    a = a + a
+def twicePointer(var a: int?)
+    twice(*a)
+
 [export]
 def test
     print("Hello, daslang!\n")
-    das_c_func(42)
+    
+    unsafe
+        var s : int
+        s = 10
+        twicePointer(addr(s))
+
+        var p : Point
+        p.x = 1
+        p.y = 2
+
+        das_c_func(p.x)
+        das_c_func(p.y)
+
+        das_c_func_ptr(addr(p))
 )"""";
 
 // this is test function
@@ -20,14 +39,36 @@ vec4f das_c_func(das_context* ctx, das_node* node, vec4f* args)
     return das_result_void();
 }
 
+struct Point {
+    int x;
+    int y;
+};
+
+vec4f das_c_func_ptr(das_context* ctx, das_node* node, vec4f* args)
+{
+    (void)ctx;
+    (void)node;
+    Point* p = (Point*)das_argument_ptr(args[0]);
+    printf("Point x:(%i) y:(%i)\n", p->x, p->y);
+    return das_result_void();
+}
+
 das_module* register_module_clay_test()
 {
     // create module and library
     das_module*       mod = das_module_create((char*)"clay_test");
     das_module_group* lib = das_modulegroup_make();
+    das_modulegroup_add_module(lib, mod);
+
+    // handled structure
+    das_structure* st = das_structure_make(lib, "Point", "Point", sizeof(Point), alignof(Point));
+    das_structure_add_field(st, mod, lib, "x", "x", offsetof(Point, x), "i");
+    das_structure_add_field(st, mod, lib, "y", "y", offsetof(Point, y), "i");
+    das_module_bind_structure(mod, st);
 
     // bind das_c_func
     das_module_bind_interop_function(mod, lib, &das_c_func, (char*)"das_c_func", (char*)"das_c_func", SIDEEFFECTS_modifyExternal, (char*)"v i");
+    das_module_bind_interop_function(mod, lib, &das_c_func_ptr, (char*)"das_c_func_ptr", (char*)"das_c_func_ptr", SIDEEFFECTS_modifyExternal, (char*)"v ?");
 
     // cleanup
     das_modulegroup_release(lib);
