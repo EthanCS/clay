@@ -7,6 +7,7 @@
 #include <clay_core/file.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
+#include <clay_das/clay_das.h>
 
 using namespace clay;
 
@@ -49,6 +50,9 @@ private:
 
     void init()
     {
+        das::init();
+        das::run();
+
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
         bool bInit = gfx::init({ .type     = gfx::BackendType::Vulkan,
@@ -200,6 +204,7 @@ private:
 
     void shutdown()
     {
+        das::shutdown();
         gfx::shutdown();
         window.shutdown();
     }
@@ -207,8 +212,6 @@ private:
 
 int main(int argc, char** argv)
 {
-    // test_das();
-
     HelloTriangleApplication app;
     try
     {

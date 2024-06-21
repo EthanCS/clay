@@ -1,0 +1,8 @@
+target("clay_das")
+    set_kind("static")
+    add_includedirs("include/", {public = true})
+    add_packages("daScript", {public = true})
+    add_files("src/**.cpp")
+    set_toolchains("msvc")
+    set_languages("cxx17")
+target_end()
