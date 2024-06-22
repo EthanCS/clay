@@ -4,10 +4,10 @@ package("daScript")
     set_license("BSD-3-Clause")
 
     add_urls("https://github.com/EthanCS/daScript.git")
-    add_versions("0.4.9", "4a50d568e6c1ef033ca24ed5b6c5690b17b5c9f1")
+    add_versions("0.4.9", "887f3164782129120fe77a7c282f65d831cb21b1")
 
     add_deps("cmake")
-    
+
     on_install(function (package)
         local configs = {
             "-DDAS_FLEX_BISON_DISABLED=ON",

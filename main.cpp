@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -7,9 +8,24 @@
 #include <clay_core/file.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
-#include <clay_das/clay_das.h>
+
+#include <clay_gfx/das.h>
+REGISTER_MODULE(Module_clay_gfx);
+
+const char* DAS_CODE = R""""(
+require clay_gfx
+
+[export]
+def record_commands(cb: HCommandBuffer)
+    cmd_begin(cb)
+
+[export]
+def test
+    print("this is nano tutorial\n")
+)"""";
 
 using namespace clay;
+using namespace das;
 
 const int   MAX_FRAMES_IN_FLIGHT = 2;
 const u32   WIDTH                = 1280;
@@ -48,10 +64,25 @@ private:
     u32 swapchain_width  = 0;
     u32 swapchain_height = 0;
 
+    das::ProgramPtr das_program;
+    TextPrinter     das_logs;
+
     void init()
     {
-        das::init();
-        das::run();
+        NEED_ALL_DEFAULT_MODULES;
+        NEED_MODULE(Module_clay_gfx);
+
+        das::Module::Initialize();
+        {
+            // make file access, introduce string as if it was a file
+            auto fileInfo = make_unique<das::TextFileInfo>(DAS_CODE, uint32_t(strlen(DAS_CODE)), false);
+            auto fAccess  = make_smart<FsFileAccess>();
+            fAccess->setFileInfo("dummy.das", das::move(fileInfo));
+
+            // compile script
+            ModuleGroup dummyLibGroup;
+            das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
+        }
 
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
@@ -187,7 +218,28 @@ private:
 
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
-        gfx::cmd_begin(cmd);
+        if (!das_program->failed())
+        {
+            // create context
+            Context ctx(das_program->getContextStackSize());
+            if (das_program->simulate(ctx, das_logs))
+            {
+                // find function. its up to application to check, if function is not null
+                auto function = ctx.findFunction("record_commands");
+                if (function)
+                {
+                    // call context function
+                    vec4f args[1];
+                    args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(cmd);
+                    ctx.evalWithCatch(function, args);
+                }
+            }
+        }
+        else
+        {
+            gfx::cmd_begin(cmd);
+        }
+
         gfx::cmd_begin_render_pass(cmd,
                                    { .framebuffer        = swapchain_framebuffers[image_index],
                                      .render_pass_layout = render_pass_layout,
@@ -204,7 +256,7 @@ private:
 
     void shutdown()
     {
-        das::shutdown();
+        das::Module::Shutdown();
         gfx::shutdown();
         window.shutdown();
     }
