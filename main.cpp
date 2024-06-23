@@ -17,7 +17,13 @@ require clay_gfx
 
 [export]
 def record_commands(cb: HCommandBuffer)
-    cmd_begin(cb)
+    gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = 1280.0, height = 720.0, min_depth = 0.0, max_depth = 1.0]])
+    // let scissor : CmdSetScissorOptions
+    // scissor.offset[0] = 0
+    // scissor.offset[1] = 0
+    // scissor.extent[0] = 1280
+    // scissor.extent[1] = 720
+    // gfx_cmd_set_scissor(cb, scissor)
 
 [export]
 def test
@@ -218,6 +224,15 @@ private:
 
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
+        gfx::cmd_begin(cmd);
+        gfx::cmd_begin_render_pass(cmd,
+                                   { .framebuffer        = swapchain_framebuffers[image_index],
+                                     .render_pass_layout = render_pass_layout,
+                                     .extent             = { swapchain_width, swapchain_height },
+                                     .clear              = true,
+                                     .clear_values       = { { .color = { .r = 0.0f, .g = 0.0f, .b = 1.0f, .a = 1.0f } } } });
+        gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
+
         if (!das_program->failed())
         {
             // create context
@@ -235,19 +250,9 @@ private:
                 }
             }
         }
-        else
-        {
-            gfx::cmd_begin(cmd);
-        }
 
-        gfx::cmd_begin_render_pass(cmd,
-                                   { .framebuffer        = swapchain_framebuffers[image_index],
-                                     .render_pass_layout = render_pass_layout,
-                                     .extent             = { swapchain_width, swapchain_height },
-                                     .clear              = true,
-                                     .clear_values       = { { .color = { .r = 0.0f, .g = 0.0f, .b = 1.0f, .a = 1.0f } } } });
-        gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
-        gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        // gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+
         gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
         gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
         gfx::cmd_end_render_pass(cmd);
