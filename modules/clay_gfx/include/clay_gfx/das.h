@@ -1,6 +1,7 @@
 #pragma once
 
 #include "daScript/ast/ast_typefactory.h"
+#include "resource.h"
 #include <daScript/daScript.h>
 #include <clay_gfx/backend.h>
 
@@ -20,8 +21,91 @@
     };
 
 HANDLE_DAS_TYPE_BINDING(HSwapchain, Swapchain)
+HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
 HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
 HANDLE_DAS_TYPE_BINDING(HGraphicsPipeline, GraphicsPipeline)
+
+DAS_BIND_ENUM_CAST(clay::gfx::RenderPassLoadOp::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::RenderPassLoadOp::Enum, RenderPassLoadOp, DontCare, Load, Clear)
+
+DAS_BIND_ENUM_CAST(clay::gfx::ImageLayout::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::ImageLayout::Enum, ImageLayout, Undefined, General, ColorAttachmentOptimal, DepthStencilAttachmentOptimal, DepthStencilReadOnlyOptimal, ShaderReadOnlyOptimal, TransferSrcOptimal, TransferDstOptimal, Preinitialized, PresentSrc)
+
+DAS_BIND_ENUM_CAST(clay::gfx::Format::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::Format::Enum, Format, Undefined, D32_SFLOAT, D32_SFLOAT_S8_UINT, D24_UNORM_S8_UINT, B8G8R8A8_UNORM, B8G8R8A8_SRGB, R8G8B8A8_UNORM, R8G8B8A8_SRGB, B8G8R8_UNORM, B8G8R8_SRGB, R8G8B8_UNORM, R8G8B8_SRGB, R32_SFLOAT, R32G32_SFLOAT, R32G32B32_SFLOAT, R32G32B32A32_SFLOAT)
+
+MAKE_TYPE_FACTORY(ColorAttachmentDesc, clay::gfx::ColorAttachmentDesc);
+struct ColorAttachmentDescAnnotation : public das::ManagedStructureAnnotation<clay::gfx::ColorAttachmentDesc, true, true> {
+    ColorAttachmentDescAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("ColorAttachmentDesc", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(format)>("format");
+        addField<DAS_BIND_MANAGED_FIELD(layout)>("layout");
+        addField<DAS_BIND_MANAGED_FIELD(load_op)>("load_op");
+    }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
+};
+
+MAKE_TYPE_FACTORY(DepthStencilAttachmentDesc, clay::gfx::DepthStencilAttachmentDesc);
+struct DepthStencilAttachmentDescAnnotation : public das::ManagedStructureAnnotation<clay::gfx::DepthStencilAttachmentDesc, true, true> {
+    DepthStencilAttachmentDescAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("DepthStencilAttachmentDesc", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(format)>("format");
+        addField<DAS_BIND_MANAGED_FIELD(layout)>("layout");
+        addField<DAS_BIND_MANAGED_FIELD(depth_op)>("depth_op");
+        addField<DAS_BIND_MANAGED_FIELD(stencil_op)>("stencil_op");
+    }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
+};
+
+MAKE_TYPE_FACTORY(RenderPassLayout, clay::gfx::RenderPassLayout);
+struct RenderPassLayoutAnnotation : public das::ManagedStructureAnnotation<clay::gfx::RenderPassLayout, true, true> {
+    RenderPassLayoutAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("RenderPassLayout", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(colors)>("colors");
+        addField<DAS_BIND_MANAGED_FIELD(depth_stencil)>("depth_stencil");
+    }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
+};
+
+MAKE_TYPE_FACTORY(ClearValue, clay::gfx::ClearValue);
+struct ClearValueAnnotation : public das::ManagedStructureAnnotation<clay::gfx::ClearValue, true, true> {
+    ClearValueAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("ClearValue", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(color)>("color");
+        addField<DAS_BIND_MANAGED_FIELD(depth)>("depth");
+        addField<DAS_BIND_MANAGED_FIELD(stencil)>("stencil");
+    }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
+};
+
+MAKE_TYPE_FACTORY(CmdBeginRenderPassOptions, clay::gfx::CmdBeginRenderPassOptions);
+struct CmdBeginRenderPassOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBeginRenderPassOptions, true, true> {
+    CmdBeginRenderPassOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdBeginRenderPassOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(framebuffer)>("framebuffer");
+        addField<DAS_BIND_MANAGED_FIELD(render_pass_layout)>("render_pass_layout");
+        addField<DAS_BIND_MANAGED_FIELD(offset)>("offset");
+        addField<DAS_BIND_MANAGED_FIELD(extent)>("extent");
+        addField<DAS_BIND_MANAGED_FIELD(clear)>("clear");
+        addField<DAS_BIND_MANAGED_FIELD(clear_values)>("clear_values");
+    }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
+};
 
 MAKE_TYPE_FACTORY(CmdDrawOptions, clay::gfx::CmdDrawOptions);
 struct CmdDrawOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdDrawOptions, true, true> {
@@ -79,21 +163,37 @@ public:
         das::ModuleLibrary lib(this);
         lib.addBuiltInModule();
 
+        // bind basic types
+        addAnnotation(das::make_smart<ClearValueAnnotation>(lib));
+
+        // bind enums
+        addEnumeration(das::make_smart<EnumerationRenderPassLoadOp>());
+        addEnumeration(das::make_smart<EnumerationImageLayout>());
+        addEnumeration(das::make_smart<EnumerationFormat>());
+
         // bind handle types
         addAnnotation(das::make_smart<HSwapchainAnnotation>(lib));
+        addAnnotation(das::make_smart<HFramebufferAnnotation>(lib));
         addAnnotation(das::make_smart<HCommandBufferAnnotation>(lib));
         addAnnotation(das::make_smart<HGraphicsPipelineAnnotation>(lib));
+
+        // bind resource types
+        addAnnotation(das::make_smart<ColorAttachmentDescAnnotation>(lib));
+        addAnnotation(das::make_smart<DepthStencilAttachmentDescAnnotation>(lib));
+        addAnnotation(das::make_smart<RenderPassLayoutAnnotation>(lib));
 
         // bind normal types
         addAnnotation(das::make_smart<CmdDrawOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdSetScissorOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdSetViewportOptionsAnnotation>(lib));
+        addAnnotation(das::make_smart<CmdBeginRenderPassOptionsAnnotation>(lib));
 
         // bind functions
         DAS_BIND_CMD_FUNC(cmd_begin)
         DAS_BIND_CMD_FUNC(cmd_end)
-        DAS_BIND_CMD_FUNC(cmd_bind_graphics_pipeline)
+        DAS_BIND_CMD_FUNC(cmd_begin_render_pass)
         DAS_BIND_CMD_FUNC(cmd_end_render_pass)
+        DAS_BIND_CMD_FUNC(cmd_bind_graphics_pipeline)
         DAS_BIND_CMD_FUNC(cmd_set_viewport)
         DAS_BIND_CMD_FUNC(cmd_set_scissor)
         DAS_BIND_CMD_FUNC(cmd_draw)

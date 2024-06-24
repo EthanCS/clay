@@ -919,18 +919,18 @@ void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, c
         for (u8 i = 0; i < num_colors; i++)
         {
             clear_values[num_clear_values].color = {
-                options.clear_values[num_clear_values].color.r,
-                options.clear_values[num_clear_values].color.g,
-                options.clear_values[num_clear_values].color.b,
-                options.clear_values[num_clear_values].color.a
+                options.clear_values[num_clear_values].color[0],
+                options.clear_values[num_clear_values].color[1],
+                options.clear_values[num_clear_values].color[2],
+                options.clear_values[num_clear_values].color[3]
             };
             num_clear_values++;
         }
         if (options.render_pass_layout.has_depth_stencil())
         {
             clear_values[num_clear_values].depthStencil = {
-                options.clear_values[num_clear_values].depth_stencil.depth,
-                options.clear_values[num_clear_values].depth_stencil.stencil
+                options.clear_values[num_clear_values].depth,
+                options.clear_values[num_clear_values].stencil
             };
             num_clear_values++;
         }

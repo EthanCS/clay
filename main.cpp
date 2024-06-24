@@ -1,3 +1,4 @@
+#include "modules/clay_gfx/include/clay_gfx/resource.h"
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -11,19 +12,6 @@
 
 #include <clay_gfx/das.h>
 REGISTER_MODULE(Module_clay_gfx);
-
-const char* DAS_CODE = R""""(
-require clay_gfx
-
-[export]
-def record_commands(cb: HCommandBuffer; w: uint; h: uint)
-    gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = float(w), height = float(h), min_depth = 0.0, max_depth = 1.0]])
-    gfx_cmd_set_scissor(cb, [[CmdSetScissorOptions offset = [[int[2] 0; 0]], extent = [[uint[2] w; h]]]])
-
-[export]
-def test
-    print("this is nano tutorial\n")
-)"""";
 
 using namespace clay;
 using namespace das;
@@ -65,25 +53,13 @@ private:
     u32 swapchain_width  = 0;
     u32 swapchain_height = 0;
 
-    das::ProgramPtr das_program;
     TextPrinter     das_logs;
 
     void init()
     {
         NEED_ALL_DEFAULT_MODULES;
         NEED_MODULE(Module_clay_gfx);
-
         das::Module::Initialize();
-        {
-            // make file access, introduce string as if it was a file
-            auto fileInfo = make_unique<das::TextFileInfo>(DAS_CODE, uint32_t(strlen(DAS_CODE)), false);
-            auto fAccess  = make_smart<FsFileAccess>();
-            fAccess->setFileInfo("dummy.das", das::move(fileInfo));
-
-            // compile script
-            ModuleGroup dummyLibGroup;
-            das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
-        }
 
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
@@ -158,7 +134,50 @@ private:
         gfx::reset_fences(&in_flight_fences[current_frame], 1);
 
         gfx::reset_command_buffer(command_buffers[current_frame], false);
-        record_commands(command_buffers[current_frame], acquire_swapchain.image_index);
+
+        auto das_script = core::read_file("../../../../assets/script/hello_triangle.das");
+
+        // make file access, introduce string as if it was a file
+        auto fileInfo = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
+        auto fAccess  = make_smart<FsFileAccess>();
+        fAccess->setFileInfo("dummy.das", das::move(fileInfo));
+
+        // compile script
+        ModuleGroup dummyLibGroup;
+        auto das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
+
+        if (!das_program->failed())
+        {
+            // create context
+            Context ctx(das_program->getContextStackSize());
+            if (das_program->simulate(ctx, das_logs))
+            {
+                auto idx_swapchain_width = ctx.findVariable("swapchain_width");
+                memcpy(ctx.getVariable(idx_swapchain_width), &swapchain_width, sizeof(u32));
+
+                auto idx_swapchain_height = ctx.findVariable("swapchain_height");
+                memcpy(ctx.getVariable(idx_swapchain_height), &swapchain_height, sizeof(u32));
+
+                auto idx_pipeline = ctx.findVariable("pipeline");
+                memcpy(ctx.getVariable(idx_pipeline), &pipeline, sizeof(gfx::Handle<gfx::GraphicsPipeline>));
+
+                auto idx_render_pass_layout = ctx.findVariable("render_pass_layout");
+                memcpy(ctx.getVariable(idx_render_pass_layout), &render_pass_layout, sizeof(gfx::RenderPassLayout));
+
+                // find function. its up to application to check, if function is not null
+                auto function = ctx.findFunction("record_commands");
+                if (function)
+                {
+                    // call context function
+                    vec4f args[3];
+                    args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(command_buffers[current_frame]);
+                    args[1] = cast<const gfx::Handle<gfx::Framebuffer>&>::from(swapchain_framebuffers[acquire_swapchain.image_index]);
+                    ctx.evalWithCatch(function, args);
+                }
+            }
+        }
+
+        // record_commands(command_buffers[current_frame], acquire_swapchain.image_index);
 
         gfx::QueueSubmitOptions submit_options = {};
         submit_options.command_buffers         = &command_buffers[current_frame];
@@ -225,32 +244,10 @@ private:
                                      .render_pass_layout = render_pass_layout,
                                      .extent             = { swapchain_width, swapchain_height },
                                      .clear              = true,
-                                     .clear_values       = { { .color = { .r = 0.0f, .g = 0.0f, .b = 1.0f, .a = 1.0f } } } });
+                                     .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } } } });
         gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
-
-        if (!das_program->failed())
-        {
-            // create context
-            Context ctx(das_program->getContextStackSize());
-            if (das_program->simulate(ctx, das_logs))
-            {
-                // find function. its up to application to check, if function is not null
-                auto function = ctx.findFunction("record_commands");
-                if (function)
-                {
-                    // call context function
-                    vec4f args[3];
-                    args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(cmd);
-                    args[1] = cast<u32>::from(swapchain_width);
-                    args[2] = cast<u32>::from(swapchain_height);
-                    ctx.evalWithCatch(function, args);
-                }
-            }
-        }
-
-        // gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
-        // gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
-
+        gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
         gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
         gfx::cmd_end_render_pass(cmd);
         gfx::cmd_end(cmd);

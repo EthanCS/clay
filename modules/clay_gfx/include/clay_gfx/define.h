@@ -14,19 +14,9 @@ static const u8 MAX_VERTEX_ATTRIBUTES = 16;
 static const u8 MAX_VERTEX_BINDINGS   = 16;
 
 struct ClearValue {
-    union
-    {
-        struct {
-            f32 r;
-            f32 g;
-            f32 b;
-            f32 a;
-        } color;
-        struct {
-            f32 depth;
-            u32 stencil;
-        } depth_stencil;
-    };
+    f32 color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    f32 depth;
+    u32 stencil;
 };
 
 struct BackendType {
