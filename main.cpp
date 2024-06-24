@@ -16,14 +16,9 @@ const char* DAS_CODE = R""""(
 require clay_gfx
 
 [export]
-def record_commands(cb: HCommandBuffer)
-    gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = 1280.0, height = 720.0, min_depth = 0.0, max_depth = 1.0]])
-    // let scissor : CmdSetScissorOptions
-    // scissor.offset[0] = 0
-    // scissor.offset[1] = 0
-    // scissor.extent[0] = 1280
-    // scissor.extent[1] = 720
-    // gfx_cmd_set_scissor(cb, scissor)
+def record_commands(cb: HCommandBuffer; w: uint; h: uint)
+    gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = float(w), height = float(h), min_depth = 0.0, max_depth = 1.0]])
+    gfx_cmd_set_scissor(cb, [[CmdSetScissorOptions offset = [[int[2] 0; 0]], extent = [[uint[2] w; h]]]])
 
 [export]
 def test
@@ -244,16 +239,18 @@ private:
                 if (function)
                 {
                     // call context function
-                    vec4f args[1];
+                    vec4f args[3];
                     args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(cmd);
+                    args[1] = cast<u32>::from(swapchain_width);
+                    args[2] = cast<u32>::from(swapchain_height);
                     ctx.evalWithCatch(function, args);
                 }
             }
         }
 
         // gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        // gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
 
-        gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
         gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
         gfx::cmd_end_render_pass(cmd);
         gfx::cmd_end(cmd);

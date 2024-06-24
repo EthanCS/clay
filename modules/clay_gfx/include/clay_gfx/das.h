@@ -46,9 +46,9 @@ struct CmdSetScissorOptionsAnnotation : public das::ManagedStructureAnnotation<c
         addField<DAS_BIND_MANAGED_FIELD(offset)>("offset");
         addField<DAS_BIND_MANAGED_FIELD(extent)>("extent");
     }
-    // virtual bool isLocal() const override { return true; }
-    // virtual bool canCopy() const override { return true; }
-    // virtual bool canMove() const override { return true; }
+    virtual bool isLocal() const override { return true; }
+    virtual bool canCopy() const override { return true; }
+    virtual bool canMove() const override { return true; }
 };
 
 MAKE_TYPE_FACTORY(CmdSetViewportOptions, clay::gfx::CmdSetViewportOptions);
