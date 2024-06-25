@@ -392,18 +392,9 @@ inline VkImageViewType to_vk_image_view_type(TextureViewType::Enum view_type)
 inline VkImageAspectFlags to_vk_image_aspect_flags(const TextureAspect::Flag& aspect_flags)
 {
     VkImageAspectFlags flags = 0;
-    if (aspect_flags & TextureAspect::Color)
-    {
-        flags |= VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-    if (aspect_flags & TextureAspect::Depth)
-    {
-        flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
-    }
-    if (aspect_flags & TextureAspect::Stencil)
-    {
-        flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
+    if (aspect_flags & TextureAspect::Color) { flags |= VK_IMAGE_ASPECT_COLOR_BIT; }
+    if (aspect_flags & TextureAspect::Depth) { flags |= VK_IMAGE_ASPECT_DEPTH_BIT; }
+    if (aspect_flags & TextureAspect::Stencil) { flags |= VK_IMAGE_ASPECT_STENCIL_BIT; }
     return flags;
 }
 
@@ -495,6 +486,35 @@ inline VkPipelineStageFlags to_vk_pipeline_stage_flags(PipelineStage::Flag stage
     {
         flags |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     }
+    return flags;
+}
+
+inline VkBufferUsageFlags to_vk_buffer_usage_flags(BufferUsage::Flag usage)
+{
+    VkBufferUsageFlags flags = 0;
+    if (usage & BufferUsage::TransferSrc) { flags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT; }
+    if (usage & BufferUsage::TransferDst) { flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT; }
+    if (usage & BufferUsage::UniformTexelBuffer) { flags |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT; }
+    if (usage & BufferUsage::StorageTexelBuffer) { flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT; }
+    if (usage & BufferUsage::UniformBuffer) { flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT; }
+    if (usage & BufferUsage::StorageBuffer) { flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; }
+    if (usage & BufferUsage::IndexBuffer) { flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT; }
+    if (usage & BufferUsage::VertexBuffer) { flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT; }
+    if (usage & BufferUsage::IndirectBuffer) { flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT; }
+    if (usage & BufferUsage::ShaderDeviceAddress) { flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT; }
+    if (usage & BufferUsage::VideoDecodeSrc) { flags |= VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR; }
+    if (usage & BufferUsage::VideoDecodeDst) { flags |= VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR; }
+    if (usage & BufferUsage::TransformFeedbackBuffer) { flags |= VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT; }
+    if (usage & BufferUsage::TransformFeedbackCounterBuffer) { flags |= VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT; }
+    if (usage & BufferUsage::ConditionalRendering) { flags |= VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT; }
+    if (usage & BufferUsage::AccelerationStructureBuildInputReadOnly) { flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR; }
+    if (usage & BufferUsage::AccelerationStructureStorage) { flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR; }
+    if (usage & BufferUsage::ShaderBindingTable) { flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR; }
+    if (usage & BufferUsage::SamplerDescriptorBuffer) { flags |= VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT; }
+    if (usage & BufferUsage::ResourceDescriptorBuffer) { flags |= VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT; }
+    if (usage & BufferUsage::PushDescriptorsDescriptorBuffer) { flags |= VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT; }
+    if (usage & BufferUsage::MicromapBuildInputReadOnly) { flags |= VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT; }
+    if (usage & BufferUsage::MicromapStorage) { flags |= VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT; }
     return flags;
 }
 

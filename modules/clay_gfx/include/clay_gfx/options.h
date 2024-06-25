@@ -27,6 +27,12 @@ struct CreateShaderOptions {
     u32         code_size = 0;
 };
 
+struct CreateBufferOptions {
+    u64               size = 0;
+    BufferUsage::Flag usage;
+    bool              exclusive{ true };
+};
+
 struct AcquireNextImageOptions {
     u64               time_out  = u64_MAX;
     Handle<Semaphore> semaphore = Handle<Semaphore>();

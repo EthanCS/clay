@@ -366,6 +366,7 @@ void VulkanResources::destroy(const VkDevice& device)
     graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
     command_pools.each([&](VulkanCommandPool& p) { vkDestroyCommandPool(device, p.command_pool, nullptr); });
     framebuffers.each([&](VulkanFramebuffer& f) { vkDestroyFramebuffer(device, f.framebuffer, nullptr); });
+    buffers.each([&](VulkanBuffer& b) { vkDestroyBuffer(device, b.buffer, nullptr); });
 
     std::for_each(render_passes.begin(), render_passes.end(), [&](VulkanRenderPass& r) {
         vkDestroyRenderPass(device, r.render_pass, nullptr);
@@ -380,6 +381,7 @@ void VulkanResources::destroy(const VkDevice& device)
     command_pools.clear();
     command_buffers.clear();
     framebuffers.clear();
+    buffers.clear();
 
     render_passes.clear();
 }

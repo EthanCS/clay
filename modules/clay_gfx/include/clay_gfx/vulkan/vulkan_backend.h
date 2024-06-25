@@ -71,6 +71,9 @@ public:
     u32  get_texture_height(const Handle<Texture>& texture);
     void destroy_texture(const Handle<Texture>& texture);
 
+    Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
+    void           destroy_buffer(const Handle<Buffer>& buffer);
+
     Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc);
     void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer);
 

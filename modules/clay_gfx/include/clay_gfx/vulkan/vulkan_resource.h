@@ -114,6 +114,10 @@ struct VulkanFramebuffer {
     VkFramebuffer framebuffer = VK_NULL_HANDLE;
 };
 
+struct VulkanBuffer {
+    VkBuffer buffer = VK_NULL_HANDLE;
+};
+
 struct VulkanResources {
     Pool<Swapchain, VulkanSwapchain>               swapchains;
     Pool<Fence, VulkanFence>                       fences;
@@ -125,6 +129,7 @@ struct VulkanResources {
     Pool<CommandPool, VulkanCommandPool>           command_pools;
     Pool<CommandBuffer, VulkanCommandBuffer>       command_buffers;
     Pool<Framebuffer, VulkanFramebuffer>           framebuffers;
+    Pool<Buffer, VulkanBuffer>                     buffers;
 
     std::vector<VulkanRenderPass> render_passes;
 
@@ -139,6 +144,7 @@ struct VulkanResources {
         , command_pools(4)
         , command_buffers(8)
         , framebuffers(4)
+        , buffers(16)
     {
     }
 

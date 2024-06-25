@@ -1,4 +1,3 @@
-#include "modules/clay_gfx/include/clay_gfx/resource.h"
 #include <cstring>
 #include <iostream>
 #include <stdexcept>

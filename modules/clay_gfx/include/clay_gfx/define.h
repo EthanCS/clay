@@ -284,5 +284,34 @@ struct PipelineStage {
     };
 };
 
+struct BufferUsage {
+    enum Flag
+    {
+        TransferSrc                             = 0x00000001,
+        TransferDst                             = 0x00000002,
+        UniformTexelBuffer                      = 0x00000004,
+        StorageTexelBuffer                      = 0x00000008,
+        UniformBuffer                           = 0x00000010,
+        StorageBuffer                           = 0x00000020,
+        IndexBuffer                             = 0x00000040,
+        VertexBuffer                            = 0x00000080,
+        IndirectBuffer                          = 0x00000100,
+        ShaderDeviceAddress                     = 0x00020000,
+        VideoDecodeSrc                          = 0x00002000,
+        VideoDecodeDst                          = 0x00004000,
+        TransformFeedbackBuffer                 = 0x00000800,
+        TransformFeedbackCounterBuffer          = 0x00001000,
+        ConditionalRendering                    = 0x00000200,
+        AccelerationStructureBuildInputReadOnly = 0x00080000,
+        AccelerationStructureStorage            = 0x00100000,
+        ShaderBindingTable                      = 0x00000400,
+        SamplerDescriptorBuffer                 = 0x00200000,
+        ResourceDescriptorBuffer                = 0x00400000,
+        PushDescriptorsDescriptorBuffer         = 0x04000000,
+        MicromapBuildInputReadOnly              = 0x00800000,
+        MicromapStorage                         = 0x01000000,
+    };
+};
+
 } // namespace gfx
 } // namespace clay

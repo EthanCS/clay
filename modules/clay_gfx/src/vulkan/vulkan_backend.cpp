@@ -1,4 +1,5 @@
 #include "clay_gfx/define.h"
+#include "clay_gfx/handle.h"
 #include "clay_gfx/vulkan/vulkan_resource.h"
 #include <SDL.h>
 #include <SDL_vulkan.h>
@@ -719,6 +720,33 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
     if (vulkan_texture == nullptr) [[unlikely]] { return; }
     vulkan_texture->destroy(device);
     resources.textures.free(texture);
+}
+
+Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
+{
+    VkBufferCreateInfo create_info = {};
+    create_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size               = desc.size;
+    create_info.usage              = to_vk_buffer_usage_flags(desc.usage);
+    create_info.sharingMode        = desc.exclusive ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
+
+    VkBuffer buffer = VK_NULL_HANDLE;
+    VkResult result = vkCreateBuffer(device, &create_info, nullptr, &buffer);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan buffer. ({})", string_VkResult(result));
+        return Handle<Buffer>();
+    }
+
+    return resources.buffers.push(VulkanBuffer{ .buffer = buffer });
+}
+
+void VulkanBackend::destroy_buffer(const Handle<Buffer>& buffer)
+{
+    const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    vkDestroyBuffer(device, vulkan_buffer->buffer, nullptr);
+    resources.buffers.free(buffer);
 }
 
 Handle<Framebuffer> VulkanBackend::create_framebuffer(const CreateFramebufferOptions& desc)
