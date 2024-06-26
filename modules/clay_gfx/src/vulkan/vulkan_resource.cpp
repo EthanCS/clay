@@ -1,4 +1,3 @@
-#include "clay_gfx/resource.h"
 #define NOMINMAX
 
 #include <vector>
@@ -340,7 +339,7 @@ VkRenderPass VulkanResources::get_or_create_render_pass(const VkDevice& device, 
     return render_pass;
 }
 
-void VulkanResources::destroy(const VkDevice& device)
+void VulkanResources::destroy(const VkDevice& device, const VmaAllocator& vma_allocator)
 {
     swapchains.each([&](VulkanSwapchain& s) {
         for (const Handle<Texture>& image : s.images)
@@ -366,7 +365,7 @@ void VulkanResources::destroy(const VkDevice& device)
     graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
     command_pools.each([&](VulkanCommandPool& p) { vkDestroyCommandPool(device, p.command_pool, nullptr); });
     framebuffers.each([&](VulkanFramebuffer& f) { vkDestroyFramebuffer(device, f.framebuffer, nullptr); });
-    buffers.each([&](VulkanBuffer& b) { vkDestroyBuffer(device, b.buffer, nullptr); });
+    buffers.each([&](VulkanBuffer& b) { vmaDestroyBuffer(vma_allocator, b.buffer, b.allocation); });
 
     std::for_each(render_passes.begin(), render_passes.end(), [&](VulkanRenderPass& r) {
         vkDestroyRenderPass(device, r.render_pass, nullptr);

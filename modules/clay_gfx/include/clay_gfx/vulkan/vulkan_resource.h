@@ -1,11 +1,12 @@
 #pragma once
 
-#include "clay_gfx/handle.h"
 #include <vector>
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
 #include <clay_gfx/pool.h>
+
 #include <clay_gfx/vulkan/vulkan_header.h>
+#include <vk_mem_alloc.h>
 
 namespace clay
 {
@@ -115,7 +116,10 @@ struct VulkanFramebuffer {
 };
 
 struct VulkanBuffer {
-    VkBuffer buffer = VK_NULL_HANDLE;
+    VkBuffer       buffer        = VK_NULL_HANDLE;
+    VmaAllocation  allocation    = VK_NULL_HANDLE;
+    VkDeviceMemory device_memory = VK_NULL_HANDLE;
+    u32            size          = 0;
 };
 
 struct VulkanResources {
@@ -149,7 +153,7 @@ struct VulkanResources {
     }
 
     VkRenderPass get_or_create_render_pass(const VkDevice& device, const RenderPassLayout& layout);
-    void         destroy(const VkDevice& device);
+    void         destroy(const VkDevice& device, const VmaAllocator& vma_allocator);
 };
 
 } // namespace gfx

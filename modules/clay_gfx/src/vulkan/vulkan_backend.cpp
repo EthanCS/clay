@@ -1,15 +1,15 @@
-#include "clay_gfx/define.h"
-#include "clay_gfx/handle.h"
-#include "clay_gfx/vulkan/vulkan_resource.h"
+#include <vector>
+
 #include <SDL.h>
 #include <SDL_vulkan.h>
+
 #include <clay_core/log.h>
 #include <clay_core/macro.h>
 
+#define VMA_IMPLEMENTATION
 #include <clay_gfx/resource.h>
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
-#include <vector>
 
 namespace clay
 {
@@ -258,6 +258,17 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
         vkGetDeviceQueue(device, transfer_queue_family_index, 0, &transfer_queue.queue);
     }
 
+    //////// Init VMA.
+    {
+        VmaAllocatorCreateInfo allocator_info = {};
+        allocator_info.physicalDevice         = physical_device;
+        allocator_info.device                 = device;
+        allocator_info.instance               = instance;
+
+        VkResult r = vmaCreateAllocator(&allocator_info, &vma_allocator);
+        CLAY_ASSERT(r == VK_SUCCESS, "Failed to create VMA allocator. ({})", string_VkResult(r));
+    }
+
     //////// Init debug utils function pointers.
     if (debug_utils_enabled)
     {
@@ -278,7 +289,7 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
 
 void VulkanBackend::shutdown()
 {
-    resources.destroy(device);
+    resources.destroy(device, vma_allocator);
 
     vkDestroySurfaceKHR(instance, surface, nullptr);
 
@@ -287,6 +298,8 @@ void VulkanBackend::shutdown()
         auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
         vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
     }
+
+    vmaDestroyAllocator(vma_allocator);
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
@@ -724,28 +737,39 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
 
 Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
 {
-    VkBufferCreateInfo create_info = {};
-    create_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size               = desc.size;
-    create_info.usage              = to_vk_buffer_usage_flags(desc.usage);
-    create_info.sharingMode        = desc.exclusive ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
+    VulkanBuffer buffer = {};
+    buffer.size         = desc.size;
 
-    VkBuffer buffer = VK_NULL_HANDLE;
-    VkResult result = vkCreateBuffer(device, &create_info, nullptr, &buffer);
-    if (result != VK_SUCCESS) [[unlikely]]
+    VkBufferCreateInfo buffer_info = {};
+    buffer_info.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size               = desc.size;
+    buffer_info.usage              = to_vk_buffer_usage_flags(desc.usage);
+    buffer_info.sharingMode        = desc.exclusive ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
+
+    VmaAllocationCreateInfo memory_info = {};
+    memory_info.flags                   = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+    memory_info.usage                   = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+    VmaAllocationInfo allocation_info = {};
+    VkResult          res             = vmaCreateBuffer(vma_allocator, &buffer_info, &memory_info,
+                                                        &buffer.buffer, &buffer.allocation, &allocation_info);
+
+    if (res != VK_SUCCESS) [[unlikely]]
     {
-        CLAY_LOG_ERROR("Failed to create Vulkan buffer. ({})", string_VkResult(result));
+        CLAY_LOG_ERROR("Failed to create Vulkan buffer. ({})", string_VkResult(res));
         return Handle<Buffer>();
     }
 
-    return resources.buffers.push(VulkanBuffer{ .buffer = buffer });
+    buffer.device_memory = allocation_info.deviceMemory;
+
+    return resources.buffers.push(buffer);
 }
 
 void VulkanBackend::destroy_buffer(const Handle<Buffer>& buffer)
 {
     const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);
     if (vulkan_buffer == nullptr) [[unlikely]] { return; }
-    vkDestroyBuffer(device, vulkan_buffer->buffer, nullptr);
+    vmaDestroyBuffer(vma_allocator, vulkan_buffer->buffer, vulkan_buffer->allocation);
     resources.buffers.free(buffer);
 }
 

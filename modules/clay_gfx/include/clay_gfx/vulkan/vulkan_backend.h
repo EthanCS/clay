@@ -1,6 +1,5 @@
 #pragma once
 
-#include "clay_gfx/handle.h"
 #include <clay_gfx/resource.h>
 #include <clay_gfx/backend.h>
 #include <clay_gfx/vulkan/vulkan_header.h>
@@ -19,6 +18,8 @@ private:
     VkDevice         device          = VK_NULL_HANDLE;
     VkPhysicalDevice physical_device = VK_NULL_HANDLE;
     VkSurfaceKHR     surface         = VK_NULL_HANDLE;
+
+    VmaAllocator vma_allocator = VK_NULL_HANDLE;
 
     VulkanQueue graphics_queue;
     VulkanQueue present_queue;
