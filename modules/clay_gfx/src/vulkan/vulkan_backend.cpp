@@ -765,6 +765,23 @@ Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
     return resources.buffers.push(buffer);
 }
 
+void* VulkanBackend::map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size)
+{
+    const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return nullptr; }
+
+    void* data;
+    vmaMapMemory(vma_allocator, vulkan_buffer->allocation, &data);
+    return data;
+}
+
+void VulkanBackend::unmap_buffer(const Handle<Buffer>& buffer)
+{
+    const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]] { return; }
+    vmaUnmapMemory(vma_allocator, vulkan_buffer->allocation);
+}
+
 void VulkanBackend::destroy_buffer(const Handle<Buffer>& buffer)
 {
     const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);

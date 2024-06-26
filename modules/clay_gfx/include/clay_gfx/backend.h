@@ -60,6 +60,8 @@ PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
 
 /////// Buffer
 PRO_DEF_MEMBER_DISPATCH(create_buffer, Handle<Buffer>(const CreateBufferOptions&));
+PRO_DEF_MEMBER_DISPATCH(map_buffer, void*(const Handle<Buffer>&, u32, u32));
+PRO_DEF_MEMBER_DISPATCH(unmap_buffer, void(const Handle<Buffer>&));
 PRO_DEF_MEMBER_DISPATCH(destroy_buffer, void(const Handle<Buffer>&));
 
 /////// Framebuffer
@@ -113,6 +115,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                get_texture_height,
                                destroy_texture,
                                create_buffer,
+                               map_buffer,
+                               unmap_buffer,
                                destroy_buffer,
                                create_framebuffer,
                                destroy_framebuffer,
@@ -169,6 +173,8 @@ inline u32  get_texture_height(const Handle<Texture>& texture) { return g_backen
 inline void destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
 
 inline Handle<Buffer> create_buffer(const CreateBufferOptions& desc) { return g_backend_proxy.create_buffer(desc); }
+inline void*          map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size) { return g_backend_proxy.map_buffer(buffer, offset, size); }
+inline void           unmap_buffer(const Handle<Buffer>& buffer) { g_backend_proxy.unmap_buffer(buffer); }
 inline void           destroy_buffer(const Handle<Buffer>& buffer) { g_backend_proxy.destroy_buffer(buffer); }
 
 inline Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc) { return g_backend_proxy.create_framebuffer(desc); }

@@ -53,12 +53,24 @@ private:
     u32 swapchain_height = 0;
 
     TextPrinter     das_logs;
+    das::ProgramPtr das_program = nullptr;
 
     void init()
     {
         NEED_ALL_DEFAULT_MODULES;
         NEED_MODULE(Module_clay_gfx);
         das::Module::Initialize();
+
+        auto das_script = core::read_file("../../../../assets/script/hello_triangle.das");
+
+        // make file access, introduce string as if it was a file
+        auto fileInfo = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
+        auto fAccess  = make_smart<FsFileAccess>();
+        fAccess->setFileInfo("dummy.das", das::move(fileInfo));
+
+        // compile script
+        ModuleGroup dummyLibGroup;
+        das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
 
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
@@ -133,17 +145,6 @@ private:
         gfx::reset_fences(&in_flight_fences[current_frame], 1);
 
         gfx::reset_command_buffer(command_buffers[current_frame], false);
-
-        auto das_script = core::read_file("../../../../assets/script/hello_triangle.das");
-
-        // make file access, introduce string as if it was a file
-        auto fileInfo = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
-        auto fAccess  = make_smart<FsFileAccess>();
-        fAccess->setFileInfo("dummy.das", das::move(fileInfo));
-
-        // compile script
-        ModuleGroup dummyLibGroup;
-        auto das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
 
         if (!das_program->failed())
         {

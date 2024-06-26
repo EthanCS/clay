@@ -8,6 +8,8 @@ var swapchain_height = 0u
 [export]
 def record_commands(cb: HCommandBuffer; fb: HFramebuffer)
     let handle = gfx_create_buffer([[CreateBufferOptions size = uint64(16), usage = BufferUsage VertexBuffer, exclusive = true]])
+    let mem = gfx_map_buffer(handle, 0u, 16u)
+    gfx_unmap_buffer(handle)
     gfx_destroy_buffer(handle)
     
     gfx_cmd_begin(cb)

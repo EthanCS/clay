@@ -157,7 +157,7 @@ struct CmdSetViewportOptionsAnnotation : public das::ManagedStructureAnnotation<
 };
 
 #define DAS_BIND_FUNC(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
-#define DAS_BIND_FUNC_NO_RET(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
+#define DAS_BIND_FUNC_SIMPLE(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
 
 class Module_clay_gfx : public das::Module
 {
@@ -198,15 +198,17 @@ public:
 
         // bind functions
         DAS_BIND_FUNC(create_buffer)
-        DAS_BIND_FUNC_NO_RET(destroy_buffer)
+        DAS_BIND_FUNC_SIMPLE(map_buffer)
+        DAS_BIND_FUNC_SIMPLE(unmap_buffer)
+        DAS_BIND_FUNC_SIMPLE(destroy_buffer)
 
-        DAS_BIND_FUNC_NO_RET(cmd_begin)
-        DAS_BIND_FUNC_NO_RET(cmd_end)
-        DAS_BIND_FUNC_NO_RET(cmd_begin_render_pass)
-        DAS_BIND_FUNC_NO_RET(cmd_end_render_pass)
-        DAS_BIND_FUNC_NO_RET(cmd_bind_graphics_pipeline)
-        DAS_BIND_FUNC_NO_RET(cmd_set_viewport)
-        DAS_BIND_FUNC_NO_RET(cmd_set_scissor)
-        DAS_BIND_FUNC_NO_RET(cmd_draw)
+        DAS_BIND_FUNC_SIMPLE(cmd_begin)
+        DAS_BIND_FUNC_SIMPLE(cmd_end)
+        DAS_BIND_FUNC_SIMPLE(cmd_begin_render_pass)
+        DAS_BIND_FUNC_SIMPLE(cmd_end_render_pass)
+        DAS_BIND_FUNC_SIMPLE(cmd_bind_graphics_pipeline)
+        DAS_BIND_FUNC_SIMPLE(cmd_set_viewport)
+        DAS_BIND_FUNC_SIMPLE(cmd_set_scissor)
+        DAS_BIND_FUNC_SIMPLE(cmd_draw)
     }
 };

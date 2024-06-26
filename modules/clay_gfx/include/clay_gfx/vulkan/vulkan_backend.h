@@ -73,6 +73,8 @@ public:
     void destroy_texture(const Handle<Texture>& texture);
 
     Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
+    void*          map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size);
+    void           unmap_buffer(const Handle<Buffer>& buffer);
     void           destroy_buffer(const Handle<Buffer>& buffer);
 
     Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc);
