@@ -20,6 +20,11 @@ const u32   WIDTH                = 1280;
 const u32   HEIGHT               = 720;
 const char* TITLE                = "Hello Clay!";
 
+TextPrinter     das_logs;
+das::ProgramPtr das_program = nullptr;
+das::Context*   das_context = nullptr;
+bool            load_das_script(const char* script_name);
+
 class HelloTriangleApplication
 {
 public:
@@ -52,26 +57,8 @@ private:
     u32 swapchain_width  = 0;
     u32 swapchain_height = 0;
 
-    TextPrinter     das_logs;
-    das::ProgramPtr das_program = nullptr;
-
     void init()
     {
-        NEED_ALL_DEFAULT_MODULES;
-        NEED_MODULE(Module_clay_gfx);
-        das::Module::Initialize();
-
-        auto das_script = core::read_file("../../../../assets/script/hello_triangle.das");
-
-        // make file access, introduce string as if it was a file
-        auto fileInfo = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
-        auto fAccess  = make_smart<FsFileAccess>();
-        fAccess->setFileInfo("dummy.das", das::move(fileInfo));
-
-        // compile script
-        ModuleGroup dummyLibGroup;
-        das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup);
-
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
         bool bInit = gfx::init({ .type     = gfx::BackendType::Vulkan,
@@ -146,35 +133,30 @@ private:
 
         gfx::reset_command_buffer(command_buffers[current_frame], false);
 
-        if (!das_program->failed())
+        auto idx_swapchain_width = das_context->findVariable("swapchain_width");
+        memcpy(das_context->getVariable(idx_swapchain_width), &swapchain_width, sizeof(u32));
+
+        auto idx_swapchain_height = das_context->findVariable("swapchain_height");
+        memcpy(das_context->getVariable(idx_swapchain_height), &swapchain_height, sizeof(u32));
+
+        auto idx_pipeline = das_context->findVariable("pipeline");
+        memcpy(das_context->getVariable(idx_pipeline), &pipeline, sizeof(gfx::Handle<gfx::GraphicsPipeline>));
+
+        auto idx_render_pass_layout = das_context->findVariable("render_pass_layout");
+        memcpy(das_context->getVariable(idx_render_pass_layout), &render_pass_layout, sizeof(gfx::RenderPassLayout));
+
+        // find function. its up to application to check, if function is not null
+        auto function = das_context->findFunction("record_commands");
+        if (function)
         {
-            // create context
-            Context ctx(das_program->getContextStackSize());
-            if (das_program->simulate(ctx, das_logs))
-            {
-                auto idx_swapchain_width = ctx.findVariable("swapchain_width");
-                memcpy(ctx.getVariable(idx_swapchain_width), &swapchain_width, sizeof(u32));
+            // call garbage collector
+            das_context->collectHeap(nullptr, true, true);
 
-                auto idx_swapchain_height = ctx.findVariable("swapchain_height");
-                memcpy(ctx.getVariable(idx_swapchain_height), &swapchain_height, sizeof(u32));
-
-                auto idx_pipeline = ctx.findVariable("pipeline");
-                memcpy(ctx.getVariable(idx_pipeline), &pipeline, sizeof(gfx::Handle<gfx::GraphicsPipeline>));
-
-                auto idx_render_pass_layout = ctx.findVariable("render_pass_layout");
-                memcpy(ctx.getVariable(idx_render_pass_layout), &render_pass_layout, sizeof(gfx::RenderPassLayout));
-
-                // find function. its up to application to check, if function is not null
-                auto function = ctx.findFunction("record_commands");
-                if (function)
-                {
-                    // call context function
-                    vec4f args[3];
-                    args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(command_buffers[current_frame]);
-                    args[1] = cast<const gfx::Handle<gfx::Framebuffer>&>::from(swapchain_framebuffers[acquire_swapchain.image_index]);
-                    ctx.evalWithCatch(function, args);
-                }
-            }
+            // call context function
+            vec4f args[3];
+            args[0] = cast<const gfx::Handle<gfx::CommandBuffer>&>::from(command_buffers[current_frame]);
+            args[1] = cast<const gfx::Handle<gfx::Framebuffer>&>::from(swapchain_framebuffers[acquire_swapchain.image_index]);
+            das_context->evalWithCatch(function, args);
         }
 
         // record_commands(command_buffers[current_frame], acquire_swapchain.image_index);
@@ -255,7 +237,6 @@ private:
 
     void shutdown()
     {
-        das::Module::Shutdown();
         gfx::shutdown();
         window.shutdown();
     }
@@ -263,15 +244,70 @@ private:
 
 int main(int argc, char** argv)
 {
-    HelloTriangleApplication app;
-    try
+    NEED_ALL_DEFAULT_MODULES;
+    NEED_MODULE(Module_clay_gfx);
+
+    das::Module::Initialize();
+
+    if (load_das_script("../../../../assets/script/hello_triangle.das"))
     {
-        app.run();
-    } catch (const std::exception& e)
+        HelloTriangleApplication app;
+        try
+        {
+            app.run();
+        } catch (const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    else
     {
-        std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
+    delete das_context;
+    das::Module::Shutdown();
+
     return EXIT_SUCCESS;
+}
+
+bool load_das_script(const char* script_path)
+{
+    das::CodeOfPolicies policies;    // default policies
+    policies.persistent_heap = true; // enable persistent heap for GC
+
+    // read script
+    auto das_script = core::read_file(script_path);
+    auto fileInfo   = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
+    auto fAccess    = make_smart<FsFileAccess>();
+    fAccess->setFileInfo("dummy.das", das::move(fileInfo));
+
+    // compile script
+    ModuleGroup dummyLibGroup;
+    das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup, policies);
+
+    if (das_program->failed())
+    {
+        das_logs << "failed to compile\n";
+        for (auto& err : das_program->errors)
+        {
+            das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
+        }
+        return false;
+    }
+
+    das_context = new das::Context(das_program->getContextStackSize());
+    if (!das_program->simulate(*das_context, das_logs))
+    {
+        // if interpretation failed, report errors
+        das_logs << "failed to simulate\n";
+        for (auto& err : das_program->errors)
+        {
+            das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
+        }
+        return false;
+    }
+
+    return true;
 }

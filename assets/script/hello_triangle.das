@@ -5,12 +5,17 @@ var pipeline = [[HGraphicsPipeline]]
 var swapchain_width = 0u
 var swapchain_height = 0u
 
+var buffer_created = false
+
 [export]
 def record_commands(cb: HCommandBuffer; fb: HFramebuffer)
-    let handle = gfx_create_buffer([[CreateBufferOptions size = uint64(16), usage = BufferUsage VertexBuffer, exclusive = true]])
-    let mem = gfx_map_buffer(handle, 0u, 16u)
-    gfx_unmap_buffer(handle)
-    gfx_destroy_buffer(handle)
+    if buffer_created == false
+        print("creating buffer\n")
+        let handle = gfx_create_buffer([[CreateBufferOptions size = uint64(16), usage = BufferUsage VertexBuffer, exclusive = true]])
+        let mem = gfx_map_buffer(handle, 0u, 16u)
+        gfx_unmap_buffer(handle)
+        gfx_destroy_buffer(handle)
+        buffer_created = true
     
     gfx_cmd_begin(cb)
     var render_pass = [[CmdBeginRenderPassOptions]]
