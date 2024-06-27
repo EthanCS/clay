@@ -1086,5 +1086,46 @@ void VulkanBackend::cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawO
 
     vkCmdDraw(vulkan_buffer->command_buffer, draw.vertex_count, draw.instance_count, draw.first_vertex, draw.first_instance);
 }
+
+void VulkanBackend::cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(cb);
+    const VulkanBuffer*        vk_buffer = resources.buffers.get(options.buffer);
+    if (vk_cb == nullptr || vk_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer or buffer.");
+        return;
+    }
+
+    VkDeviceSize offsets[] = { options.offset };
+    vkCmdBindVertexBuffers(vk_cb->command_buffer, options.binding, 1, &vk_buffer->buffer, offsets);
+}
+
+void VulkanBackend::cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    if (vk_cb == nullptr || options.buffers == nullptr || options.offsets == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    std::vector<VkDeviceSize> vk_offsets;
+    std::vector<VkBuffer>     vk_buffers;
+    vk_offsets.reserve(options.binding_count);
+    vk_buffers.reserve(options.binding_count);
+
+    for (u32 i = 0; i < options.binding_count; i++)
+    {
+        const VulkanBuffer* vk_buffer = resources.buffers.get(options.buffers[i]);
+        if (vk_buffer == nullptr) [[unlikely]] { continue; }
+
+        vk_offsets.push_back(options.offsets[i]);
+        vk_buffers.push_back(vk_buffer->buffer);
+    }
+
+    vkCmdBindVertexBuffers(vk_cb->command_buffer, options.first_binding, options.binding_count, vk_buffers.data(), vk_offsets.data());
+}
+
 } // namespace gfx
 } // namespace clay

@@ -156,6 +156,31 @@ struct CmdSetViewportOptionsAnnotation : public das::ManagedStructureAnnotation<
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CmdBindVertexBufferOptions, clay::gfx::CmdBindVertexBufferOptions);
+struct CmdBindVertexBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBindVertexBufferOptions, true, true> {
+    CmdBindVertexBufferOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdBindVertexBufferOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(binding)>("binding");
+        addField<DAS_BIND_MANAGED_FIELD(buffer)>("buffer");
+        addField<DAS_BIND_MANAGED_FIELD(offset)>("offset");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
+MAKE_TYPE_FACTORY(CmdBindVertexBuffersOptions, clay::gfx::CmdBindVertexBuffersOptions);
+struct CmdBindVertexBuffersOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBindVertexBuffersOptions, true, true> {
+    CmdBindVertexBuffersOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdBindVertexBuffersOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(first_binding)>("first_binding");
+        addField<DAS_BIND_MANAGED_FIELD(binding_count)>("binding_count");
+        addField<DAS_BIND_MANAGED_FIELD(buffers)>("buffers");
+        addField<DAS_BIND_MANAGED_FIELD(offsets)>("offsets");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 #define DAS_BIND_FUNC(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
 #define DAS_BIND_FUNC_SIMPLE(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
 
@@ -195,6 +220,8 @@ public:
         addAnnotation(das::make_smart<CmdSetScissorOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdSetViewportOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdBeginRenderPassOptionsAnnotation>(lib));
+        addAnnotation(das::make_smart<CmdBindVertexBufferOptionsAnnotation>(lib));
+        addAnnotation(das::make_smart<CmdBindVertexBuffersOptionsAnnotation>(lib));
 
         // bind functions
         DAS_BIND_FUNC(create_buffer)
@@ -210,5 +237,7 @@ public:
         DAS_BIND_FUNC_SIMPLE(cmd_set_viewport)
         DAS_BIND_FUNC_SIMPLE(cmd_set_scissor)
         DAS_BIND_FUNC_SIMPLE(cmd_draw)
+        DAS_BIND_FUNC_SIMPLE(cmd_bind_vertex_buffer)
+        DAS_BIND_FUNC_SIMPLE(cmd_bind_vertex_buffers)
     }
 };

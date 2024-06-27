@@ -95,5 +95,18 @@ struct CmdDrawOptions {
     u32 first_instance = 0;
 };
 
+struct CmdBindVertexBufferOptions {
+    u32            binding = 0;
+    Handle<Buffer> buffer;
+    u32            offset = 0;
+};
+
+struct CmdBindVertexBuffersOptions {
+    u32             first_binding = 0;
+    u32             binding_count = 0;
+    Handle<Buffer>* buffers       = nullptr;
+    u32*            offsets       = nullptr;
+};
+
 } // namespace gfx
 } // namespace clay

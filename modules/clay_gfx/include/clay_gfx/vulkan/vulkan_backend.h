@@ -87,14 +87,16 @@ public:
     void                  reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource);
     void                  free_command_buffer(const Handle<CommandBuffer>& buffer);
 
-    void cmd_begin(const Handle<CommandBuffer>& buffer);
-    void cmd_end(const Handle<CommandBuffer>& buffer);
-    void cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options);
-    void cmd_end_render_pass(const Handle<CommandBuffer>& buffer);
-    void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline);
-    void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport);
-    void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor);
-    void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw);
+    void cmd_begin(const Handle<CommandBuffer>& cb);
+    void cmd_end(const Handle<CommandBuffer>& cb);
+    void cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options);
+    void cmd_end_render_pass(const Handle<CommandBuffer>& cb);
+    void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& cb, const Handle<GraphicsPipeline>& pipeline);
+    void cmd_set_viewport(const Handle<CommandBuffer>& cb, const CmdSetViewportOptions& viewport);
+    void cmd_set_scissor(const Handle<CommandBuffer>& cb, const CmdSetScissorOptions& scissor);
+    void cmd_draw(const Handle<CommandBuffer>& cb, const CmdDrawOptions& draw);
+    void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options);
+    void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options);
 
 private:
     VkQueue get_queue(QueueType::Enum queue_type)
