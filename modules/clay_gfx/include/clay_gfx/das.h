@@ -1,7 +1,6 @@
 #pragma once
 
 #include "daScript/ast/ast_typefactory.h"
-#include "resource.h"
 #include <daScript/daScript.h>
 #include <clay_gfx/backend.h>
 
@@ -30,6 +29,9 @@ HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
 HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
 HANDLE_DAS_TYPE_BINDING(HGraphicsPipeline, GraphicsPipeline)
 
+DAS_BIND_ENUM_CAST(clay::gfx::BackendType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::BackendType::Enum, BackendType, Vulkan, DirectX12, Metal)
+
 DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
 DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
 
@@ -41,6 +43,33 @@ DAS_BASE_BIND_ENUM(clay::gfx::ImageLayout::Enum, ImageLayout, Undefined, General
 
 DAS_BIND_ENUM_CAST(clay::gfx::Format::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::Format::Enum, Format, Undefined, D32_SFLOAT, D32_SFLOAT_S8_UINT, D24_UNORM_S8_UINT, B8G8R8A8_UNORM, B8G8R8A8_SRGB, R8G8B8A8_UNORM, R8G8B8A8_SRGB, B8G8R8_UNORM, B8G8R8_SRGB, R8G8B8_UNORM, R8G8B8_SRGB, R32_SFLOAT, R32G32_SFLOAT, R32G32B32_SFLOAT, R32G32B32A32_SFLOAT)
+
+MAKE_TYPE_FACTORY(InitBackendOptions, clay::gfx::InitBackendOptions);
+struct InitBackendOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::InitBackendOptions, true, true> {
+    InitBackendOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("InitBackendOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(type)>("type");
+        addField<DAS_BIND_MANAGED_FIELD(window)>("window");
+        addField<DAS_BIND_MANAGED_FIELD(app_name)>("app_name");
+        addField<DAS_BIND_MANAGED_FIELD(device_id)>("device_id");
+        addField<DAS_BIND_MANAGED_FIELD(debug)>("debug");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
+MAKE_TYPE_FACTORY(CreateSwapchainOptions, clay::gfx::CreateSwapchainOptions);
+struct CreateSwapchainOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateSwapchainOptions, true, true> {
+    CreateSwapchainOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CreateSwapchainOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(width)>("width");
+        addField<DAS_BIND_MANAGED_FIELD(height)>("height");
+        addField<DAS_BIND_MANAGED_FIELD(vsync)>("vsync");
+        addField<DAS_BIND_MANAGED_FIELD(format)>("format");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
 
 MAKE_TYPE_FACTORY(CreateBufferOptions, clay::gfx::CreateBufferOptions);
 struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateBufferOptions, true, true> {
@@ -197,6 +226,7 @@ public:
         addAnnotation(das::make_smart<ClearValueAnnotation>(lib));
 
         // bind enums
+        addEnumeration(das::make_smart<EnumerationBackendType>());
         addEnumeration(das::make_smart<EnumerationRenderPassLoadOp>());
         addEnumeration(das::make_smart<EnumerationImageLayout>());
         addEnumeration(das::make_smart<EnumerationFormat>());
@@ -215,6 +245,8 @@ public:
         addAnnotation(das::make_smart<RenderPassLayoutAnnotation>(lib));
 
         // bind normal types
+        addAnnotation(das::make_smart<InitBackendOptionsAnnotation>(lib));
+        addAnnotation(das::make_smart<CreateSwapchainOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CreateBufferOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdDrawOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdSetScissorOptionsAnnotation>(lib));
@@ -224,6 +256,14 @@ public:
         addAnnotation(das::make_smart<CmdBindVertexBuffersOptionsAnnotation>(lib));
 
         // bind functions
+        DAS_BIND_FUNC_SIMPLE(init)
+        DAS_BIND_FUNC_SIMPLE(shutdown)
+
+        DAS_BIND_FUNC_SIMPLE(device_wait_idle)
+
+        DAS_BIND_FUNC(create_swapchain)
+        DAS_BIND_FUNC_SIMPLE(destroy_swapchain)
+
         DAS_BIND_FUNC(create_buffer)
         DAS_BIND_FUNC_SIMPLE(map_buffer)
         DAS_BIND_FUNC_SIMPLE(unmap_buffer)

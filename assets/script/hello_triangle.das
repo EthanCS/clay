@@ -32,3 +32,16 @@ def record_commands(cb: HCommandBuffer; fb: HFramebuffer)
     gfx_cmd_draw(cb, [[CmdDrawOptions vertex_count = 3u, instance_count = 1u, first_vertex = 0u, first_instance = 0u]])
     gfx_cmd_end_render_pass(cb)
     gfx_cmd_end(cb)
+
+[export]
+def on_init()
+    print("hello triangle init\n")
+
+[export]
+def on_update()
+    print("hello triangle update\n")
+
+[export]
+def on_destroy()
+    gfx_device_wait_idle()
+    gfx_shutdown()

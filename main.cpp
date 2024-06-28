@@ -4,13 +4,14 @@
 #include <vector>
 #include <cstdlib>
 
-#include <clay_gfx/backend.h>
 #include <clay_core/file.h>
 #include <clay_core/clay_core.h>
 #include <clay_app/window.h>
 
-#include <clay_gfx/das.h>
+#ifdef CLAY_GFX_ENABLE
+    #include <clay_gfx/das.h>
 REGISTER_MODULE(Module_clay_gfx);
+#endif
 
 using namespace clay;
 using namespace das;
@@ -20,19 +21,75 @@ const u32   WIDTH                = 1280;
 const u32   HEIGHT               = 720;
 const char* TITLE                = "Hello Clay!";
 
-TextPrinter     das_logs;
-das::ProgramPtr das_program = nullptr;
-das::Context*   das_context = nullptr;
-bool            load_das_script(const char* script_name);
-
-class HelloTriangleApplication
+class Application
 {
+private:
+    TextPrinter     das_logs;
+    das::ProgramPtr das_program = nullptr;
+    das::Context*   das_context = nullptr;
+
+    das::SimFunction* das_on_init    = nullptr;
+    das::SimFunction* das_on_update  = nullptr;
+    das::SimFunction* das_on_destroy = nullptr;
+
 public:
+    bool prepare(const char* script_path)
+    {
+        das::CodeOfPolicies policies;    // default policies
+        policies.persistent_heap = true; // enable persistent heap for GC
+
+        // read script
+        auto das_script = core::read_file(script_path);
+        auto fileInfo   = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
+        auto fAccess    = make_smart<FsFileAccess>();
+        fAccess->setFileInfo("dummy.das", das::move(fileInfo));
+
+        // compile script
+        ModuleGroup dummyLibGroup;
+        das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup, policies);
+
+        if (das_program->failed())
+        {
+            das_logs << "failed to compile\n";
+            for (auto& err : das_program->errors)
+            {
+                das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
+            }
+            return false;
+        }
+
+        das_context = new das::Context(das_program->getContextStackSize());
+        if (!das_program->simulate(*das_context, das_logs))
+        {
+            // if interpretation failed, report errors
+            das_logs << "failed to simulate\n";
+            for (auto& err : das_program->errors)
+            {
+                das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
+            }
+            return false;
+        }
+
+        das_on_init    = das_context->findFunction("on_init");
+        das_on_update  = das_context->findFunction("on_update");
+        das_on_destroy = das_context->findFunction("on_destroy");
+
+        return true;
+    }
+
     void run()
     {
         init();
         main_loop();
         shutdown();
+    }
+
+    void destroy()
+    {
+        if (das_context != nullptr)
+        {
+            delete das_context;
+        }
     }
 
 private:
@@ -106,6 +163,8 @@ private:
         }
 
         create_swapchain(window.width, window.height);
+
+        if (das_on_init != nullptr) { das_context->eval(das_on_init, nullptr); }
     }
 
     void main_loop()
@@ -113,9 +172,15 @@ private:
         while (!window.requested_exit)
         {
             window.handle_events();
+
+            if (das_on_update != nullptr)
+            {
+                das_context->collectHeap(nullptr, true, true);
+                das_context->evalWithCatch(das_on_update, nullptr);
+            }
+
             draw_frame();
         }
-        gfx::device_wait_idle();
     }
 
     void draw_frame()
@@ -237,7 +302,7 @@ private:
 
     void shutdown()
     {
-        gfx::shutdown();
+        if (das_on_init != nullptr) { das_context->eval(das_on_destroy, nullptr); }
         window.shutdown();
     }
 };
@@ -245,13 +310,17 @@ private:
 int main(int argc, char** argv)
 {
     NEED_ALL_DEFAULT_MODULES;
+
+#ifdef CLAY_GFX_ENABLE
     NEED_MODULE(Module_clay_gfx);
+#endif
 
     das::Module::Initialize();
 
-    if (load_das_script("../../../../assets/script/hello_triangle.das"))
+    Application app;
+
+    if (app.prepare("../../../../assets/script/hello_triangle.das"))
     {
-        HelloTriangleApplication app;
         try
         {
             app.run();
@@ -266,48 +335,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    delete das_context;
+    app.destroy();
     das::Module::Shutdown();
 
     return EXIT_SUCCESS;
-}
-
-bool load_das_script(const char* script_path)
-{
-    das::CodeOfPolicies policies;    // default policies
-    policies.persistent_heap = true; // enable persistent heap for GC
-
-    // read script
-    auto das_script = core::read_file(script_path);
-    auto fileInfo   = make_unique<das::TextFileInfo>(das_script.data(), (u32)das_script.size(), false);
-    auto fAccess    = make_smart<FsFileAccess>();
-    fAccess->setFileInfo("dummy.das", das::move(fileInfo));
-
-    // compile script
-    ModuleGroup dummyLibGroup;
-    das_program = compileDaScript("dummy.das", fAccess, das_logs, dummyLibGroup, policies);
-
-    if (das_program->failed())
-    {
-        das_logs << "failed to compile\n";
-        for (auto& err : das_program->errors)
-        {
-            das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
-        }
-        return false;
-    }
-
-    das_context = new das::Context(das_program->getContextStackSize());
-    if (!das_program->simulate(*das_context, das_logs))
-    {
-        // if interpretation failed, report errors
-        das_logs << "failed to simulate\n";
-        for (auto& err : das_program->errors)
-        {
-            das_logs << reportError(err.at, err.what, err.extra, err.fixme, err.cerr);
-        }
-        return false;
-    }
-
-    return true;
 }
