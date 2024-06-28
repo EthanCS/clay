@@ -43,5 +43,6 @@ def on_update()
 
 [export]
 def on_destroy()
+    print("{gfx_get_type()}\n")
     gfx_device_wait_idle()
     gfx_shutdown()

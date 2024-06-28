@@ -143,7 +143,7 @@ extern pro::proxy<spec::IRenderBackend> g_backend_proxy;
 
 bool                     init(const InitBackendOptions& desc);
 void                     shutdown();
-inline BackendType::Enum get_type() noexcept { return g_backend_proxy.get_type(); }
+inline BackendType::Enum get_type() { return g_backend_proxy.get_type(); }
 
 inline void device_wait_idle() { g_backend_proxy.device_wait_idle(); }
 

@@ -24,13 +24,24 @@
     };
 
 HANDLE_DAS_TYPE_BINDING(HSwapchain, Swapchain)
+HANDLE_DAS_TYPE_BINDING(HFence, Fence)
+HANDLE_DAS_TYPE_BINDING(HSemaphore, Semaphore)
 HANDLE_DAS_TYPE_BINDING(HBuffer, Buffer)
-HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
-HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
+HANDLE_DAS_TYPE_BINDING(HTexture, Texture)
+HANDLE_DAS_TYPE_BINDING(HSampler, Sampler)
+HANDLE_DAS_TYPE_BINDING(HShader, Shader)
+HANDLE_DAS_TYPE_BINDING(HPipelineLayout, PipelineLayout)
 HANDLE_DAS_TYPE_BINDING(HGraphicsPipeline, GraphicsPipeline)
+HANDLE_DAS_TYPE_BINDING(HComputePipeline, ComputePipeline)
+HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
+HANDLE_DAS_TYPE_BINDING(HCommandPool, CommandPool)
+HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
 
 DAS_BIND_ENUM_CAST(clay::gfx::BackendType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::BackendType::Enum, BackendType, Vulkan, DirectX12, Metal)
+
+DAS_BIND_ENUM_CAST(clay::gfx::QueueType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::QueueType::Enum, QueueType, Graphics, Present, Compute, Transfer)
 
 DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
 DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
@@ -227,17 +238,26 @@ public:
 
         // bind enums
         addEnumeration(das::make_smart<EnumerationBackendType>());
+        addEnumeration(das::make_smart<EnumerationQueueType>());
         addEnumeration(das::make_smart<EnumerationRenderPassLoadOp>());
         addEnumeration(das::make_smart<EnumerationImageLayout>());
         addEnumeration(das::make_smart<EnumerationFormat>());
         addEnumeration(das::make_smart<EnumerationBufferUsage>());
 
         // bind handle types
-        addAnnotation(das::make_smart<HBufferAnnotation>(lib));
         addAnnotation(das::make_smart<HSwapchainAnnotation>(lib));
-        addAnnotation(das::make_smart<HFramebufferAnnotation>(lib));
-        addAnnotation(das::make_smart<HCommandBufferAnnotation>(lib));
+        addAnnotation(das::make_smart<HFenceAnnotation>(lib));
+        addAnnotation(das::make_smart<HSemaphoreAnnotation>(lib));
+        addAnnotation(das::make_smart<HBufferAnnotation>(lib));
+        addAnnotation(das::make_smart<HTextureAnnotation>(lib));
+        addAnnotation(das::make_smart<HSamplerAnnotation>(lib));
+        addAnnotation(das::make_smart<HShaderAnnotation>(lib));
+        addAnnotation(das::make_smart<HPipelineLayoutAnnotation>(lib));
         addAnnotation(das::make_smart<HGraphicsPipelineAnnotation>(lib));
+        addAnnotation(das::make_smart<HComputePipelineAnnotation>(lib));
+        addAnnotation(das::make_smart<HFramebufferAnnotation>(lib));
+        addAnnotation(das::make_smart<HCommandPoolAnnotation>(lib));
+        addAnnotation(das::make_smart<HCommandBufferAnnotation>(lib));
 
         // bind resource types
         addAnnotation(das::make_smart<ColorAttachmentDescAnnotation>(lib));
@@ -255,11 +275,14 @@ public:
         addAnnotation(das::make_smart<CmdBindVertexBufferOptionsAnnotation>(lib));
         addAnnotation(das::make_smart<CmdBindVertexBuffersOptionsAnnotation>(lib));
 
-        // bind functions
+        // bind backend.h
         DAS_BIND_FUNC_SIMPLE(init)
+        addExtern<DAS_BIND_FUN(clay::gfx::get_type)>(*this, lib, "gfx_get_type", das::SideEffects::accessExternal, "clay::gfx::get_type");
         DAS_BIND_FUNC_SIMPLE(shutdown)
 
-        DAS_BIND_FUNC_SIMPLE(device_wait_idle)
+        addExtern<DAS_BIND_FUN(clay::gfx::device_wait_idle)>(*this, lib, "gfx_device_wait_idle", das::SideEffects::accessExternal, "clay::gfx::device_wait_idle");
+
+        addExtern<DAS_BIND_FUN(clay::gfx::queue_wait_idle)>(*this, lib, "gfx_queue_wait_idle", das::SideEffects::accessExternal, "clay::gfx::queue_wait_idle");
 
         DAS_BIND_FUNC(create_swapchain)
         DAS_BIND_FUNC_SIMPLE(destroy_swapchain)
@@ -269,15 +292,15 @@ public:
         DAS_BIND_FUNC_SIMPLE(unmap_buffer)
         DAS_BIND_FUNC_SIMPLE(destroy_buffer)
 
-        DAS_BIND_FUNC_SIMPLE(cmd_begin)
-        DAS_BIND_FUNC_SIMPLE(cmd_end)
-        DAS_BIND_FUNC_SIMPLE(cmd_begin_render_pass)
-        DAS_BIND_FUNC_SIMPLE(cmd_end_render_pass)
-        DAS_BIND_FUNC_SIMPLE(cmd_bind_graphics_pipeline)
-        DAS_BIND_FUNC_SIMPLE(cmd_set_viewport)
-        DAS_BIND_FUNC_SIMPLE(cmd_set_scissor)
-        DAS_BIND_FUNC_SIMPLE(cmd_draw)
-        DAS_BIND_FUNC_SIMPLE(cmd_bind_vertex_buffer)
-        DAS_BIND_FUNC_SIMPLE(cmd_bind_vertex_buffers)
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_begin)>(*this, lib, "gfx_cmd_begin", das::SideEffects::accessExternal, "clay::gfx::cmd_begin");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_end)>(*this, lib, "gfx_cmd_end", das::SideEffects::accessExternal, "clay::gfx::cmd_end");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_begin_render_pass)>(*this, lib, "gfx_cmd_begin_render_pass", das::SideEffects::accessExternal, "clay::gfx::cmd_begin_render_pass");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_end_render_pass)>(*this, lib, "gfx_cmd_end_render_pass", das::SideEffects::accessExternal, "clay::gfx::cmd_end_render_pass");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_bind_graphics_pipeline)>(*this, lib, "gfx_cmd_bind_graphics_pipeline", das::SideEffects::accessExternal, "clay::gfx::cmd_bind_graphics_pipeline");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_set_viewport)>(*this, lib, "gfx_cmd_set_viewport", das::SideEffects::accessExternal, "clay::gfx::cmd_set_viewport");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_set_scissor)>(*this, lib, "gfx_cmd_set_scissor", das::SideEffects::accessExternal, "clay::gfx::cmd_set_scissor");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_draw)>(*this, lib, "gfx_cmd_draw", das::SideEffects::accessExternal, "clay::gfx::cmd_draw");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_bind_vertex_buffer)>(*this, lib, "gfx_cmd_bind_vertex_buffer", das::SideEffects::accessExternal, "clay::gfx::cmd_bind_vertex_buffer");
+        addExtern<DAS_BIND_FUN(clay::gfx::cmd_bind_vertex_buffers)>(*this, lib, "gfx_cmd_bind_vertex_buffers", das::SideEffects::accessExternal, "clay::gfx::cmd_bind_vertex_buffers");
     }
 };
