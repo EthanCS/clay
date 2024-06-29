@@ -39,7 +39,11 @@ public:
         u16 index = free_indices.back();
         free_indices.pop_back();
         objects[index] = object;
-        return Handle<TTag>(index, generations[index]);
+
+        Handle<TTag> handle = {};
+        handle.set_index(index);
+        handle.set_generation(generations[index]);
+        return handle;
     }
 
     std::tuple<Handle<TTag>, TObject*> malloc()
@@ -48,7 +52,12 @@ public:
 
         u16 index = free_indices.back();
         free_indices.pop_back();
-        return { Handle<TTag>(index, generations[index]), &objects[index] };
+
+        Handle<TTag> handle = {};
+        handle.set_index(index);
+        handle.set_generation(generations[index]);
+
+        return { handle, &objects[index] };
     }
 
     void free(const Handle<TTag>& handle)

@@ -14,12 +14,6 @@ private:
     u16 generation;
 
 public:
-    Handle()
-        : index(0)
-        , generation(0)
-    {
-    }
-
     bool operator==(const Handle<T>& other) const { return index == other.index && generation == other.generation; }
     bool operator!=(const Handle<T>& other) const { return index != other.index || generation != other.generation; }
 
@@ -27,12 +21,11 @@ public:
     u16  get_index() const { return index; }
     u32  hash() const { return ((u32)index << 16) + (u32)generation; }
 
+    static Handle<T> invalid() noexcept { return {}; }
+
 private:
-    Handle(u16 _index, u16 _generation)
-        : index(_index)
-        , generation(_generation)
-    {
-    }
+    void set_index(u16 index) noexcept { this->index = index; }
+    void set_generation(u16 generation) noexcept { this->generation = generation; }
 
     template <typename U, typename V>
     friend class Pool;

@@ -106,7 +106,7 @@ struct VertexBufferBinding {
 };
 
 struct ShaderInfo {
-    Handle<Shader> compiled_shader = Handle<Shader>();
+    Handle<Shader> compiled_shader = {};
     const char*    entry_func      = nullptr;
 
     inline bool is_valid() const { return compiled_shader.is_valid() && entry_func != nullptr; }

@@ -35,8 +35,8 @@ struct CreateBufferOptions {
 
 struct AcquireNextImageOptions {
     u64               time_out  = u64_MAX;
-    Handle<Semaphore> semaphore = Handle<Semaphore>();
-    Handle<Fence>     fence     = Handle<Fence>();
+    Handle<Semaphore> semaphore = {};
+    Handle<Fence>     fence     = {};
 };
 
 struct QueueSubmitOptions {
@@ -47,11 +47,11 @@ struct QueueSubmitOptions {
     Handle<Semaphore>*     signal_semaphores     = nullptr;
     u32                    num_signal_semaphores = 0;
     PipelineStage::Flag    wait_dst_stage        = PipelineStage::TopOfPipe;
-    Handle<Fence>          fence                 = Handle<Fence>();
+    Handle<Fence>          fence                 = {};
 };
 
 struct QueuePresentOptions {
-    Handle<Swapchain>  swapchain           = Handle<Swapchain>();
+    Handle<Swapchain>  swapchain           = {};
     u32                image_index         = 0;
     Handle<Semaphore>* wait_semaphores     = nullptr;
     u32                num_wait_semaphores = 0;

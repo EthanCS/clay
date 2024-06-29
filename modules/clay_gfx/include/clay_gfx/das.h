@@ -19,6 +19,8 @@
             : ManagedStructureAnnotation(#DAS_NAME, ml)                                                                           \
         {                                                                                                                         \
             addProperty<DAS_BIND_MANAGED_PROP(is_valid)>("is_valid");                                                             \
+            addProperty<DAS_BIND_MANAGED_PROP(get_index)>("get_index");                                                           \
+            addProperty<DAS_BIND_MANAGED_PROP(hash)>("hash");                                                                     \
         }                                                                                                                         \
         GFX_DAS_STRUCT_COMMON                                                                                                     \
     };

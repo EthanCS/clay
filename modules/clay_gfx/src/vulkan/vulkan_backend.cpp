@@ -403,7 +403,7 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
     if (!is_surface_support)
     {
         CLAY_LOG_ERROR("Surface is not supported by the selected physical device.");
-        return Handle<Swapchain>();
+        return Handle<Swapchain>::invalid();
     }
 
     u32 format_count;
@@ -488,7 +488,7 @@ Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& 
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create swapchain! ({})", string_VkResult(result));
-        return Handle<Swapchain>();
+        return Handle<Swapchain>::invalid();
     }
 
     // Fetch swapchain images and create image views
@@ -544,7 +544,7 @@ u32 VulkanBackend::get_swapchain_image_count(const Handle<Swapchain>& swapchain)
 Handle<Texture> VulkanBackend::get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index)
 {
     const VulkanSwapchain* vulkan_swapchain = resources.swapchains.get(swapchain);
-    if (vulkan_swapchain == nullptr) [[unlikely]] { return Handle<Texture>(); }
+    if (vulkan_swapchain == nullptr) [[unlikely]] { return Handle<Texture>::invalid(); }
 
     return vulkan_swapchain->images[index];
 }
@@ -585,7 +585,7 @@ Handle<Fence> VulkanBackend::create_fence(bool signal)
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan fence. ({})", string_VkResult(result));
-        return Handle<Fence>();
+        return Handle<Fence>::invalid();
     }
 
     return resources.fences.push(VulkanFence{ .fence = fence });
@@ -655,7 +655,7 @@ Handle<Semaphore> VulkanBackend::create_semaphore()
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan semaphore. ({})", string_VkResult(result));
-        return Handle<Semaphore>();
+        return Handle<Semaphore>::invalid();
     }
 
     return resources.semaphores.push(VulkanSemaphore{ .semaphore = semaphore });
@@ -681,7 +681,7 @@ Handle<Shader> VulkanBackend::create_shader(const CreateShaderOptions& desc)
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create shader module. ({})", string_VkResult(result));
-        return Handle<Shader>();
+        return Handle<Shader>::invalid();
     }
 
     return resources.shaders.push(VulkanShader{ .shader_module = shader_module });
@@ -702,7 +702,7 @@ Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const CreateGra
     {
         return resources.graphics_pipelines.push(pipeline);
     }
-    return Handle<GraphicsPipeline>();
+    return Handle<GraphicsPipeline>::invalid();
 }
 
 void VulkanBackend::destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline)
@@ -757,7 +757,7 @@ Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
     if (res != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan buffer. ({})", string_VkResult(res));
-        return Handle<Buffer>();
+        return Handle<Buffer>::invalid();
     }
 
     buffer.device_memory = allocation_info.deviceMemory;
@@ -799,14 +799,14 @@ Handle<Framebuffer> VulkanBackend::create_framebuffer(const CreateFramebufferOpt
     for (u8 i = 0; i < num_colors; i++)
     {
         VulkanTexture* vulkan_texture = resources.textures.get_mut(desc.color_attachments[i].texture);
-        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>(); }
+        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>::invalid(); }
         attachments[num_attachments++] = vulkan_texture->get_view(device, to_vulkan_texture_view_desc(desc.color_attachments[i]));
     }
 
     if (desc.render_pass_layout.has_depth_stencil())
     {
         VulkanTexture* vulkan_texture = resources.textures.get_mut(desc.depth_stencil_attachment.texture);
-        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>(); }
+        if (vulkan_texture == nullptr) [[unlikely]] { return Handle<Framebuffer>::invalid(); }
         attachments[num_attachments++] = vulkan_texture->get_view(device, to_vulkan_texture_view_desc(desc.depth_stencil_attachment));
     }
 
@@ -824,7 +824,7 @@ Handle<Framebuffer> VulkanBackend::create_framebuffer(const CreateFramebufferOpt
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan framebuffer. ({})", string_VkResult(result));
-        return Handle<Framebuffer>();
+        return Handle<Framebuffer>::invalid();
     }
 
     return resources.framebuffers.push(VulkanFramebuffer{ .framebuffer = framebuffer });
@@ -871,7 +871,7 @@ Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_typ
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan command pool. ({})", string_VkResult(result));
-        return Handle<CommandPool>();
+        return Handle<CommandPool>::invalid();
     }
 
     return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool });
@@ -888,7 +888,7 @@ void VulkanBackend::destroy_command_pool(const Handle<CommandPool>& pool)
 Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<CommandPool>& pool)
 {
     const VulkanCommandPool* vulkan_pool = resources.command_pools.get(pool);
-    if (vulkan_pool == nullptr) [[unlikely]] { return Handle<CommandBuffer>(); }
+    if (vulkan_pool == nullptr) [[unlikely]] { return Handle<CommandBuffer>::invalid(); }
 
     VkCommandBufferAllocateInfo allocate_info = {};
     allocate_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -901,7 +901,7 @@ Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<Comman
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to allocate Vulkan command buffer. ({})", string_VkResult(result));
-        return Handle<CommandBuffer>();
+        return Handle<CommandBuffer>::invalid();
     }
 
     return resources.command_buffers.push(VulkanCommandBuffer{ .command_buffer = command_buffer, .pool = pool });
