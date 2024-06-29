@@ -65,7 +65,7 @@ public:
     Handle<Shader> create_shader(const CreateShaderOptions& desc);
     void           destroy_shader(const Handle<Shader>& shader);
 
-    Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc);
+    Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc);
     void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline);
 
     u32  get_texture_width(const Handle<Texture>& texture);

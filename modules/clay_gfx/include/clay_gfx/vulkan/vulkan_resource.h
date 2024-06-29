@@ -4,6 +4,7 @@
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
 #include <clay_gfx/pool.h>
+#include <clay_gfx/options.h>
 
 #include <clay_gfx/vulkan/vulkan_header.h>
 #include <vk_mem_alloc.h>
@@ -92,7 +93,7 @@ struct VulkanPipelineLayout {
 struct VulkanGraphicsPipeline {
     VkPipeline pipeline = VK_NULL_HANDLE;
 
-    bool init(VulkanResources* res, const VkDevice& device, const GraphicsPipelineCreateDesc& desc);
+    bool init(VulkanResources* res, const VkDevice& device, const CreateGraphicsPipelineOptions& desc);
 };
 
 struct VulkanRenderPass {

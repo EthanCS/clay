@@ -695,7 +695,7 @@ void VulkanBackend::destroy_shader(const Handle<Shader>& shader)
     resources.shaders.free(shader);
 }
 
-Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc)
+Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc)
 {
     VulkanGraphicsPipeline pipeline;
     if (pipeline.init(&resources, device, desc)) [[likely]]

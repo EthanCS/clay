@@ -82,7 +82,7 @@ VkPipelineShaderStageCreateInfo to_shader_stage_create_info(const VulkanResource
     return shader_stage_info;
 }
 
-bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& device, const GraphicsPipelineCreateDesc& desc)
+bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& device, const CreateGraphicsPipelineOptions& desc)
 {
     if (resources == nullptr) { return false; }
 

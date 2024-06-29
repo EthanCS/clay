@@ -50,7 +50,7 @@ PRO_DEF_MEMBER_DISPATCH(create_shader, Handle<Shader>(const CreateShaderOptions&
 PRO_DEF_MEMBER_DISPATCH(destroy_shader, void(const Handle<Shader>&));
 
 /////// GraphicsPipeline
-PRO_DEF_MEMBER_DISPATCH(create_graphics_pipeline, Handle<GraphicsPipeline>(const GraphicsPipelineCreateDesc&));
+PRO_DEF_MEMBER_DISPATCH(create_graphics_pipeline, Handle<GraphicsPipeline>(const CreateGraphicsPipelineOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_graphics_pipeline, void(const Handle<GraphicsPipeline>&));
 
 /////// Texture
@@ -169,7 +169,7 @@ inline void              destroy_semaphore(const Handle<Semaphore>& semaphore) {
 inline Handle<Shader> create_shader(const CreateShaderOptions& desc) { return g_backend_proxy.create_shader(desc); }
 inline void           destroy_shader(const Handle<Shader>& shader) { g_backend_proxy.destroy_shader(shader); }
 
-inline Handle<GraphicsPipeline> create_graphics_pipeline(const GraphicsPipelineCreateDesc& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }
+inline Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }
 inline void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.destroy_graphics_pipeline(pipeline); }
 
 inline u32  get_texture_width(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_width(texture); }

@@ -141,15 +141,6 @@ struct GraphicsState {
     RenderPassLayout render_pass_layout;
 };
 
-struct GraphicsPipelineCreateDesc {
-    const char* name = nullptr;
-
-    ShaderInfo vertex_shader;
-    ShaderInfo pixel_shader;
-
-    GraphicsState graphics_state;
-};
-
 struct TextureViewDesc {
     Handle<Texture>               texture;
     TextureViewType::Enum         view_type;

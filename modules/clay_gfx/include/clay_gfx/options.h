@@ -65,6 +65,15 @@ struct CreateFramebufferOptions {
     RenderPassLayout render_pass_layout;
 };
 
+struct CreateGraphicsPipelineOptions {
+    const char* name = nullptr;
+
+    ShaderInfo vertex_shader;
+    ShaderInfo pixel_shader;
+
+    GraphicsState graphics_state;
+};
+
 struct CmdBeginRenderPassOptions {
     Handle<Framebuffer> framebuffer;
     RenderPassLayout    render_pass_layout;
