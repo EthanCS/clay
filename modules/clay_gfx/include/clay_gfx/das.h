@@ -1,6 +1,5 @@
 #pragma once
 
-#include "daScript/ast/ast_typefactory.h"
 #include <daScript/daScript.h>
 #include <clay_gfx/backend.h>
 
@@ -10,7 +9,8 @@
 #define GFX_DAS_STRUCT_COMMON                              \
     virtual bool isLocal() const override { return true; } \
     virtual bool canCopy() const override { return true; } \
-    virtual bool canMove() const override { return true; }
+    virtual bool canMove() const override { return true; } \
+    virtual bool canBePlacedInContainer() const override { return true; }
 
 #define HANDLE_DAS_TYPE_BINDING(DAS_NAME, HANDLE_TYPE)                                                                            \
     MAKE_TYPE_FACTORY(DAS_NAME, clay::gfx::Handle<clay::gfx::HANDLE_TYPE>);                                                       \

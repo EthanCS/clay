@@ -1,48 +1,167 @@
 require clay_gfx
 
+let MAX_FRAMES_IN_FLIGHT = 2
+
+var window_width = 1280u
+var window_height = 720u
+var window_resized = false
+var hello_vs = [[HShader]]
+var hello_fs = [[HShader]]
+
+var swapchain_width = 1280u
+var swapchain_height = 720u
+
 var render_pass_layout = [[RenderPassLayout]]
 var pipeline = [[HGraphicsPipeline]]
-var swapchain_width = 0u
-var swapchain_height = 0u
 
-var buffer_created = false
-var vertex_buffer = [[HBuffer]]
+var command_pool = [[HCommandPool]]
+var command_buffers : array<HCommandBuffer>
+
+var in_flight_fences : array<HFence>
+var image_available_semaphores : array<HSemaphore>
+var render_finished_semaphores : array<HSemaphore>
+
+var swapchain = [[HSwapchain]]
+var swapchain_framebuffers : array<HFramebuffer>
+
+var current_frame = 0u
 
 [export]
-def record_commands(cb: HCommandBuffer; fb: HFramebuffer)
-    if buffer_created == false
-        print("creating buffer\n")
-        vertex_buffer = gfx_create_buffer([[CreateBufferOptions size = uint64(16), usage = BufferUsage VertexBuffer, exclusive = true]])
-        let mem = gfx_map_buffer(vertex_buffer, 0u, 16u)
-        gfx_unmap_buffer(vertex_buffer)
-        buffer_created = true
+def on_init()
+    // Render pass layout
+    render_pass_layout.colors[0] = [[ColorAttachmentDesc 
+        format = Format B8G8R8A8_UNORM, 
+        layout = ImageLayout PresentSrc, 
+        load_op = RenderPassLoadOp Clear]]
     
+    // Create pipeline
+    var pipeline_options = [[CreateGraphicsPipelineOptions name = "triangle"]]
+    pipeline_options.vertex_shader = [[ShaderInfo compiled_shader = hello_vs, entry_func = "main"]]
+    pipeline_options.pixel_shader = [[ShaderInfo compiled_shader = hello_fs, entry_func = "main"]]
+    pipeline_options.graphics_state.primitive_topology = PrimitiveTopology TriangleList
+    pipeline_options.graphics_state.cull_mode = CullMode None
+    pipeline_options.graphics_state.front_face = FrontFace CounterClockwise
+    pipeline_options.graphics_state.fill_mode = FillMode Solid
+    pipeline_options.graphics_state.depth_test_enabled = false
+    pipeline_options.graphics_state.blend_states[0].color_write = ColorWriteEnabled All
+    pipeline_options.graphics_state.vertex_buffer_bindings[0].byte_stride = uint16(-1)
+    pipeline_options.graphics_state.vertex_buffer_bindings[0].attributes[0].byte_offset = uint16(-1)
+    pipeline_options.graphics_state.render_pass_layout = render_pass_layout
+    pipeline = gfx_create_graphics_pipeline(pipeline_options)
+
+    // Command
+    command_pool = gfx_create_command_pool(QueueType Graphics)
+    resize(command_buffers, MAX_FRAMES_IN_FLIGHT)
+    for i in range(0, MAX_FRAMES_IN_FLIGHT)
+        command_buffers[i] = gfx_allocate_command_buffer(command_pool)
+    
+    // Sync objects
+    resize(in_flight_fences, MAX_FRAMES_IN_FLIGHT)
+    resize(image_available_semaphores, MAX_FRAMES_IN_FLIGHT)
+    resize(render_finished_semaphores, MAX_FRAMES_IN_FLIGHT)
+    for i in range(0, MAX_FRAMES_IN_FLIGHT)
+        in_flight_fences[i] = gfx_create_fence(true)
+        image_available_semaphores[i] = gfx_create_semaphore()
+        render_finished_semaphores[i] = gfx_create_semaphore()
+    
+    // Swapchain
+    create_swapchain(window_width, window_height)
+
+[export]
+def on_update()
+    draw_frame()
+
+[export]
+def on_destroy()
+    gfx_device_wait_idle()
+    gfx_shutdown()
+
+def draw_frame()
+    unsafe 
+        gfx_wait_for_fence(in_flight_fences[current_frame], true, uint64(-1))
+
+        let acquire_swapchain = gfx_acquire_next_image(swapchain, [[AcquireNextImageOptions time_out = uint64(-1), semaphore = image_available_semaphores[current_frame]]])
+
+        if acquire_swapchain.status == SwapchainStatus OutOfDate
+            recreate_swapchain()
+            return
+
+        gfx_reset_fences(addr(in_flight_fences[current_frame]), 1)
+
+        gfx_reset_command_buffer(command_buffers[current_frame], false)
+        record_commands(command_buffers[current_frame], uint(acquire_swapchain.image_index))
+
+        var submit_options = [[QueueSubmitOptions]]
+        submit_options.command_buffers = addr(command_buffers[current_frame])
+        submit_options.num_command_buffers = 1u
+        submit_options.wait_semaphores = addr(image_available_semaphores[current_frame])
+        submit_options.num_wait_semaphores = 1u
+        submit_options.signal_semaphores = addr(render_finished_semaphores[current_frame])
+        submit_options.num_signal_semaphores = 1u
+        submit_options.wait_dst_stage = PipelineStage ColorAttachmentOutput
+        submit_options.fence = in_flight_fences[current_frame]
+        gfx_queue_submit(QueueType Graphics, submit_options)
+
+        var present_options = [[QueuePresentOptions]]
+        present_options.swapchain = swapchain
+        present_options.image_index = uint(acquire_swapchain.image_index)
+        present_options.wait_semaphores = addr(render_finished_semaphores[current_frame])
+        present_options.num_wait_semaphores = 1u
+        let present_status = gfx_queue_present(present_options)
+
+        if present_status == SwapchainStatus OutOfDate || present_status == SwapchainStatus Suboptimal || window_resized
+            window_resized = false
+            recreate_swapchain()
+        elif present_status != SwapchainStatus Success
+            print("failed to present\n")
+            
+        current_frame = (current_frame + 1u) % uint(MAX_FRAMES_IN_FLIGHT)
+
+def record_commands(cb: HCommandBuffer; image_index: uint)
     gfx_cmd_begin(cb)
     var render_pass = [[CmdBeginRenderPassOptions]]
-    render_pass.framebuffer = fb
+    render_pass.framebuffer = swapchain_framebuffers[image_index]
     render_pass.render_pass_layout = render_pass_layout
     render_pass.extent = [[uint[2] swapchain_width; swapchain_height]]
     render_pass.clear = true
-    render_pass.clear_values[0].color =  [[float[] 1.0; 1.0; 1.0; 1.0]]
+    render_pass.clear_values[0].color =  [[float[] 1.0; 0.0; 1.0; 1.0]]
     gfx_cmd_begin_render_pass(cb, render_pass)
     gfx_cmd_bind_graphics_pipeline(cb, pipeline)
     gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = float(swapchain_width), height = float(swapchain_height), min_depth = 0.0, max_depth = 1.0]])
     gfx_cmd_set_scissor(cb, [[CmdSetScissorOptions offset = [[int[2] 0; 0]], extent = [[uint[2] swapchain_width; swapchain_height]]]])
-    gfx_cmd_bind_vertex_buffer(cb, [[CmdBindVertexBufferOptions binding = 0u, buffer = vertex_buffer, offset = 0u]])
     gfx_cmd_draw(cb, [[CmdDrawOptions vertex_count = 3u, instance_count = 1u, first_vertex = 0u, first_instance = 0u]])
     gfx_cmd_end_render_pass(cb)
     gfx_cmd_end(cb)
 
-[export]
-def on_init()
-    print("hello triangle init\n")
-
-[export]
-def on_update()
-    print("hello triangle update\n")
-
-[export]
-def on_destroy()
-    print("{gfx_get_type()}\n")
+def recreate_swapchain()
     gfx_device_wait_idle()
-    gfx_shutdown()
+    for fb in swapchain_framebuffers
+        gfx_destroy_framebuffer(fb)
+    gfx_destroy_swapchain(swapchain)
+    create_swapchain(window_width, window_height)
+
+def create_swapchain(width: uint; height: uint)
+    swapchain = gfx_create_swapchain([[CreateSwapchainOptions width = width, height = height, vsync = true, format = Format B8G8R8A8_UNORM]])
+    let num_images = int(gfx_get_swapchain_image_count(swapchain))
+    resize(swapchain_framebuffers, num_images)
+    for i in range(0, num_images)
+        var option = [[CreateFramebufferOptions]]
+        option.width = width
+        option.height = height
+        option.color_attachments[0] = [[TextureViewDesc 
+            texture = gfx_get_swapchain_back_buffer(swapchain, uint(i)), 
+            view_type = TextureViewType Texture2D,
+            aspect_flags = TextureAspect Color,
+            format = Format Undefined,
+            base_mip_level = uint8(0),
+            level_count = uint8(1),
+            base_array_layer = uint8(0),
+            layer_count = uint8(1),
+            component_r = TextureComponentSwizzle Identity,
+            component_g = TextureComponentSwizzle Identity,
+            component_b = TextureComponentSwizzle Identity,
+            component_a = TextureComponentSwizzle Identity]]
+        option.render_pass_layout = render_pass_layout
+        swapchain_framebuffers[i] = gfx_create_framebuffer(option)
+    swapchain_width = width
+    swapchain_height = height
