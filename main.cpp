@@ -6,7 +6,11 @@
 
 #include <clay_core/file.h>
 #include <clay_core/clay_core.h>
-#include <clay_app/window.h>
+
+#ifdef CLAY_APP_ENABLE
+    #include <clay_app/das.h>
+REGISTER_MODULE(Module_clay_app);
+#endif
 
 #ifdef CLAY_GFX_ENABLE
     #include <clay_gfx/das.h>
@@ -24,9 +28,10 @@ const char* TITLE                = "Hello Clay!";
 class Application
 {
 private:
-    TextPrinter     das_logs;
-    das::ProgramPtr das_program = nullptr;
-    das::Context*   das_context = nullptr;
+    TextPrinter       das_logs;
+    das::ProgramPtr   das_program = nullptr;
+    das::Context*     das_context = nullptr;
+    das::SimFunction* das_main    = nullptr;
 
     das::SimFunction* das_on_init    = nullptr;
     das::SimFunction* das_on_update  = nullptr;
@@ -70,6 +75,7 @@ public:
             return false;
         }
 
+        das_main       = das_context->findFunction("main");
         das_on_init    = das_context->findFunction("on_init");
         das_on_update  = das_context->findFunction("on_update");
         das_on_destroy = das_context->findFunction("on_destroy");
@@ -79,6 +85,11 @@ public:
 
     void run()
     {
+        // if (das_main != nullptr)
+        // {
+        //     das_context->eval(das_main, nullptr);
+        // }
+
         init();
         main_loop();
         shutdown();
@@ -147,6 +158,10 @@ private:
 int main(int argc, char** argv)
 {
     NEED_ALL_DEFAULT_MODULES;
+
+#ifdef CLAY_APP_ENABLE
+    NEED_MODULE(Module_clay_app);
+#endif
 
 #ifdef CLAY_GFX_ENABLE
     NEED_MODULE(Module_clay_gfx);

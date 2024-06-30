@@ -1,3 +1,4 @@
+require clay_app
 require clay_gfx
 
 let MAX_FRAMES_IN_FLIGHT = 2
@@ -25,6 +26,12 @@ var swapchain = [[HSwapchain]]
 var swapchain_framebuffers : array<HFramebuffer>
 
 var current_frame = 0u
+
+var window = [[Window]]
+
+[export]
+def main
+    init(window, [[WindowConfig title = "Hello Triangle", width = 1280u, height = 720u]])
 
 [export]
 def on_init()
