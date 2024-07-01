@@ -13,7 +13,7 @@ add_defines("DAS_FUSION=2", "DAS_DEBUGGER=0", "DAS_SMART_PTR_TRACKER=0", "DAS_SM
 includes("thirdparty")
 includes("modules")
 
-target("test")
+target("clay")
     set_kind("binary")
     add_files("main.cpp")
     add_deps("clay_core", "clay_app", "clay_gfx")

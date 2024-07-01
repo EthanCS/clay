@@ -1,4 +1,3 @@
-#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -106,9 +105,6 @@ public:
 private:
     app::Window window;
 
-    gfx::Handle<gfx::Shader> hello_vs;
-    gfx::Handle<gfx::Shader> hello_fs;
-
     void init()
     {
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
@@ -118,18 +114,6 @@ private:
                                  .app_name = TITLE,
                                  .debug    = true });
         if (!bInit) { throw std::runtime_error("failed to initialize clay gfx!"); }
-
-        // Shader
-        auto vert_shader_code = core::read_file("../../../../assets/shader/vert.spv");
-        auto frag_shader_code = core::read_file("../../../../assets/shader/frag.spv");
-        hello_vs              = gfx::create_shader({ .code = vert_shader_code.data(), .code_size = (u32)vert_shader_code.size() });
-        hello_fs              = gfx::create_shader({ .code = frag_shader_code.data(), .code_size = (u32)frag_shader_code.size() });
-
-        auto idx_hello_vs = das_context->findVariable("hello_vs");
-        memcpy(das_context->getVariable(idx_hello_vs), &hello_vs, sizeof(gfx::Handle<gfx::Shader>));
-
-        auto idx_hello_fs = das_context->findVariable("hello_fs");
-        memcpy(das_context->getVariable(idx_hello_fs), &hello_fs, sizeof(gfx::Handle<gfx::Shader>));
 
         if (das_on_init != nullptr) { das_context->eval(das_on_init, nullptr); }
     }
@@ -157,6 +141,12 @@ private:
 
 int main(int argc, char** argv)
 {
+    if (argc != 2)
+    {
+        std::cerr << "Please input das file." << std::endl;
+        return EXIT_FAILURE;
+    }
+
     NEED_ALL_DEFAULT_MODULES;
 
 #ifdef CLAY_APP_ENABLE
@@ -171,7 +161,7 @@ int main(int argc, char** argv)
 
     Application app;
 
-    if (app.prepare("../../../../assets/script/hello_triangle.das"))
+    if (app.prepare(argv[1]))
     {
         try
         {
@@ -184,6 +174,7 @@ int main(int argc, char** argv)
     }
     else
     {
+        std::cerr << "das compile failed." << std::endl;
         return EXIT_FAILURE;
     }
 

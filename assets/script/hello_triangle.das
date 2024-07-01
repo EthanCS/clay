@@ -1,3 +1,4 @@
+require fio
 require clay_app
 require clay_gfx
 
@@ -6,6 +7,7 @@ let MAX_FRAMES_IN_FLIGHT = 2
 var window_width = 1280u
 var window_height = 720u
 var window_resized = false
+
 var hello_vs = [[HShader]]
 var hello_fs = [[HShader]]
 
@@ -35,6 +37,22 @@ def main
 
 [export]
 def on_init()
+    // Load shaders
+    fopen("../../../../assets/shader/vert.spv", "rb") <| $ ( f )
+        if f != null
+            fseek(f, int64(0), seek_end)
+            let size = ftell(f)
+            let data = fread(f)
+            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
+            fclose(f)
+    fopen("../../../../assets/shader/frag.spv", "rb") <| $ ( f )
+        if f != null
+            fseek(f, int64(0), seek_end)
+            let size = ftell(f)
+            let data = fread(f)
+            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
+            fclose(f)
+
     // Render pass layout
     render_pass_layout.colors[0] = [[ColorAttachmentDesc 
         format = Format B8G8R8A8_UNORM, 
