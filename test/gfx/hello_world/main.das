@@ -39,15 +39,16 @@ def main
     on_destroy()
 
 def on_init()
+
     // Load shaders
-    fopen("C:\\Workspace\\clay\\assets\\shader\\vert.spv", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/vert.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
             hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
             fclose(f)
-    fopen("C:\\Workspace\\clay\\assets\\shader\\frag.spv", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/frag.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)

@@ -1,0 +1,4 @@
+{
+    "cmake.ignoreCMakeListsMissing": true,
+    "dascript.compiler": "${workspaceFolder}/build/windows/x64/release/clay.exe"
+}

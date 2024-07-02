@@ -34,4 +34,5 @@
 /build
 /.xmake
 /.vs
-/.vscode
+/.vscode/.cache
+/.vscode/compile_commands.json
