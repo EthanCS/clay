@@ -4,10 +4,6 @@ require clay_gfx
 
 let MAX_FRAMES_IN_FLIGHT = 2
 
-var window_width = 1280u
-var window_height = 720u
-var window_resized = false
-
 var hello_vs = [[HShader]]
 var hello_fs = [[HShader]]
 
@@ -34,18 +30,24 @@ var window = [[Window]]
 [export]
 def main
     init(window, [[WindowConfig title = "Hello Triangle", width = 1280u, height = 720u]])
+    var backend = [[InitBackendOptions backend_type = BackendType Vulkan, window = window.platform_handle, app_name = "Hello Triangle", debug = true]]
+    let gfx_init = gfx_init(backend)
+    on_init()
+    while !window.requested_exit
+        handle_events(window)
+        on_update()
+    on_destroy()
 
-[export]
 def on_init()
     // Load shaders
-    fopen("../../../../assets/shader/vert.spv", "rb") <| $ ( f )
+    fopen("C:\\Workspace\\clay\\assets\\shader\\vert.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
             hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
             fclose(f)
-    fopen("../../../../assets/shader/frag.spv", "rb") <| $ ( f )
+    fopen("C:\\Workspace\\clay\\assets\\shader\\frag.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
@@ -90,16 +92,15 @@ def on_init()
         render_finished_semaphores[i] = gfx_create_semaphore()
     
     // Swapchain
-    create_swapchain(window_width, window_height)
+    create_swapchain(window.width, window.height)
 
-[export]
 def on_update()
     draw_frame()
 
-[export]
 def on_destroy()
     gfx_device_wait_idle()
     gfx_shutdown()
+    shutdown(window)
 
 def draw_frame()
     unsafe 
@@ -134,8 +135,8 @@ def draw_frame()
         present_options.num_wait_semaphores = 1u
         let present_status = gfx_queue_present(present_options)
 
-        if present_status == SwapchainStatus OutOfDate || present_status == SwapchainStatus Suboptimal || window_resized
-            window_resized = false
+        if present_status == SwapchainStatus OutOfDate || present_status == SwapchainStatus Suboptimal || window.resized
+            window.resized = false
             recreate_swapchain()
         elif present_status != SwapchainStatus Success
             print("failed to present\n")
@@ -149,7 +150,7 @@ def record_commands(cb: HCommandBuffer; image_index: uint)
     render_pass.render_pass_layout = render_pass_layout
     render_pass.extent = [[uint[2] swapchain_width; swapchain_height]]
     render_pass.clear = true
-    render_pass.clear_values[0].color =  [[float[] 1.0; 0.0; 1.0; 1.0]]
+    render_pass.clear_values[0].color =  [[float[] 1.0; 1.0; 1.0; 1.0]]
     gfx_cmd_begin_render_pass(cb, render_pass)
     gfx_cmd_bind_graphics_pipeline(cb, pipeline)
     gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = float(swapchain_width), height = float(swapchain_height), min_depth = 0.0, max_depth = 1.0]])
@@ -163,7 +164,7 @@ def recreate_swapchain()
     for fb in swapchain_framebuffers
         gfx_destroy_framebuffer(fb)
     gfx_destroy_swapchain(swapchain)
-    create_swapchain(window_width, window_height)
+    create_swapchain(window.width, window.height)
 
 def create_swapchain(width: uint; height: uint)
     swapchain = gfx_create_swapchain([[CreateSwapchainOptions width = width, height = height, vsync = true, format = Format B8G8R8A8_UNORM]])

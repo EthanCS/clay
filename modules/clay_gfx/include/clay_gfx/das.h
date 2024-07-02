@@ -297,7 +297,7 @@ struct InitBackendOptionsAnnotation : public das::ManagedStructureAnnotation<cla
     InitBackendOptionsAnnotation(das::ModuleLibrary& ml)
         : ManagedStructureAnnotation("InitBackendOptions", ml)
     {
-        addField<DAS_BIND_MANAGED_FIELD(type)>("type");
+        addField<DAS_BIND_MANAGED_FIELD(type)>("backend_type");
         addField<DAS_BIND_MANAGED_FIELD(window)>("window");
         addField<DAS_BIND_MANAGED_FIELD(app_name)>("app_name");
         addField<DAS_BIND_MANAGED_FIELD(device_id)>("device_id");
