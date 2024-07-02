@@ -5,6 +5,7 @@ package("daScript")
 
     add_urls("https://github.com/EthanCS/daScript.git")
     add_versions("0.4.9", "887f3164782129120fe77a7c282f65d831cb21b1")
+    add_versions("0.4.10", "823edd4dc93f553b974520c79cccdf7828c8f694")
 
     add_deps("cmake")
 
