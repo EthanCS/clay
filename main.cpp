@@ -5,15 +5,11 @@
 
 using namespace das;
 
-#ifdef CLAY_APP_ENABLE
-    #include <clay_app/das.h>
+#include <clay_app/das.h>
 REGISTER_MODULE(Module_clay_app);
-#endif
 
-#ifdef CLAY_GFX_ENABLE
-    #include <clay_gfx/das.h>
+#include <clay_gfx/das.h>
 REGISTER_MODULE(Module_clay_gfx);
-#endif
 
 void use_utf8();
 
@@ -380,13 +376,8 @@ int das_aot_main(int argc, char* argv[])
         NEED_MODULE(Module_DASBIND);
     }
 
-#ifdef CLAY_APP_ENABLE
     NEED_MODULE(Module_clay_app);
-#endif
-
-#ifdef CLAY_GFX_ENABLE
     NEED_MODULE(Module_clay_gfx);
-#endif
 
     // require_project_specific_modules();
 
@@ -757,13 +748,8 @@ int MAIN_FUNC_NAME(int argc, char* argv[])
     NEED_MODULE(Module_DASBIND);
     // require_project_specific_modules();
 
-#ifdef CLAY_APP_ENABLE
     NEED_MODULE(Module_clay_app);
-#endif
-
-#ifdef CLAY_GFX_ENABLE
     NEED_MODULE(Module_clay_gfx);
-#endif
 
     Module::Initialize();
     daScriptEnvironment::bound->g_isInAot = true;
