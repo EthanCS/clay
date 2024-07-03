@@ -1,3 +1,5 @@
+#include <whereami.h>
+
 #include <daScript/daScript.h>
 #include <daScript/simulate/fs_file_info.h>
 
@@ -386,7 +388,7 @@ int das_aot_main(int argc, char* argv[])
     NEED_MODULE(Module_clay_gfx);
 #endif
 
-    //require_project_specific_modules();
+    // require_project_specific_modules();
 
     Module::Initialize();
     daScriptEnvironment::bound->g_isInAot = true;
@@ -550,6 +552,23 @@ void print_help()
 
 int MAIN_FUNC_NAME(int argc, char* argv[])
 {
+    char* path = NULL;
+    int   length, dirname_length;
+    int   i;
+
+    length = wai_getExecutablePath(NULL, 0, &dirname_length);
+    if (length > 0)
+    {
+        path = (char*)malloc(length + 1);
+        if (!path)
+            abort();
+        wai_getExecutablePath(path, length, &dirname_length);
+
+        path[dirname_length] = '\0';
+        setDasRoot(path);
+        free(path);
+    }
+
     if (argc > 2 && strcmp(argv[1], "-aot") == 0)
     {
         return das_aot_main(argc, argv);
@@ -736,7 +755,7 @@ int MAIN_FUNC_NAME(int argc, char* argv[])
     NEED_MODULE(Module_JobQue);
     NEED_MODULE(Module_FIO);
     NEED_MODULE(Module_DASBIND);
-    //require_project_specific_modules();
+    // require_project_specific_modules();
 
 #ifdef CLAY_APP_ENABLE
     NEED_MODULE(Module_clay_app);
