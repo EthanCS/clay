@@ -34,6 +34,12 @@
 #define ADD_FUNC_RET_REF_MODIFY_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
 #define ADD_FUNC_RET_REF_ACCESS_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::accessExternal, #FUNC_NAME);
 
+#define ADD_MEMBER_FUNCTION(STRUCT_NAME, FUNC_NAME)                                                                                                                       \
+    {                                                                                                                                                                     \
+        using method_##FUNC_NAME = DAS_CALL_MEMBER(clay::gfx::STRUCT_NAME::FUNC_NAME);                                                                                    \
+        addExtern<DAS_CALL_METHOD(method_##FUNC_NAME)>(*this, lib, #FUNC_NAME, das::SideEffects::modifyArgument, DAS_CALL_MEMBER_CPP(clay::gfx::STRUCT_NAME::FUNC_NAME)); \
+    }
+
 //////////////////////////////////////////////////////////////////////////
 //////// define.h
 
@@ -592,6 +598,9 @@ public:
         ADD_STRUCT_ANNOTATION(VertexBufferBinding)
         ADD_STRUCT_ANNOTATION(ShaderInfo)
         ADD_STRUCT_ANNOTATION(GraphicsState)
+        ADD_MEMBER_FUNCTION(GraphicsState, reset)
+        ADD_MEMBER_FUNCTION(GraphicsState, set_vertex_buffer_binding)
+        ADD_MEMBER_FUNCTION(GraphicsState, set_vertex_buffer_attribute)
         ADD_STRUCT_ANNOTATION(TextureViewDesc)
 
         // bind options.h

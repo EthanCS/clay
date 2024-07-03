@@ -4,6 +4,8 @@ require clay_gfx
 
 let MAX_FRAMES_IN_FLIGHT = 2
 
+var window = [[Window]]
+
 var hello_vs = [[HShader]]
 var hello_fs = [[HShader]]
 
@@ -25,7 +27,14 @@ var swapchain_framebuffers : array<HFramebuffer>
 
 var current_frame = 0u
 
-var window = [[Window]]
+struct Vertex
+    position: float2
+    color: float3
+
+let vertices = [[auto   [[Vertex position = float2(0.0f, -0.5f), color = float3(1.0f, 0.0f, 0.0f)]],
+                        [[Vertex position = float2(0.5f, 0.5f), color = float3(0.0f, 1.0f, 0.0f)]],
+                        [[Vertex position = float2(-0.5f, 0.5f), color = float3(0.0f, 0.0f, 1.0f)]] 
+                ]]
 
 [export]
 def main
@@ -66,14 +75,12 @@ def on_init()
     var pipeline_options = [[CreateGraphicsPipelineOptions name = "triangle"]]
     pipeline_options.vertex_shader = [[ShaderInfo compiled_shader = hello_vs, entry_func = "main"]]
     pipeline_options.pixel_shader = [[ShaderInfo compiled_shader = hello_fs, entry_func = "main"]]
-    pipeline_options.graphics_state.primitive_topology = PrimitiveTopology TriangleList
-    pipeline_options.graphics_state.cull_mode = CullMode None
-    pipeline_options.graphics_state.front_face = FrontFace CounterClockwise
-    pipeline_options.graphics_state.fill_mode = FillMode Solid
+
+    reset(pipeline_options.graphics_state)
+    // set_vertex_buffer_binding(pipeline_options.graphics_state, uint8(0), uint16(typeinfo(sizeof type<Vertex>)))
+    // set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(0), uint16(typeinfo(offsetof<position> type<Vertex>)), Format R32G32_SFLOAT)
+    // set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(1), uint16(typeinfo(offsetof<color> type<Vertex>)), Format R32G32B32_SFLOAT)
     pipeline_options.graphics_state.depth_test_enabled = false
-    pipeline_options.graphics_state.blend_states[0].color_write = ColorWriteEnabled All
-    pipeline_options.graphics_state.vertex_buffer_bindings[0].byte_stride = uint16(-1)
-    pipeline_options.graphics_state.vertex_buffer_bindings[0].attributes[0].byte_offset = uint16(-1)
     pipeline_options.graphics_state.render_pass_layout = render_pass_layout
     pipeline = gfx_create_graphics_pipeline(pipeline_options)
 

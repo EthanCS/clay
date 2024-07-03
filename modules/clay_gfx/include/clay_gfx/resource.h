@@ -139,6 +139,19 @@ struct GraphicsState {
 
     /////// Render Pass Layout
     RenderPassLayout render_pass_layout;
+
+    void reset() { *this = {}; }
+
+    void set_vertex_buffer_binding(u8 binding, u16 byte_stride)
+    {
+        vertex_buffer_bindings[binding].byte_stride = byte_stride;
+    }
+
+    void set_vertex_buffer_attribute(u8 binding, u8 attribute, u16 byte_offset, Format::Enum format)
+    {
+        vertex_buffer_bindings[binding].attributes[attribute].byte_offset = byte_offset;
+        vertex_buffer_bindings[binding].attributes[attribute].format      = format;
+    }
 };
 
 struct TextureViewDesc {
