@@ -519,6 +519,20 @@ struct CmdBindIndexBufferOptionsAnnotation : public das::ManagedStructureAnnotat
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CmdCopyBufferOptions, clay::gfx::CmdCopyBufferOptions);
+struct CmdCopyBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdCopyBufferOptions, true, true> {
+    CmdCopyBufferOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdCopyBufferOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(src_buffer)>("src_buffer");
+        addField<DAS_BIND_MANAGED_FIELD(src_offset)>("src_offset");
+        addField<DAS_BIND_MANAGED_FIELD(dst_buffer)>("dst_buffer");
+        addField<DAS_BIND_MANAGED_FIELD(dst_offset)>("dst_offset");
+        addField<DAS_BIND_MANAGED_FIELD(size)>("size");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 class Module_clay_gfx : public das::Module
 {
 public:
@@ -598,6 +612,7 @@ public:
         ADD_STRUCT_ANNOTATION(CmdBindVertexBufferOptions)
         ADD_STRUCT_ANNOTATION(CmdBindVertexBuffersOptions)
         ADD_STRUCT_ANNOTATION(CmdBindIndexBufferOptions)
+        ADD_STRUCT_ANNOTATION(CmdCopyBufferOptions)
 
         // bind backend.h
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(init)
@@ -662,5 +677,6 @@ public:
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffer)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffers)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_index_buffer)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_copy_buffer)
     }
 };

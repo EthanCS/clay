@@ -90,6 +90,7 @@ PRO_DEF_MEMBER_DISPATCH(cmd_draw_indexed, void(const Handle<CommandBuffer>&, con
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffer, void(const Handle<CommandBuffer>&, const CmdBindVertexBufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffers, void(const Handle<CommandBuffer>&, const CmdBindVertexBuffersOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_index_buffer, void(const Handle<CommandBuffer>&, const CmdBindIndexBufferOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_copy_buffer, void(const Handle<CommandBuffer>&, const CmdCopyBufferOptions&));
 
 PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                init,
@@ -140,7 +141,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                cmd_draw_indexed,
                                cmd_bind_vertex_buffer,
                                cmd_bind_vertex_buffers,
-                               cmd_bind_index_buffer));
+                               cmd_bind_index_buffer,
+                               cmd_copy_buffer));
 } // namespace spec
 
 extern pro::proxy<spec::IRenderBackend> g_backend_proxy;
@@ -207,6 +209,7 @@ inline void cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const CmdDrawI
 inline void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& buffer, const CmdBindVertexBufferOptions& vertex_buffer) { g_backend_proxy.cmd_bind_vertex_buffer(buffer, vertex_buffer); }
 inline void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& buffer, const CmdBindVertexBuffersOptions& vertex_buffers) { g_backend_proxy.cmd_bind_vertex_buffers(buffer, vertex_buffers); }
 inline void cmd_bind_index_buffer(const Handle<CommandBuffer>& buffer, const CmdBindIndexBufferOptions& index_buffer) { g_backend_proxy.cmd_bind_index_buffer(buffer, index_buffer); }
+inline void cmd_copy_buffer(const Handle<CommandBuffer>& buffer, const CmdCopyBufferOptions& copy_buffer) { g_backend_proxy.cmd_copy_buffer(buffer, copy_buffer); }
 
 } // namespace gfx
 } // namespace clay

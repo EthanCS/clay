@@ -99,6 +99,7 @@ public:
     void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options);
     void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options);
     void cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options);
+    void cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options);
 
 private:
     VkQueue get_queue(QueueType::Enum queue_type)

@@ -131,5 +131,13 @@ struct CmdBindIndexBufferOptions {
     IndexType::Enum index_type;
 };
 
+struct CmdCopyBufferOptions {
+    Handle<Buffer> src_buffer;
+    u64            src_offset;
+    Handle<Buffer> dst_buffer;
+    u64            dst_offset;
+    u64            size;
+};
+
 } // namespace gfx
 } // namespace clay

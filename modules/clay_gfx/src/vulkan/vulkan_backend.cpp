@@ -1152,5 +1152,30 @@ void VulkanBackend::cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const
     vkCmdBindIndexBuffer(vk_cb->command_buffer, vk_buffer->buffer, options.offset, to_vk_index_type(options.index_type));
 }
 
+void VulkanBackend::cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    if (vk_cb == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    const VulkanBuffer* src_buffer = resources.buffers.get(options.src_buffer);
+    const VulkanBuffer* dst_buffer = resources.buffers.get(options.dst_buffer);
+    if (src_buffer == nullptr || dst_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find source or destination buffer.");
+        return;
+    }
+
+    VkBufferCopy copy_region = {};
+    copy_region.srcOffset    = options.src_offset;
+    copy_region.dstOffset    = options.dst_offset;
+    copy_region.size         = options.size;
+
+    vkCmdCopyBuffer(vk_cb->command_buffer, src_buffer->buffer, dst_buffer->buffer, 1, &copy_region);
+}
+
 } // namespace gfx
 } // namespace clay
