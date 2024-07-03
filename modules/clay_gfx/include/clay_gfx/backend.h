@@ -86,8 +86,10 @@ PRO_DEF_MEMBER_DISPATCH(cmd_bind_graphics_pipeline, void(const Handle<CommandBuf
 PRO_DEF_MEMBER_DISPATCH(cmd_set_viewport, void(const Handle<CommandBuffer>&, const CmdSetViewportOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_set_scissor, void(const Handle<CommandBuffer>&, const CmdSetScissorOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_draw, void(const Handle<CommandBuffer>&, const CmdDrawOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_draw_indexed, void(const Handle<CommandBuffer>&, const CmdDrawIndexedOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffer, void(const Handle<CommandBuffer>&, const CmdBindVertexBufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffers, void(const Handle<CommandBuffer>&, const CmdBindVertexBuffersOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_index_buffer, void(const Handle<CommandBuffer>&, const CmdBindIndexBufferOptions&));
 
 PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                init,
@@ -135,8 +137,10 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                cmd_set_viewport,
                                cmd_set_scissor,
                                cmd_draw,
+                               cmd_draw_indexed,
                                cmd_bind_vertex_buffer,
-                               cmd_bind_vertex_buffers));
+                               cmd_bind_vertex_buffers,
+                               cmd_bind_index_buffer));
 } // namespace spec
 
 extern pro::proxy<spec::IRenderBackend> g_backend_proxy;
@@ -199,8 +203,10 @@ inline void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, cons
 inline void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) { g_backend_proxy.cmd_set_viewport(buffer, viewport); }
 inline void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor) { g_backend_proxy.cmd_set_scissor(buffer, scissor); }
 inline void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw) { g_backend_proxy.cmd_draw(buffer, draw); }
+inline void cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const CmdDrawIndexedOptions& draw) { g_backend_proxy.cmd_draw_indexed(buffer, draw); }
 inline void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& buffer, const CmdBindVertexBufferOptions& vertex_buffer) { g_backend_proxy.cmd_bind_vertex_buffer(buffer, vertex_buffer); }
 inline void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& buffer, const CmdBindVertexBuffersOptions& vertex_buffers) { g_backend_proxy.cmd_bind_vertex_buffers(buffer, vertex_buffers); }
+inline void cmd_bind_index_buffer(const Handle<CommandBuffer>& buffer, const CmdBindIndexBufferOptions& index_buffer) { g_backend_proxy.cmd_bind_index_buffer(buffer, index_buffer); }
 
 } // namespace gfx
 } // namespace clay

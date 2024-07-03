@@ -313,5 +313,13 @@ struct BufferUsage {
     };
 };
 
+struct IndexType {
+    enum Enum
+    {
+        Uint16,
+        Uint32,
+    };
+};
+
 } // namespace gfx
 } // namespace clay

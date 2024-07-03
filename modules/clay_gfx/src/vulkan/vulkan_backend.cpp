@@ -1087,6 +1087,18 @@ void VulkanBackend::cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawO
     vkCmdDraw(vulkan_buffer->command_buffer, draw.vertex_count, draw.instance_count, draw.first_vertex, draw.first_instance);
 }
 
+void VulkanBackend::cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const CmdDrawIndexedOptions& draw)
+{
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    if (vulkan_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    vkCmdDrawIndexed(vulkan_buffer->command_buffer, draw.index_count, draw.instance_count, draw.first_index, draw.vertex_offset, draw.first_instance);
+}
+
 void VulkanBackend::cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options)
 {
     const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(cb);
@@ -1125,6 +1137,19 @@ void VulkanBackend::cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, con
     }
 
     vkCmdBindVertexBuffers(vk_cb->command_buffer, options.first_binding, options.binding_count, vk_buffers.data(), vk_offsets.data());
+}
+
+void VulkanBackend::cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(cb);
+    const VulkanBuffer*        vk_buffer = resources.buffers.get(options.buffer);
+    if (vk_cb == nullptr || vk_buffer == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer or buffer.");
+        return;
+    }
+
+    vkCmdBindIndexBuffer(vk_cb->command_buffer, vk_buffer->buffer, options.offset, to_vk_index_type(options.index_type));
 }
 
 } // namespace gfx

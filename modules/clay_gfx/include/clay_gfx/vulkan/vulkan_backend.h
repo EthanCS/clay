@@ -95,8 +95,10 @@ public:
     void cmd_set_viewport(const Handle<CommandBuffer>& cb, const CmdSetViewportOptions& viewport);
     void cmd_set_scissor(const Handle<CommandBuffer>& cb, const CmdSetScissorOptions& scissor);
     void cmd_draw(const Handle<CommandBuffer>& cb, const CmdDrawOptions& draw);
+    void cmd_draw_indexed(const Handle<CommandBuffer>& cb, const CmdDrawIndexedOptions& draw);
     void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options);
     void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options);
+    void cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options);
 
 private:
     VkQueue get_queue(QueueType::Enum queue_type)

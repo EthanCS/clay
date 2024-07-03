@@ -518,5 +518,17 @@ inline VkBufferUsageFlags to_vk_buffer_usage_flags(BufferUsage::Flag usage)
     return flags;
 }
 
+inline VkIndexType to_vk_index_type(IndexType::Enum index_type)
+{
+    switch (index_type)
+    {
+        case IndexType::Uint16:
+            return VK_INDEX_TYPE_UINT16;
+        case IndexType::Uint32:
+            return VK_INDEX_TYPE_UINT32;
+    }
+    return VK_INDEX_TYPE_UINT16;
+}
+
 } // namespace gfx
 } // namespace clay

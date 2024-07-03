@@ -104,6 +104,14 @@ struct CmdDrawOptions {
     u32 first_instance = 0;
 };
 
+struct CmdDrawIndexedOptions {
+    u32 index_count    = 0;
+    u32 instance_count = 1;
+    u32 first_index    = 0;
+    i32 vertex_offset  = 0;
+    u32 first_instance = 0;
+};
+
 struct CmdBindVertexBufferOptions {
     u32            binding = 0;
     Handle<Buffer> buffer;
@@ -115,6 +123,12 @@ struct CmdBindVertexBuffersOptions {
     u32             binding_count = 0;
     Handle<Buffer>* buffers       = nullptr;
     u32*            offsets       = nullptr;
+};
+
+struct CmdBindIndexBufferOptions {
+    Handle<Buffer>  buffer;
+    u32             offset = 0;
+    IndexType::Enum index_type;
 };
 
 } // namespace gfx

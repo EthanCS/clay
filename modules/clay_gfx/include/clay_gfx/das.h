@@ -115,6 +115,9 @@ DAS_BASE_BIND_ENUM(clay::gfx::PipelineStage::Flag, PipelineStage, TopOfPipe, Dra
 DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
 DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
 
+DAS_BIND_ENUM_CAST(clay::gfx::IndexType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
+
 //////////////////////////////////////////////////////////////////////////
 //////// resource.h
 
@@ -465,6 +468,20 @@ struct CmdDrawOptionsAnnotation : public das::ManagedStructureAnnotation<clay::g
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CmdDrawIndexedOptions, clay::gfx::CmdDrawIndexedOptions);
+struct CmdDrawIndexedOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdDrawIndexedOptions, true, true> {
+    CmdDrawIndexedOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdDrawIndexedOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(index_count)>("index_count");
+        addField<DAS_BIND_MANAGED_FIELD(instance_count)>("instance_count");
+        addField<DAS_BIND_MANAGED_FIELD(first_index)>("first_index");
+        addField<DAS_BIND_MANAGED_FIELD(vertex_offset)>("vertex_offset");
+        addField<DAS_BIND_MANAGED_FIELD(first_instance)>("first_instance");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 MAKE_TYPE_FACTORY(CmdBindVertexBufferOptions, clay::gfx::CmdBindVertexBufferOptions);
 struct CmdBindVertexBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBindVertexBufferOptions, true, true> {
     CmdBindVertexBufferOptionsAnnotation(das::ModuleLibrary& ml)
@@ -486,6 +503,18 @@ struct CmdBindVertexBuffersOptionsAnnotation : public das::ManagedStructureAnnot
         addField<DAS_BIND_MANAGED_FIELD(binding_count)>("binding_count");
         addField<DAS_BIND_MANAGED_FIELD(buffers)>("buffers");
         addField<DAS_BIND_MANAGED_FIELD(offsets)>("offsets");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
+MAKE_TYPE_FACTORY(CmdBindIndexBufferOptions, clay::gfx::CmdBindIndexBufferOptions);
+struct CmdBindIndexBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBindIndexBufferOptions, true, true> {
+    CmdBindIndexBufferOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdBindIndexBufferOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(buffer)>("buffer");
+        addField<DAS_BIND_MANAGED_FIELD(offset)>("offset");
+        addField<DAS_BIND_MANAGED_FIELD(index_type)>("index_type");
     }
     GFX_DAS_STRUCT_COMMON
 };
@@ -523,6 +552,7 @@ public:
         ADD_ENUM_ANNOTATION(SwapchainStatus)
         ADD_ENUM_ANNOTATION(PipelineStage)
         ADD_ENUM_ANNOTATION(BufferUsage)
+        ADD_ENUM_ANNOTATION(IndexType)
 
         // bind resource.h
         ADD_STRUCT_ANNOTATION(HSwapchain)
@@ -564,8 +594,10 @@ public:
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)
         ADD_STRUCT_ANNOTATION(CmdSetScissorOptions)
         ADD_STRUCT_ANNOTATION(CmdDrawOptions)
+        ADD_STRUCT_ANNOTATION(CmdDrawIndexedOptions)
         ADD_STRUCT_ANNOTATION(CmdBindVertexBufferOptions)
         ADD_STRUCT_ANNOTATION(CmdBindVertexBuffersOptions)
+        ADD_STRUCT_ANNOTATION(CmdBindIndexBufferOptions)
 
         // bind backend.h
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(init)
@@ -626,7 +658,9 @@ public:
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_set_viewport)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_set_scissor)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_draw)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_draw_indexed)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffer)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffers)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_index_buffer)
     }
 };
