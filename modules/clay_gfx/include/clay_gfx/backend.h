@@ -60,7 +60,7 @@ PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
 
 /////// Buffer
 PRO_DEF_MEMBER_DISPATCH(create_buffer, Handle<Buffer>(const CreateBufferOptions&));
-PRO_DEF_MEMBER_DISPATCH(map_buffer, void*(const Handle<Buffer>&, u32, u32));
+PRO_DEF_MEMBER_DISPATCH(map_buffer, void*(const Handle<Buffer>&));
 PRO_DEF_MEMBER_DISPATCH(unmap_buffer, void(const Handle<Buffer>&));
 PRO_DEF_MEMBER_DISPATCH(destroy_buffer, void(const Handle<Buffer>&));
 
@@ -78,7 +78,7 @@ PRO_DEF_MEMBER_DISPATCH(reset_command_buffer, void(const Handle<CommandBuffer>&,
 PRO_DEF_MEMBER_DISPATCH(free_command_buffer, void(const Handle<CommandBuffer>&));
 
 /////// Command
-PRO_DEF_MEMBER_DISPATCH(cmd_begin, void(const Handle<CommandBuffer>&));
+PRO_DEF_MEMBER_DISPATCH(cmd_begin, void(const Handle<CommandBuffer>&, bool));
 PRO_DEF_MEMBER_DISPATCH(cmd_end, void(const Handle<CommandBuffer>&));
 PRO_DEF_MEMBER_DISPATCH(cmd_begin_render_pass, void(const Handle<CommandBuffer>&, const CmdBeginRenderPassOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_end_render_pass, void(const Handle<CommandBuffer>&));
@@ -183,7 +183,7 @@ inline u32  get_texture_height(const Handle<Texture>& texture) { return g_backen
 inline void destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
 
 inline Handle<Buffer> create_buffer(const CreateBufferOptions& desc) { return g_backend_proxy.create_buffer(desc); }
-inline void*          map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size) { return g_backend_proxy.map_buffer(buffer, offset, size); }
+inline void*          map_buffer(const Handle<Buffer>& buffer) { return g_backend_proxy.map_buffer(buffer); }
 inline void           unmap_buffer(const Handle<Buffer>& buffer) { g_backend_proxy.unmap_buffer(buffer); }
 inline void           destroy_buffer(const Handle<Buffer>& buffer) { g_backend_proxy.destroy_buffer(buffer); }
 
@@ -197,7 +197,7 @@ inline Handle<CommandBuffer> allocate_command_buffer(const Handle<CommandPool>& 
 inline void                  reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource) { g_backend_proxy.reset_command_buffer(buffer, release_resource); }
 inline void                  free_command_buffer(const Handle<CommandBuffer>& buffer) { g_backend_proxy.free_command_buffer(buffer); }
 
-inline void cmd_begin(const Handle<CommandBuffer>& buffer) { g_backend_proxy.cmd_begin(buffer); }
+inline void cmd_begin(const Handle<CommandBuffer>& buffer, bool one_time) { g_backend_proxy.cmd_begin(buffer, one_time); }
 inline void cmd_end(const Handle<CommandBuffer>& buffer) { g_backend_proxy.cmd_end(buffer); }
 inline void cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options) { g_backend_proxy.cmd_begin_render_pass(buffer, options); }
 inline void cmd_end_render_pass(const Handle<CommandBuffer>& buffer) { g_backend_proxy.cmd_end_render_pass(buffer); }

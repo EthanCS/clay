@@ -73,7 +73,7 @@ public:
     void destroy_texture(const Handle<Texture>& texture);
 
     Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
-    void*          map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size);
+    void*          map_buffer(const Handle<Buffer>& buffer);
     void           unmap_buffer(const Handle<Buffer>& buffer);
     void           destroy_buffer(const Handle<Buffer>& buffer);
 
@@ -87,7 +87,7 @@ public:
     void                  reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource);
     void                  free_command_buffer(const Handle<CommandBuffer>& buffer);
 
-    void cmd_begin(const Handle<CommandBuffer>& cb);
+    void cmd_begin(const Handle<CommandBuffer>& cb, bool one_time);
     void cmd_end(const Handle<CommandBuffer>& cb);
     void cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options);
     void cmd_end_render_pass(const Handle<CommandBuffer>& cb);

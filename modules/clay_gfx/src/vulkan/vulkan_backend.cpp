@@ -765,7 +765,7 @@ Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
     return resources.buffers.push(buffer);
 }
 
-void* VulkanBackend::map_buffer(const Handle<Buffer>& buffer, u32 offset, u32 size)
+void* VulkanBackend::map_buffer(const Handle<Buffer>& buffer)
 {
     const VulkanBuffer* vulkan_buffer = resources.buffers.get(buffer);
     if (vulkan_buffer == nullptr) [[unlikely]] { return nullptr; }
@@ -928,7 +928,7 @@ void VulkanBackend::free_command_buffer(const Handle<CommandBuffer>& buffer)
     resources.command_buffers.free(buffer);
 }
 
-void VulkanBackend::cmd_begin(const Handle<CommandBuffer>& buffer)
+void VulkanBackend::cmd_begin(const Handle<CommandBuffer>& buffer, bool one_time)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
     if (vulkan_buffer == nullptr) [[unlikely]]
@@ -939,7 +939,7 @@ void VulkanBackend::cmd_begin(const Handle<CommandBuffer>& buffer)
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    // begin_info.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (one_time) { begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; }
     vkBeginCommandBuffer(vulkan_buffer->command_buffer, &begin_info);
 }
 

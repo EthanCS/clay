@@ -31,10 +31,16 @@ struct Vertex
     position: float2
     color: float3
 
-let vertices = [[auto   [[Vertex position = float2(0.0f, -0.5f), color = float3(1.0f, 0.0f, 0.0f)]],
-                        [[Vertex position = float2(0.5f, 0.5f), color = float3(0.0f, 1.0f, 0.0f)]],
-                        [[Vertex position = float2(-0.5f, 0.5f), color = float3(0.0f, 0.0f, 1.0f)]] 
+let vertices = [[auto   [[Vertex position = float2(-0.5f, -0.5f),   color = float3(1.0f, 0.0f, 0.0f)]];
+                        [[Vertex position = float2(0.5f, -0.5f),    color = float3(0.0f, 1.0f, 0.0f)]];
+                        [[Vertex position = float2(0.5f, 0.5f),     color = float3(0.0f, 0.0f, 1.0f)]];
+                        [[Vertex position = float2(-0.5f, 0.5f),    color = float3(1.0f, 1.0f, 1.0f)]]
                 ]]
+
+let indices = [[auto uint16(0); uint16(1); uint16(2); uint16(2); uint16(3); uint16(0)]]
+
+var index_buffer = [[HBuffer]]
+var vertex_buffer = [[HBuffer]]
 
 [export]
 def main
@@ -102,6 +108,9 @@ def on_init()
     // Swapchain
     create_swapchain(window.width, window.height)
 
+    // Buffers
+    create_index_buffer()
+
 def on_update()
     draw_frame()
 
@@ -152,7 +161,7 @@ def draw_frame()
         current_frame = (current_frame + 1u) % uint(MAX_FRAMES_IN_FLIGHT)
 
 def record_commands(cb: HCommandBuffer; image_index: uint)
-    gfx_cmd_begin(cb)
+    gfx_cmd_begin(cb, false)
     var render_pass = [[CmdBeginRenderPassOptions]]
     render_pass.framebuffer = swapchain_framebuffers[image_index]
     render_pass.render_pass_layout = render_pass_layout
@@ -199,3 +208,37 @@ def create_swapchain(width: uint; height: uint)
         swapchain_framebuffers[i] = gfx_create_framebuffer(option)
     swapchain_width = width
     swapchain_height = height
+
+def copy_buffer(src_buffer: HBuffer; dst_buffer: HBuffer; size: uint64)
+    var cb = gfx_allocate_command_buffer(command_pool)
+    gfx_cmd_begin(cb, true)
+    gfx_cmd_copy_buffer(cb, [[CmdCopyBufferOptions 
+        src_buffer = src_buffer, src_offset = uint64(0), 
+        dst_buffer = dst_buffer, dst_offset = uint64(0), 
+        size = size]])
+    gfx_cmd_end(cb)
+
+    var submit_options = [[QueueSubmitOptions]]
+    unsafe
+        submit_options.command_buffers = addr(cb)
+    submit_options.num_command_buffers = 1u
+    gfx_queue_submit(QueueType Graphics, submit_options)
+    gfx_queue_wait_idle(QueueType Graphics)
+    gfx_free_command_buffer(cb)
+
+def create_index_buffer
+    let buffer_size = length(indices) * typeinfo(sizeof type<uint16>)
+    
+    var staging_buffer = gfx_create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage TransferSrc, 
+        exclusive = true]])
+    var data = gfx_map_buffer(staging_buffer)
+    unsafe 
+        memcpy(data, addr(indices), buffer_size)
+    gfx_unmap_buffer(staging_buffer)
+
+    index_buffer = gfx_create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage IndexBuffer | BufferUsage TransferDst, exclusive = true]])
+
+    copy_buffer(staging_buffer, index_buffer, uint64(buffer_size))
+    gfx_destroy_buffer(staging_buffer)

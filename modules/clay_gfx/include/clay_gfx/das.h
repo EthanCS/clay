@@ -118,8 +118,18 @@ DAS_BASE_BIND_ENUM(clay::gfx::SwapchainStatus::Enum, SwapchainStatus, Success, O
 DAS_BIND_ENUM_CAST(clay::gfx::PipelineStage::Flag);
 DAS_BASE_BIND_ENUM(clay::gfx::PipelineStage::Flag, PipelineStage, TopOfPipe, DrawIndirect, VertexInput, VertexShader, TessellationControlShader, TessellationEvaluationShader, GeometryShader, FragmentShader, EarlyFragmentTests, LateFragmentTests, ColorAttachmentOutput, ComputeShader, Transfer, BottomOfPipe, Host, AllGraphics, AllCommands)
 
-DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
-DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
+// DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
+// DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
+
+inline das::TypeDeclPtr makeBufferUsageFlags()
+{
+    auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
+    ft->alias    = "BufferUsage";
+    ft->argNames = {
+        "TransferSrc", "TransferDst", "UniformTexelBuffer", "StorageTexelBuffer", "UniformBuffer", "StorageBuffer", "IndexBuffer", "VertexBuffer", "IndirectBuffer", "ShaderDeviceAddress", "VideoDecodeSrc", "VideoDecodeDst", "TransformFeedbackBuffer", "TransformFeedbackCounterBuffer", "ConditionalRendering", "AccelerationStructureBuildInputReadOnly", "AccelerationStructureStorage", "ShaderBindingTable", "SamplerDescriptorBuffer", "ResourceDescriptorBuffer", "PushDescriptorsDescriptorBuffer", "MicromapBuildInputReadOnly", "MicromapStorage"
+    };
+    return ft;
+}
 
 DAS_BIND_ENUM_CAST(clay::gfx::IndexType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
@@ -345,7 +355,8 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
         : ManagedStructureAnnotation("CreateBufferOptions", ml)
     {
         addField<DAS_BIND_MANAGED_FIELD(size)>("size");
-        addField<DAS_BIND_MANAGED_FIELD(usage)>("usage");
+        // addField<DAS_BIND_MANAGED_FIELD(usage)>("usage");
+        addFieldEx("usage", "usage", offsetof(clay::gfx::CreateBufferOptions, usage), makeBufferUsageFlags());
         addField<DAS_BIND_MANAGED_FIELD(exclusive)>("exclusive");
     }
     GFX_DAS_STRUCT_COMMON
@@ -571,7 +582,8 @@ public:
         ADD_ENUM_ANNOTATION(PrimitiveTopology)
         ADD_ENUM_ANNOTATION(SwapchainStatus)
         ADD_ENUM_ANNOTATION(PipelineStage)
-        ADD_ENUM_ANNOTATION(BufferUsage)
+        // ADD_ENUM_ANNOTATION(BufferUsage)
+        addAlias(makeBufferUsageFlags());
         ADD_ENUM_ANNOTATION(IndexType)
 
         // bind resource.h
