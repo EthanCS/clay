@@ -83,9 +83,9 @@ def on_init()
     pipeline_options.pixel_shader = [[ShaderInfo compiled_shader = hello_fs, entry_func = "main"]]
 
     reset(pipeline_options.graphics_state)
-    // set_vertex_buffer_binding(pipeline_options.graphics_state, uint8(0), uint16(typeinfo(sizeof type<Vertex>)))
-    // set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(0), uint16(typeinfo(offsetof<position> type<Vertex>)), Format R32G32_SFLOAT)
-    // set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(1), uint16(typeinfo(offsetof<color> type<Vertex>)), Format R32G32B32_SFLOAT)
+    set_vertex_buffer_binding(pipeline_options.graphics_state, uint8(0), uint16(typeinfo(sizeof type<Vertex>)))
+    set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(0), uint16(typeinfo(offsetof<position> type<Vertex>)), Format R32G32_SFLOAT)
+    set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(1), uint16(typeinfo(offsetof<color> type<Vertex>)), Format R32G32B32_SFLOAT)
     pipeline_options.graphics_state.depth_test_enabled = false
     pipeline_options.graphics_state.render_pass_layout = render_pass_layout
     pipeline = gfx_create_graphics_pipeline(pipeline_options)
@@ -110,6 +110,7 @@ def on_init()
 
     // Buffers
     create_index_buffer()
+    create_vertex_buffer()
 
 def on_update()
     draw_frame()
@@ -172,7 +173,9 @@ def record_commands(cb: HCommandBuffer; image_index: uint)
     gfx_cmd_bind_graphics_pipeline(cb, pipeline)
     gfx_cmd_set_viewport(cb, [[CmdSetViewportOptions x = 0.0, y = 0.0, width = float(swapchain_width), height = float(swapchain_height), min_depth = 0.0, max_depth = 1.0]])
     gfx_cmd_set_scissor(cb, [[CmdSetScissorOptions offset = [[int[2] 0; 0]], extent = [[uint[2] swapchain_width; swapchain_height]]]])
-    gfx_cmd_draw(cb, [[CmdDrawOptions vertex_count = 3u, instance_count = 1u, first_vertex = 0u, first_instance = 0u]])
+    gfx_cmd_bind_vertex_buffer(cb, [[CmdBindVertexBufferOptions binding = 0u, buffer = vertex_buffer, offset = 0u]])
+    gfx_cmd_bind_index_buffer(cb, [[CmdBindIndexBufferOptions buffer = index_buffer, offset = 0u, index_type = IndexType Uint16]])
+    gfx_cmd_draw_indexed(cb, [[CmdDrawIndexedOptions index_count = uint(length(indices)), instance_count = 1u, first_index = 0u, vertex_offset = 0, first_instance = 0u]])
     gfx_cmd_end_render_pass(cb)
     gfx_cmd_end(cb)
 
@@ -225,6 +228,23 @@ def copy_buffer(src_buffer: HBuffer; dst_buffer: HBuffer; size: uint64)
     gfx_queue_submit(QueueType Graphics, submit_options)
     gfx_queue_wait_idle(QueueType Graphics)
     gfx_free_command_buffer(cb)
+
+def create_vertex_buffer
+    let buffer_size = length(vertices) * typeinfo(sizeof type<Vertex>)
+    
+    var staging_buffer = gfx_create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage TransferSrc, 
+        exclusive = true]])
+    var data = gfx_map_buffer(staging_buffer)
+    unsafe 
+        memcpy(data, addr(vertices), buffer_size)
+    gfx_unmap_buffer(staging_buffer)
+
+    vertex_buffer = gfx_create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage VertexBuffer | BufferUsage TransferDst, exclusive = true]])
+
+    copy_buffer(staging_buffer, vertex_buffer, uint64(buffer_size))
+    gfx_destroy_buffer(staging_buffer)
 
 def create_index_buffer
     let buffer_size = length(indices) * typeinfo(sizeof type<uint16>)
