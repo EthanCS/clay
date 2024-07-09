@@ -38,15 +38,6 @@ struct QueueType {
     };
 };
 
-struct ShaderStage {
-    enum Flag
-    {
-        Vertex   = 1 << 0,
-        Fragment = 1 << 4,
-        Compute  = 1 << 5,
-    };
-};
-
 struct Format {
     enum Enum
     {
@@ -112,15 +103,6 @@ struct TextureComponentSwizzle {
         G,
         B,
         A,
-    };
-};
-
-struct TextureAspect {
-    enum Flag : char
-    {
-        Color   = 1 << 0,
-        Depth   = 1 << 1,
-        Stencil = 1 << 2,
     };
 };
 
@@ -228,17 +210,6 @@ struct StencilOp {
     };
 };
 
-struct ColorWriteEnabled {
-    enum Flag : char
-    {
-        Red   = 1 << 0,
-        Green = 1 << 1,
-        Blue  = 1 << 2,
-        Alpha = 1 << 3,
-        All   = Red | Green | Blue | Alpha,
-    };
-};
-
 struct PrimitiveTopology {
     enum Enum
     {
@@ -258,6 +229,43 @@ struct SwapchainStatus {
         OutOfDate,
         Suboptimal,
         Error,
+    };
+};
+
+struct IndexType {
+    enum Enum
+    {
+        Uint16,
+        Uint32,
+    };
+};
+
+struct TextureAspect {
+    enum Flag : char
+    {
+        Color   = 1 << 0,
+        Depth   = 1 << 1,
+        Stencil = 1 << 2,
+    };
+};
+
+struct ShaderStage {
+    enum Flag
+    {
+        Vertex   = 1 << 0,
+        Fragment = 1 << 1,
+        Compute  = 1 << 2,
+    };
+};
+
+struct ColorWriteEnabled {
+    enum Flag : char
+    {
+        Red   = 1 << 0,
+        Green = 1 << 1,
+        Blue  = 1 << 2,
+        Alpha = 1 << 3,
+        All   = Red | Green | Blue | Alpha,
     };
 };
 
@@ -287,37 +295,29 @@ struct PipelineStage {
 struct BufferUsage {
     enum Flag
     {
-        TransferSrc                             = 0x00000001,
-        TransferDst                             = 0x00000002,
-        UniformTexelBuffer                      = 0x00000004,
-        StorageTexelBuffer                      = 0x00000008,
-        UniformBuffer                           = 0x00000010,
-        StorageBuffer                           = 0x00000020,
-        IndexBuffer                             = 0x00000040,
-        VertexBuffer                            = 0x00000080,
-        IndirectBuffer                          = 0x00000100,
-        ShaderDeviceAddress                     = 0x00020000,
-        VideoDecodeSrc                          = 0x00002000,
-        VideoDecodeDst                          = 0x00004000,
-        TransformFeedbackBuffer                 = 0x00000800,
-        TransformFeedbackCounterBuffer          = 0x00001000,
-        ConditionalRendering                    = 0x00000200,
-        AccelerationStructureBuildInputReadOnly = 0x00080000,
-        AccelerationStructureStorage            = 0x00100000,
-        ShaderBindingTable                      = 0x00000400,
-        SamplerDescriptorBuffer                 = 0x00200000,
-        ResourceDescriptorBuffer                = 0x00400000,
-        PushDescriptorsDescriptorBuffer         = 0x04000000,
-        MicromapBuildInputReadOnly              = 0x00800000,
-        MicromapStorage                         = 0x01000000,
-    };
-};
-
-struct IndexType {
-    enum Enum
-    {
-        Uint16,
-        Uint32,
+        TransferSrc                             = 1 << 0,
+        TransferDst                             = 1 << 1,
+        UniformTexelBuffer                      = 1 << 2,
+        StorageTexelBuffer                      = 1 << 3,
+        UniformBuffer                           = 1 << 4,
+        StorageBuffer                           = 1 << 5,
+        IndexBuffer                             = 1 << 6,
+        VertexBuffer                            = 1 << 7,
+        IndirectBuffer                          = 1 << 8,
+        ShaderDeviceAddress                     = 1 << 9,
+        VideoDecodeSrc                          = 1 << 10,
+        VideoDecodeDst                          = 1 << 11,
+        TransformFeedbackBuffer                 = 1 << 12,
+        TransformFeedbackCounterBuffer          = 1 << 13,
+        ConditionalRendering                    = 1 << 14,
+        AccelerationStructureBuildInputReadOnly = 1 << 15,
+        AccelerationStructureStorage            = 1 << 16,
+        ShaderBindingTable                      = 1 << 17,
+        SamplerDescriptorBuffer                 = 1 << 18,
+        ResourceDescriptorBuffer                = 1 << 19,
+        PushDescriptorsDescriptorBuffer         = 1 << 20,
+        MicromapBuildInputReadOnly              = 1 << 21,
+        MicromapStorage                         = 1 << 22,
     };
 };
 

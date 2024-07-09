@@ -61,9 +61,6 @@ DAS_BASE_BIND_ENUM(clay::gfx::BackendType::Enum, BackendType, Vulkan, DirectX12,
 DAS_BIND_ENUM_CAST(clay::gfx::QueueType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::QueueType::Enum, QueueType, Graphics, Present, Compute, Transfer)
 
-DAS_BIND_ENUM_CAST(clay::gfx::ShaderStage::Flag);
-DAS_BASE_BIND_ENUM(clay::gfx::ShaderStage::Flag, ShaderStage, Vertex, Fragment, Compute)
-
 DAS_BIND_ENUM_CAST(clay::gfx::Format::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::Format::Enum, Format, Undefined, D32_SFLOAT, D32_SFLOAT_S8_UINT, D24_UNORM_S8_UINT, B8G8R8A8_UNORM, B8G8R8A8_SRGB, R8G8B8A8_UNORM, R8G8B8A8_SRGB, B8G8R8_UNORM, B8G8R8_SRGB, R8G8B8_UNORM, R8G8B8_SRGB, R32_SFLOAT, R32G32_SFLOAT, R32G32B32_SFLOAT, R32G32B32A32_SFLOAT)
 
@@ -78,9 +75,6 @@ DAS_BASE_BIND_ENUM(clay::gfx::RenderPassStoreOp::Enum, RenderPassStoreOp, DontCa
 
 DAS_BIND_ENUM_CAST(clay::gfx::TextureComponentSwizzle::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::TextureComponentSwizzle::Enum, TextureComponentSwizzle, Identity, Zero, One, R, G, B, A)
-
-DAS_BIND_ENUM_CAST(clay::gfx::TextureAspect::Flag);
-DAS_BASE_BIND_ENUM(clay::gfx::TextureAspect::Flag, TextureAspect, Color, Depth, Stencil)
 
 DAS_BIND_ENUM_CAST(clay::gfx::TextureViewType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::TextureViewType::Enum, TextureViewType, Texture1D, Texture2D, Texture3D, TextureCube, Texture1DArray, Texture2DArray, TextureCubeArray)
@@ -106,33 +100,54 @@ DAS_BASE_BIND_ENUM(clay::gfx::CompareOp::Enum, CompareOp, Never, Less, Equal, Le
 DAS_BIND_ENUM_CAST(clay::gfx::StencilOp::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::StencilOp::Enum, StencilOp, Keep, Zero, Replace, IncrementAndClamp, DecrementAndClamp, Invert, IncrementAndWrap, DecrementAndWrap)
 
-DAS_BIND_ENUM_CAST(clay::gfx::ColorWriteEnabled::Flag);
-DAS_BASE_BIND_ENUM(clay::gfx::ColorWriteEnabled::Flag, ColorWriteEnabled, Red, Green, Blue, Alpha, All)
-
 DAS_BIND_ENUM_CAST(clay::gfx::PrimitiveTopology::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::PrimitiveTopology::Enum, PrimitiveTopology, PointList, LineList, LineStrip, TriangleList, TriangleStrip, TriangleFan)
 
 DAS_BIND_ENUM_CAST(clay::gfx::SwapchainStatus::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::SwapchainStatus::Enum, SwapchainStatus, Success, OutOfDate, Suboptimal, Error)
 
-DAS_BIND_ENUM_CAST(clay::gfx::PipelineStage::Flag);
-DAS_BASE_BIND_ENUM(clay::gfx::PipelineStage::Flag, PipelineStage, TopOfPipe, DrawIndirect, VertexInput, VertexShader, TessellationControlShader, TessellationEvaluationShader, GeometryShader, FragmentShader, EarlyFragmentTests, LateFragmentTests, ColorAttachmentOutput, ComputeShader, Transfer, BottomOfPipe, Host, AllGraphics, AllCommands)
+DAS_BIND_ENUM_CAST(clay::gfx::IndexType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
 
-// DAS_BIND_ENUM_CAST(clay::gfx::BufferUsage::Flag);
-// DAS_BASE_BIND_ENUM(clay::gfx::BufferUsage::Flag, BufferUsage, TransferSrc, TransferDst, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, IndexBuffer, VertexBuffer, IndirectBuffer, ShaderDeviceAddress, VideoDecodeSrc, VideoDecodeDst, TransformFeedbackBuffer, TransformFeedbackCounterBuffer, ConditionalRendering, AccelerationStructureBuildInputReadOnly, AccelerationStructureStorage, ShaderBindingTable, SamplerDescriptorBuffer, ResourceDescriptorBuffer, PushDescriptorsDescriptorBuffer, MicromapBuildInputReadOnly, MicromapStorage)
+inline das::TypeDeclPtr makeTextureAspectFlags()
+{
+    auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
+    ft->alias    = "TextureAspect";
+    ft->argNames = { "Color", "Depth", "Stencil" };
+    return ft;
+}
+
+inline das::TypeDeclPtr makeShaderStageFlags()
+{
+    auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
+    ft->alias    = "ShaderStage";
+    ft->argNames = { "Vertex", "Fragment", "Compute" };
+    return ft;
+}
+
+inline das::TypeDeclPtr makeColorWriteEnabledFlags()
+{
+    auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
+    ft->alias    = "ColorWriteEnabled";
+    ft->argNames = { "Red", "Green", "Blue", "Alpha" };
+    return ft;
+}
+
+inline das::TypeDeclPtr makePipelineStageFlags()
+{
+    auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
+    ft->alias    = "PipelineStage";
+    ft->argNames = { "TopOfPipe", "DrawIndirect", "VertexInput", "VertexShader", "TessellationControlShader", "TessellationEvaluationShader", "GeometryShader", "FragmentShader", "EarlyFragmentTests", "LateFragmentTests", "ColorAttachmentOutput", "ComputeShader", "Transfer", "BottomOfPipe", "Host", "AllGraphics", "AllCommands" };
+    return ft;
+}
 
 inline das::TypeDeclPtr makeBufferUsageFlags()
 {
     auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
     ft->alias    = "BufferUsage";
-    ft->argNames = {
-        "TransferSrc", "TransferDst", "UniformTexelBuffer", "StorageTexelBuffer", "UniformBuffer", "StorageBuffer", "IndexBuffer", "VertexBuffer", "IndirectBuffer", "ShaderDeviceAddress", "VideoDecodeSrc", "VideoDecodeDst", "TransformFeedbackBuffer", "TransformFeedbackCounterBuffer", "ConditionalRendering", "AccelerationStructureBuildInputReadOnly", "AccelerationStructureStorage", "ShaderBindingTable", "SamplerDescriptorBuffer", "ResourceDescriptorBuffer", "PushDescriptorsDescriptorBuffer", "MicromapBuildInputReadOnly", "MicromapStorage"
-    };
+    ft->argNames = { "TransferSrc", "TransferDst", "UniformTexelBuffer", "StorageTexelBuffer", "UniformBuffer", "StorageBuffer", "IndexBuffer", "VertexBuffer", "IndirectBuffer", "ShaderDeviceAddress", "VideoDecodeSrc", "VideoDecodeDst", "TransformFeedbackBuffer", "TransformFeedbackCounterBuffer", "ConditionalRendering", "AccelerationStructureBuildInputReadOnly", "AccelerationStructureStorage", "ShaderBindingTable", "SamplerDescriptorBuffer", "ResourceDescriptorBuffer", "PushDescriptorsDescriptorBuffer", "MicromapBuildInputReadOnly", "MicromapStorage" };
     return ft;
 }
-
-DAS_BIND_ENUM_CAST(clay::gfx::IndexType::Enum);
-DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
 
 //////////////////////////////////////////////////////////////////////////
 //////// resource.h
@@ -210,7 +225,7 @@ struct BlendStateAnnotation : public das::ManagedStructureAnnotation<clay::gfx::
         addField<DAS_BIND_MANAGED_FIELD(src_alpha)>("src_alpha");
         addField<DAS_BIND_MANAGED_FIELD(dst_alpha)>("dst_alpha");
         addField<DAS_BIND_MANAGED_FIELD(alpha_op)>("alpha_op");
-        addField<DAS_BIND_MANAGED_FIELD(color_write)>("color_write");
+        addFieldEx("color_write", "color_write", offsetof(clay::gfx::BlendState, color_write), makeColorWriteEnabledFlags());
     }
     GFX_DAS_STRUCT_COMMON
 };
@@ -294,7 +309,7 @@ struct TextureViewDescAnnotation : public das::ManagedStructureAnnotation<clay::
     {
         addField<DAS_BIND_MANAGED_FIELD(texture)>("texture");
         addField<DAS_BIND_MANAGED_FIELD(view_type)>("view_type");
-        addField<DAS_BIND_MANAGED_FIELD(aspect_flags)>("aspect_flags");
+        addFieldEx("aspect_flags", "aspect_flags", offsetof(clay::gfx::TextureViewDesc, aspect_flags), makeTextureAspectFlags());
         addField<DAS_BIND_MANAGED_FIELD(format)>("format");
         addField<DAS_BIND_MANAGED_FIELD(base_mip_level)>("base_mip_level");
         addField<DAS_BIND_MANAGED_FIELD(level_count)>("level_count");
@@ -355,7 +370,6 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
         : ManagedStructureAnnotation("CreateBufferOptions", ml)
     {
         addField<DAS_BIND_MANAGED_FIELD(size)>("size");
-        // addField<DAS_BIND_MANAGED_FIELD(usage)>("usage");
         addFieldEx("usage", "usage", offsetof(clay::gfx::CreateBufferOptions, usage), makeBufferUsageFlags());
         addField<DAS_BIND_MANAGED_FIELD(exclusive)>("exclusive");
     }
@@ -385,7 +399,7 @@ struct QueueSubmitOptionsAnnotation : public das::ManagedStructureAnnotation<cla
         addField<DAS_BIND_MANAGED_FIELD(num_wait_semaphores)>("num_wait_semaphores");
         addField<DAS_BIND_MANAGED_FIELD(signal_semaphores)>("signal_semaphores");
         addField<DAS_BIND_MANAGED_FIELD(num_signal_semaphores)>("num_signal_semaphores");
-        addField<DAS_BIND_MANAGED_FIELD(wait_dst_stage)>("wait_dst_stage");
+        addFieldEx("wait_dst_stage", "wait_dst_stage", offsetof(clay::gfx::QueueSubmitOptions, wait_dst_stage), makePipelineStageFlags());
         addField<DAS_BIND_MANAGED_FIELD(fence)>("fence");
     }
     GFX_DAS_STRUCT_COMMON
@@ -563,13 +577,11 @@ public:
         ADD_STRUCT_ANNOTATION(ClearValue)
         ADD_ENUM_ANNOTATION(BackendType)
         ADD_ENUM_ANNOTATION(QueueType)
-        ADD_ENUM_ANNOTATION(ShaderStage)
         ADD_ENUM_ANNOTATION(Format)
         ADD_ENUM_ANNOTATION(ImageLayout)
         ADD_ENUM_ANNOTATION(RenderPassLoadOp)
         ADD_ENUM_ANNOTATION(RenderPassStoreOp)
         ADD_ENUM_ANNOTATION(TextureComponentSwizzle)
-        ADD_ENUM_ANNOTATION(TextureAspect)
         ADD_ENUM_ANNOTATION(TextureViewType)
         ADD_ENUM_ANNOTATION(FillMode)
         ADD_ENUM_ANNOTATION(FrontFace)
@@ -578,13 +590,14 @@ public:
         ADD_ENUM_ANNOTATION(BlendOp)
         ADD_ENUM_ANNOTATION(CompareOp)
         ADD_ENUM_ANNOTATION(StencilOp)
-        ADD_ENUM_ANNOTATION(ColorWriteEnabled)
         ADD_ENUM_ANNOTATION(PrimitiveTopology)
         ADD_ENUM_ANNOTATION(SwapchainStatus)
-        ADD_ENUM_ANNOTATION(PipelineStage)
-        // ADD_ENUM_ANNOTATION(BufferUsage)
-        addAlias(makeBufferUsageFlags());
         ADD_ENUM_ANNOTATION(IndexType)
+        addAlias(makeTextureAspectFlags());
+        addAlias(makeShaderStageFlags());
+        addAlias(makeColorWriteEnabledFlags());
+        addAlias(makePipelineStageFlags());
+        addAlias(makeBufferUsageFlags());
 
         // bind resource.h
         ADD_STRUCT_ANNOTATION(HSwapchain)
