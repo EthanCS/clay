@@ -61,14 +61,14 @@ def on_init()
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
+            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = true]])
             fclose(f)
     fopen("test/gfx/hello_world/frag.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
+            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = true]])
             fclose(f)
 
     // Render pass layout
