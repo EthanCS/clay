@@ -11,6 +11,8 @@
 #include <clay_gfx/vulkan/vulkan_backend.h>
 #include <clay_gfx/vulkan/vulkan_utils.h>
 
+#include <shaderc/shaderc.hpp>
+
 namespace clay
 {
 namespace gfx
@@ -669,12 +671,51 @@ void VulkanBackend::destroy_semaphore(const Handle<Semaphore>& semaphore)
     resources.semaphores.free(semaphore);
 }
 
+// Compiles a shader to a SPIR-V binary. Returns the binary as
+// a vector of 32-bit words.
+std::vector<uint32_t> compile_file(const std::string& source_name, shaderc_shader_kind kind, const std::string& source, bool optimize = false)
+{
+    shaderc::Compiler       compiler;
+    shaderc::CompileOptions options;
+
+    // Like -DMY_DEFINE=1
+    // options.AddMacroDefinition("MY_DEFINE", "1");
+    if (optimize) options.SetOptimizationLevel(shaderc_optimization_level_size);
+
+    shaderc::SpvCompilationResult module =
+    compiler.CompileGlslToSpv(source, kind, source_name.c_str(), options);
+
+    if (module.GetCompilationStatus() != shaderc_compilation_status_success)
+    {
+        CLAY_LOG_ERROR("{}", module.GetErrorMessage());
+        return std::vector<uint32_t>();
+    }
+
+    return { module.cbegin(), module.cend() };
+}
+
 Handle<Shader> VulkanBackend::create_shader(const CreateShaderOptions& desc)
 {
+    const u32* binary_code = nullptr;
+    usize      binary_size = 0;
+
+    if (desc.is_compiled)
+    {
+        binary_code = reinterpret_cast<const u32*>(desc.code);
+        binary_size = desc.code_size;
+    }
+    else
+    {
+        auto binary = compile_file("shader_src", shaderc_glsl_infer_from_source, desc.code);
+        if (binary.empty()) [[unlikely]] { return Handle<Shader>::invalid(); }
+        binary_code = binary.data();
+        binary_size = binary.size() * sizeof(u32);
+    }
+
     VkShaderModuleCreateInfo shader_create_info = {};
     shader_create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shader_create_info.codeSize                 = desc.code_size;
-    shader_create_info.pCode                    = reinterpret_cast<const u32*>(desc.code);
+    shader_create_info.codeSize                 = binary_size;
+    shader_create_info.pCode                    = binary_code;
 
     VkShaderModule shader_module;
     VkResult       result = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);

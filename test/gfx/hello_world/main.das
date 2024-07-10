@@ -56,19 +56,19 @@ def main
 def on_init()
 
     // Load shaders
-    fopen("test/gfx/hello_world/vert.spv", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/vert.glsl", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = true]])
+            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = false]])
             fclose(f)
-    fopen("test/gfx/hello_world/frag.spv", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/frag.glsl", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = true]])
+            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = false]])
             fclose(f)
 
     // Render pass layout
