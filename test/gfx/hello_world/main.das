@@ -1,6 +1,7 @@
 require fio
 require clay_app
 require clay_gfx
+require ShaderConductor
 
 let MAX_FRAMES_IN_FLIGHT = 2
 
@@ -54,21 +55,20 @@ def main
     on_destroy()
 
 def on_init()
-
     // Load shaders
-    fopen("test/gfx/hello_world/vert.glsl", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/vert.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = false]])
+            hello_vs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
             fclose(f)
-    fopen("test/gfx/hello_world/frag.glsl", "rb") <| $ ( f )
+    fopen("test/gfx/hello_world/frag.spv", "rb") <| $ ( f )
         if f != null
             fseek(f, int64(0), seek_end)
             let size = ftell(f)
             let data = fread(f)
-            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size), is_compiled = false]])
+            hello_fs = gfx_create_shader([[CreateShaderOptions code = data, code_size = uint(size)]])
             fclose(f)
 
     // Render pass layout

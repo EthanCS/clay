@@ -360,7 +360,6 @@ struct CreateShaderOptionsAnnotation : public das::ManagedStructureAnnotation<cl
     {
         addField<DAS_BIND_MANAGED_FIELD(code)>("code");
         addField<DAS_BIND_MANAGED_FIELD(code_size)>("code_size");
-        addField<DAS_BIND_MANAGED_FIELD(is_compiled)>("is_compiled");
     }
     GFX_DAS_STRUCT_COMMON
 };

@@ -16,3 +16,13 @@ target("whereami")
     add_includedirs("whereami/src/", {public = true})
 target_end()
 --------------------------------------------------------
+
+-- ShaderConductor -------------------------------------
+target("ShaderConductor-clay")
+    set_kind("headeronly")
+    add_includedirs("ShaderConductor-clay/include/", {public = true})
+    add_linkdirs("ShaderConductor-clay/lib/x86_64/", {public = true})
+    add_links("ShaderConductor", {public = true})
+    add_packages("daScript")
+target_end()
+--------------------------------------------------------

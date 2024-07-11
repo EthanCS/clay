@@ -25,7 +25,6 @@ struct CreateSwapchainOptions {
 struct CreateShaderOptions {
     const char* code        = nullptr;
     u32         code_size   = 0;
-    bool        is_compiled = true;
 };
 
 struct CreateBufferOptions {

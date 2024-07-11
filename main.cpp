@@ -11,6 +11,9 @@ REGISTER_MODULE(Module_clay_app);
 #include <clay_gfx/das.h>
 REGISTER_MODULE(Module_clay_gfx);
 
+#include <ShaderConductor-clay/das.h>
+REGISTER_MODULE(Module_ShaderConductor);
+
 void use_utf8();
 
 void               require_project_specific_modules(); // link time resolved dependencies
@@ -378,6 +381,7 @@ int das_aot_main(int argc, char* argv[])
 
     NEED_MODULE(Module_clay_app);
     NEED_MODULE(Module_clay_gfx);
+    NEED_MODULE(Module_ShaderConductor);
 
     // require_project_specific_modules();
 
@@ -750,6 +754,7 @@ int MAIN_FUNC_NAME(int argc, char* argv[])
 
     NEED_MODULE(Module_clay_app);
     NEED_MODULE(Module_clay_gfx);
+    NEED_MODULE(Module_ShaderConductor);
 
     Module::Initialize();
     daScriptEnvironment::bound->g_isInAot = true;
