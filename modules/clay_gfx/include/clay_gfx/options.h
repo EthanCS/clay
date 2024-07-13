@@ -23,8 +23,8 @@ struct CreateSwapchainOptions {
 };
 
 struct CreateShaderOptions {
-    const char* code        = nullptr;
-    u32         code_size   = 0;
+    const void* code      = nullptr;
+    u32         code_size = 0;
 };
 
 struct CreateBufferOptions {

@@ -45,8 +45,6 @@ struct CompilerShaderModelAnnotation : public das::ManagedStructureAnnotation<Sh
     CompilerShaderModelAnnotation(das::ModuleLibrary& ml)
         : ManagedStructureAnnotation("CompilerShaderModel", ml)
     {
-        // addField<DAS_BIND_MANAGED_FIELD(major_ver)>("major_ver");
-        // addField<DAS_BIND_MANAGED_FIELD(minor_ver)>("minor_ver");
     }
     DAS_STRUCT_COMMON_OVERRIDE
 };
@@ -202,11 +200,24 @@ public:
         addAnnotation(das::make_smart<CompilerModuleDescAnnotation>(lib));
         addAnnotation(das::make_smart<CompilerLinkDescAnnotation>(lib));
 
-        addExtern<DAS_BIND_FUN(Module_ShaderConductor::Compile), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, "Compile", das::SideEffects::modifyExternal, "ShaderConductor::Compiler::Compile");
+        addExtern<DAS_BIND_FUN(Module_ShaderConductor::MakeShaderModel), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, "MakeShaderModel", das::SideEffects::none, "Module_ShaderConductor::MakeShaderModel");
+        addExtern<DAS_BIND_FUN(Module_ShaderConductor::MakeCompilerOptions), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, "MakeCompilerOptions", das::SideEffects::none, "Module_ShaderConductor::MakeCompilerOptions");
+
+        addExtern<DAS_BIND_FUN(Module_ShaderConductor::Compile), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, "Compile", das::SideEffects::modifyExternal, "Module_ShaderConductor::Compile");
+        addExtern<DAS_BIND_FUN(Module_ShaderConductor::CompileMulti)>(*this, lib, "CompileMulti", das::SideEffects::modifyExternal, "Module_ShaderConductor::CompileMulti");
 
         addExtern<DAS_BIND_FUN(ShaderConductor::Compiler::LinkSupport)>(*this, lib, "LinkSupport", das::SideEffects::modifyExternal, "ShaderConductor::Compiler::LinkSupport");
         addExtern<DAS_BIND_FUN(ShaderConductor::Compiler::Link), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, "Link", das::SideEffects::modifyExternal, "ShaderConductor::Compiler::Link");
     }
 
+    static ShaderConductor::Compiler::ShaderModel MakeShaderModel(uint32_t major_ver, uint32_t minor_ver) { return ShaderConductor::Compiler::ShaderModel{ (uint8_t)major_ver, (uint8_t)minor_ver }; }
+    static ShaderConductor::Compiler::Options     MakeCompilerOptions()
+    {
+        ShaderConductor::Compiler::Options R = {};
+        return R;
+    }
+
     static ShaderConductor::Compiler::ResultDesc Compile(const ShaderConductor::Compiler::SourceDesc& source, const ShaderConductor::Compiler::Options& options, const ShaderConductor::Compiler::TargetDesc& target) { return ShaderConductor::Compiler::Compile(source, options, target); }
+
+    static void CompileMulti(const ShaderConductor::Compiler::SourceDesc& source, const ShaderConductor::Compiler::Options& options, const ShaderConductor::Compiler::TargetDesc* targets, uint32_t numTargets, ShaderConductor::Compiler::ResultDesc* results) { ShaderConductor::Compiler::Compile(source, options, targets, numTargets, results); }
 };
