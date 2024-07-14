@@ -74,6 +74,18 @@ struct CreateGraphicsPipelineOptions {
     GraphicsState graphics_state;
 };
 
+struct CreateDescriptorSetLayoutOptions {
+    DescriptorBinding bindings[MAX_DESCRIPTORS_PER_SET];
+    u32               num_bindings = 0;
+    u32               set_index    = 0;
+    const char*       name         = nullptr;
+
+    inline CreateDescriptorSetLayoutOptions& reset();
+    inline CreateDescriptorSetLayoutOptions& set_set_index(u32 index);
+    inline CreateDescriptorSetLayoutOptions& set_name(const char* name);
+    inline CreateDescriptorSetLayoutOptions& add_binding(DescriptorType::Enum type, u32 start, u32 count, const char* name);
+};
+
 struct CmdBeginRenderPassOptions {
     Handle<Framebuffer> framebuffer;
     RenderPassLayout    render_pass_layout;

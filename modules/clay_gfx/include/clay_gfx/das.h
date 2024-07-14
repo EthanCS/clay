@@ -109,6 +109,9 @@ DAS_BASE_BIND_ENUM(clay::gfx::SwapchainStatus::Enum, SwapchainStatus, Success, O
 DAS_BIND_ENUM_CAST(clay::gfx::IndexType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
 
+DAS_BIND_ENUM_CAST(clay::gfx::DescriptorType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::DescriptorType::Enum, DescriptorType, Sampler, CombinedImageSampler, SampledImage, StorageImage, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, UniformBufferDynamic, StorageBufferDynamic, InputAttachment)
+
 inline das::TypeDeclPtr makeTextureAspectFlags()
 {
     auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
@@ -593,6 +596,7 @@ public:
         ADD_ENUM_ANNOTATION(PrimitiveTopology)
         ADD_ENUM_ANNOTATION(SwapchainStatus)
         ADD_ENUM_ANNOTATION(IndexType)
+        ADD_ENUM_ANNOTATION(DescriptorType)
         addAlias(makeTextureAspectFlags());
         addAlias(makeShaderStageFlags());
         addAlias(makeColorWriteEnabledFlags());

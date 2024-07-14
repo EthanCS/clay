@@ -6,12 +6,13 @@ namespace clay
 {
 namespace gfx
 {
-static const u8 MAX_SWAPCHAIN_IMAGES  = 3;
-static const u8 MAX_SHADER_STAGES     = 5;
-static const u8 MAX_COLOR_ATTACHMENTS = 8;
-static const u8 MAX_ATTACHMENTS       = MAX_COLOR_ATTACHMENTS + 1; // color + depth/stencil
-static const u8 MAX_VERTEX_ATTRIBUTES = 16;
-static const u8 MAX_VERTEX_BINDINGS   = 16;
+static const u8 MAX_SWAPCHAIN_IMAGES    = 3;
+static const u8 MAX_SHADER_STAGES       = 5;
+static const u8 MAX_COLOR_ATTACHMENTS   = 8;
+static const u8 MAX_ATTACHMENTS         = MAX_COLOR_ATTACHMENTS + 1; // color + depth/stencil
+static const u8 MAX_VERTEX_ATTRIBUTES   = 16;
+static const u8 MAX_VERTEX_BINDINGS     = 16;
+static const u8 MAX_DESCRIPTORS_PER_SET = 16;
 
 struct ClearValue {
     f32 color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -237,6 +238,23 @@ struct IndexType {
     {
         Uint16,
         Uint32,
+    };
+};
+
+struct DescriptorType {
+    enum Enum
+    {
+        Sampler,
+        CombinedImageSampler,
+        SampledImage,
+        StorageImage,
+        UniformTexelBuffer,
+        StorageTexelBuffer,
+        UniformBuffer,
+        StorageBuffer,
+        UniformBufferDynamic,
+        StorageBufferDynamic,
+        InputAttachment,
     };
 };
 

@@ -169,5 +169,12 @@ struct TextureViewDesc {
     TextureComponentSwizzle::Enum component_a{ TextureComponentSwizzle::Identity };
 };
 
+struct DescriptorBinding {
+    DescriptorType::Enum type;
+    u16                  start;
+    u16                  count;
+    const char*          name;
+};
+
 } // namespace gfx
 } // namespace clay
