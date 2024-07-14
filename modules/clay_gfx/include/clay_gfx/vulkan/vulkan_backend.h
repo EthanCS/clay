@@ -9,6 +9,9 @@ namespace clay
 {
 namespace gfx
 {
+
+static const u32 MAX_GLOBAL_POOL_ELEMENTS = 128;
+
 class VulkanBackend
 {
 private:
@@ -25,6 +28,8 @@ private:
     VulkanQueue present_queue;
     VulkanQueue compute_queue;
     VulkanQueue transfer_queue;
+
+    VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 
     bool                             debug_utils_enabled;
     VkDebugUtilsMessengerEXT         debug_utils_messenger;

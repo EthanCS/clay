@@ -266,7 +266,43 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
         allocator_info.instance               = instance;
 
         VkResult r = vmaCreateAllocator(&allocator_info, &vma_allocator);
-        CLAY_ASSERT(r == VK_SUCCESS, "Failed to create VMA allocator. ({})", string_VkResult(r));
+        if (r != VK_SUCCESS)
+        {
+            CLAY_LOG_ERROR("Failed to create VMA allocator. ({})", string_VkResult(r));
+            return false;
+        }
+    }
+
+    ////////  Create Descriptor Pools
+    {
+        VkDescriptorPoolSize pool_sizes[] = {
+            { VK_DESCRIPTOR_TYPE_SAMPLER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, MAX_GLOBAL_POOL_ELEMENTS },
+            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, MAX_GLOBAL_POOL_ELEMENTS }
+        };
+        u32 pool_sizes_count = sizeof(pool_sizes) / sizeof((pool_sizes)[0]);
+
+        VkDescriptorPoolCreateInfo pool_info = {};
+        pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        pool_info.flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        pool_info.maxSets                    = MAX_GLOBAL_POOL_ELEMENTS * pool_sizes_count;
+        pool_info.poolSizeCount              = pool_sizes_count;
+        pool_info.pPoolSizes                 = pool_sizes;
+
+        VkResult r = vkCreateDescriptorPool(device, &pool_info, nullptr, &descriptor_pool);
+        if (r != VK_SUCCESS)
+        {
+            CLAY_LOG_ERROR("Failed to create Vulkan descriptor pool. ({})", string_VkResult(r));
+            return false;
+        }
     }
 
     //////// Init debug utils function pointers.
@@ -281,7 +317,8 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
     SDL_Window* window = static_cast<SDL_Window*>(desc.window);
     if (SDL_Vulkan_CreateSurface(window, instance, &surface) == SDL_FALSE)
     {
-        CLAY_ASSERT(false, "Failed to create Vulkan surface.");
+        CLAY_LOG_ERROR("Failed to create Vulkan surface.");
+        return false;
     }
 
     return true;
@@ -300,6 +337,7 @@ void VulkanBackend::shutdown()
     }
 
     vmaDestroyAllocator(vma_allocator);
+    vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
