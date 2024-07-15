@@ -23,6 +23,7 @@ DEFINE_CLAY_GFX_RESOURCE_TAG(PipelineLayout)
 DEFINE_CLAY_GFX_RESOURCE_TAG(GraphicsPipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(ComputePipeline)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Framebuffer)
+DEFINE_CLAY_GFX_RESOURCE_TAG(DescriptorSetLayout)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandPool)
 DEFINE_CLAY_GFX_RESOURCE_TAG(CommandBuffer)
 
@@ -171,7 +172,7 @@ struct TextureViewDesc {
 
 struct DescriptorBinding {
     DescriptorType::Enum type;
-    u16                  start;
+    u16                  index;
     u16                  count;
     const char*          name;
 };

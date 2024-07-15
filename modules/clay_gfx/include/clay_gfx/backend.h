@@ -68,6 +68,10 @@ PRO_DEF_MEMBER_DISPATCH(destroy_buffer, void(const Handle<Buffer>&));
 PRO_DEF_MEMBER_DISPATCH(create_framebuffer, Handle<Framebuffer>(const CreateFramebufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_framebuffer, void(const Handle<Framebuffer>&));
 
+/////// DescriptorSetLayout
+PRO_DEF_MEMBER_DISPATCH(create_descriptor_set_layout, Handle<DescriptorSetLayout>(const CreateDescriptorSetLayoutOptions&));
+PRO_DEF_MEMBER_DISPATCH(destroy_descriptor_set_layout, void(const Handle<DescriptorSetLayout>&));
+
 /////// CommandPool
 PRO_DEF_MEMBER_DISPATCH(create_command_pool, Handle<CommandPool>(QueueType::Enum));
 PRO_DEF_MEMBER_DISPATCH(destroy_command_pool, void(const Handle<CommandPool>&));
@@ -125,6 +129,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                destroy_buffer,
                                create_framebuffer,
                                destroy_framebuffer,
+                               create_descriptor_set_layout,
+                               destroy_descriptor_set_layout,
                                create_command_pool,
                                destroy_command_pool,
                                allocate_command_buffer,
@@ -189,6 +195,9 @@ inline void           destroy_buffer(const Handle<Buffer>& buffer) { g_backend_p
 
 inline Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc) { return g_backend_proxy.create_framebuffer(desc); }
 inline void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer) { g_backend_proxy.destroy_framebuffer(framebuffer); }
+
+inline Handle<DescriptorSetLayout> create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc) { return g_backend_proxy.create_descriptor_set_layout(desc); }
+inline void                        destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout) { g_backend_proxy.destroy_descriptor_set_layout(layout); }
 
 inline Handle<CommandPool> create_command_pool(QueueType::Enum queue_type) { return g_backend_proxy.create_command_pool(queue_type); }
 inline void                destroy_command_pool(const Handle<CommandPool>& pool) { g_backend_proxy.destroy_command_pool(pool); }

@@ -13,12 +13,12 @@ CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::reset()
     return *this;
 }
 
-CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::add_binding(DescriptorType::Enum type, u32 start, u32 count, const char* name)
+CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::add_binding(DescriptorType::Enum type, u32 index, u32 count, const char* name)
 {
     if (num_bindings < MAX_DESCRIPTORS_PER_SET)
     {
         bindings[num_bindings].type  = type;
-        bindings[num_bindings].start = start;
+        bindings[num_bindings].index = index;
         bindings[num_bindings].count = count;
         bindings[num_bindings].name  = name;
         num_bindings++;

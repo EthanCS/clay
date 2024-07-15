@@ -3,9 +3,6 @@
 #include <daScript/daScript.h>
 #include <clay_gfx/backend.h>
 
-#define STRINGIFY(x) #x
-#define TOKENPASTE(x, y) STRINGIFY(x##y)
-
 #define GFX_DAS_STRUCT_COMMON                              \
     virtual bool isLocal() const override { return true; } \
     virtual bool canCopy() const override { return true; } \
@@ -28,11 +25,11 @@
 #define ADD_ENUM_ANNOTATION(S) addEnumeration(das::make_smart<Enumeration##S>());
 #define ADD_STRUCT_ANNOTATION(S) addAnnotation(das::make_smart<S##Annotation>(lib));
 
-#define ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
-#define ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::accessExternal, #FUNC_NAME);
+#define ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, #FUNC_NAME, das::SideEffects::modifyExternal, #FUNC_NAME);
+#define ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME)>(*this, lib, #FUNC_NAME, das::SideEffects::accessExternal, #FUNC_NAME);
 
-#define ADD_FUNC_RET_REF_MODIFY_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::modifyExternal, #FUNC_NAME);
-#define ADD_FUNC_RET_REF_ACCESS_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, TOKENPASTE(gfx_, FUNC_NAME), das::SideEffects::accessExternal, #FUNC_NAME);
+#define ADD_FUNC_RET_REF_MODIFY_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, #FUNC_NAME, das::SideEffects::modifyExternal, #FUNC_NAME);
+#define ADD_FUNC_RET_REF_ACCESS_EXTERNAL(FUNC_NAME) addExtern<DAS_BIND_FUN(clay::gfx::FUNC_NAME), das::SimNode_ExtFuncCallAndCopyOrMove>(*this, lib, #FUNC_NAME, das::SideEffects::accessExternal, #FUNC_NAME);
 
 #define ADD_MEMBER_FUNCTION(STRUCT_NAME, FUNC_NAME)                                                                                                                       \
     {                                                                                                                                                                     \
@@ -166,6 +163,7 @@ HANDLE_DAS_TYPE_BINDING(HPipelineLayout, PipelineLayout)
 HANDLE_DAS_TYPE_BINDING(HGraphicsPipeline, GraphicsPipeline)
 HANDLE_DAS_TYPE_BINDING(HComputePipeline, ComputePipeline)
 HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
+HANDLE_DAS_TYPE_BINDING(HDescriptorSetLayout, DescriptorSetLayout)
 HANDLE_DAS_TYPE_BINDING(HCommandPool, CommandPool)
 HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
 
@@ -375,6 +373,15 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
         addField<DAS_BIND_MANAGED_FIELD(size)>("size");
         addFieldEx("usage", "usage", offsetof(clay::gfx::CreateBufferOptions, usage), makeBufferUsageFlags());
         addField<DAS_BIND_MANAGED_FIELD(exclusive)>("exclusive");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
+MAKE_TYPE_FACTORY(CreateDescriptorSetLayoutOptions, clay::gfx::CreateDescriptorSetLayoutOptions);
+struct CreateDescriptorSetLayoutOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateDescriptorSetLayoutOptions, true, true> {
+    CreateDescriptorSetLayoutOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CreateDescriptorSetLayoutOptions", ml)
+    {
     }
     GFX_DAS_STRUCT_COMMON
 };
@@ -615,6 +622,7 @@ public:
         ADD_STRUCT_ANNOTATION(HGraphicsPipeline)
         ADD_STRUCT_ANNOTATION(HComputePipeline)
         ADD_STRUCT_ANNOTATION(HFramebuffer)
+        ADD_STRUCT_ANNOTATION(HDescriptorSetLayout)
         ADD_STRUCT_ANNOTATION(HCommandPool)
         ADD_STRUCT_ANNOTATION(HCommandBuffer)
         ADD_STRUCT_ANNOTATION(SwapchainAcquireResult)
@@ -641,6 +649,11 @@ public:
         ADD_STRUCT_ANNOTATION(QueueSubmitOptions)
         ADD_STRUCT_ANNOTATION(QueuePresentOptions)
         ADD_STRUCT_ANNOTATION(CreateFramebufferOptions)
+        ADD_STRUCT_ANNOTATION(CreateDescriptorSetLayoutOptions)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, reset)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_set_index)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_name)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
         ADD_STRUCT_ANNOTATION(CreateGraphicsPipelineOptions)
         ADD_STRUCT_ANNOTATION(CmdBeginRenderPassOptions)
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)
@@ -695,6 +708,9 @@ public:
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_framebuffer)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_framebuffer)
+
+        ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_descriptor_set_layout)
+        ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_descriptor_set_layout)
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_command_pool)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_command_pool)

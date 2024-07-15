@@ -880,6 +880,46 @@ void VulkanBackend::destroy_framebuffer(const Handle<Framebuffer>& framebuffer)
     resources.framebuffers.free(framebuffer);
 }
 
+Handle<DescriptorSetLayout> VulkanBackend::create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc)
+{
+    VkDescriptorSetLayoutBinding bindings[MAX_DESCRIPTORS_PER_SET] = {};
+    for (u32 i = 0; i < desc.num_bindings; i++)
+    {
+        bindings[i].binding            = desc.bindings[i].index;
+        bindings[i].descriptorType     = to_vk_descriptor_type(desc.bindings[i].type);
+        bindings[i].descriptorCount    = desc.bindings[i].count;
+        bindings[i].stageFlags         = VK_SHADER_STAGE_ALL;
+        bindings[i].pImmutableSamplers = nullptr;
+    }
+
+    VkDescriptorSetLayoutCreateInfo create_info = {};
+    create_info.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    create_info.bindingCount                    = desc.num_bindings;
+    create_info.pBindings                       = bindings;
+
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+    VkResult              result = vkCreateDescriptorSetLayout(device, &create_info, nullptr, &layout);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan descriptor set layout. ({})", string_VkResult(result));
+        return Handle<DescriptorSetLayout>::invalid();
+    }
+
+    return resources.descriptor_set_layouts.push(VulkanDescriptorSetLayout{ .layout = layout });
+}
+
+void VulkanBackend::destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
+{
+    const VulkanDescriptorSetLayout* vulkan_layout = resources.descriptor_set_layouts.get(layout);
+    if (vulkan_layout == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find descriptor set layout.");
+        return;
+    }
+    vkDestroyDescriptorSetLayout(device, vulkan_layout->layout, nullptr);
+    resources.descriptor_set_layouts.free(layout);
+}
+
 Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_type)
 {
     u32 family_index = 0;

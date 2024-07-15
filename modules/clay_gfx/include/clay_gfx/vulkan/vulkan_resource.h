@@ -123,18 +123,23 @@ struct VulkanBuffer {
     u32            size          = 0;
 };
 
+struct VulkanDescriptorSetLayout {
+    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+};
+
 struct VulkanResources {
-    Pool<Swapchain, VulkanSwapchain>               swapchains;
-    Pool<Fence, VulkanFence>                       fences;
-    Pool<Semaphore, VulkanSemaphore>               semaphores;
-    Pool<Shader, VulkanShader>                     shaders;
-    Pool<Texture, VulkanTexture>                   textures;
-    Pool<PipelineLayout, VulkanPipelineLayout>     pipeline_layouts;
-    Pool<GraphicsPipeline, VulkanGraphicsPipeline> graphics_pipelines;
-    Pool<CommandPool, VulkanCommandPool>           command_pools;
-    Pool<CommandBuffer, VulkanCommandBuffer>       command_buffers;
-    Pool<Framebuffer, VulkanFramebuffer>           framebuffers;
-    Pool<Buffer, VulkanBuffer>                     buffers;
+    Pool<Swapchain, VulkanSwapchain>                     swapchains;
+    Pool<Fence, VulkanFence>                             fences;
+    Pool<Semaphore, VulkanSemaphore>                     semaphores;
+    Pool<Shader, VulkanShader>                           shaders;
+    Pool<Texture, VulkanTexture>                         textures;
+    Pool<PipelineLayout, VulkanPipelineLayout>           pipeline_layouts;
+    Pool<GraphicsPipeline, VulkanGraphicsPipeline>       graphics_pipelines;
+    Pool<CommandPool, VulkanCommandPool>                 command_pools;
+    Pool<CommandBuffer, VulkanCommandBuffer>             command_buffers;
+    Pool<Framebuffer, VulkanFramebuffer>                 framebuffers;
+    Pool<Buffer, VulkanBuffer>                           buffers;
+    Pool<DescriptorSetLayout, VulkanDescriptorSetLayout> descriptor_set_layouts;
 
     std::vector<VulkanRenderPass> render_passes;
 
@@ -150,6 +155,7 @@ struct VulkanResources {
         , command_buffers(8)
         , framebuffers(4)
         , buffers(16)
+        , descriptor_set_layouts(32)
     {
     }
 
