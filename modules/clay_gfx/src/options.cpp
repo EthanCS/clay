@@ -5,6 +5,7 @@ namespace clay
 {
 namespace gfx
 {
+
 CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
 {
     if (num_descriptor_set_layouts < MAX_DESCRIPTOR_SET_LAYOUTS)
@@ -55,6 +56,35 @@ CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::set_name(con
 {
     this->name = name;
     return *this;
+}
+
+CreateDescriptorSetOptions& CreateDescriptorSetOptions::reset()
+{
+    layout       = Handle<DescriptorSetLayout>::invalid();
+    num_bindings = 0;
+    return *this;
+}
+
+CreateDescriptorSetOptions& CreateDescriptorSetOptions::set_layout(const Handle<DescriptorSetLayout>& layout)
+{
+    this->layout = layout;
+    return *this;
+}
+
+CreateDescriptorSetOptions& CreateDescriptorSetOptions::bind_buffer(u32 binding, const Handle<Buffer>& buffer)
+{
+    if (num_bindings < MAX_DESCRIPTORS_PER_SET)
+    {
+        bindings[num_bindings].binding = binding;
+        bindings[num_bindings].buffer  = buffer;
+        num_bindings++;
+        return *this;
+    }
+    else
+    {
+        CLAY_LOG_ERROR("Exceeded maximum number of descriptor bindings per set");
+        return *this;
+    }
 }
 
 } // namespace gfx

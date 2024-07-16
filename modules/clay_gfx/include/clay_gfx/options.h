@@ -98,6 +98,21 @@ struct CreateDescriptorSetLayoutOptions {
     CreateDescriptorSetLayoutOptions& add_binding(DescriptorType::Enum type, u32 index, u32 count, const char* name);
 };
 
+struct CreateDescriptorSetOptions {
+    struct Binding {
+        u32            binding;
+        Handle<Buffer> buffer;
+    };
+
+    Handle<DescriptorSetLayout> layout;
+    Binding                     bindings[MAX_DESCRIPTORS_PER_SET];
+    u32                         num_bindings = 0;
+
+    CreateDescriptorSetOptions& reset();
+    CreateDescriptorSetOptions& set_layout(const Handle<DescriptorSetLayout>& layout);
+    CreateDescriptorSetOptions& bind_buffer(u32 binding, const Handle<Buffer>& buffer);
+};
+
 struct CmdBeginRenderPassOptions {
     Handle<Framebuffer> framebuffer;
     RenderPassLayout    render_pass_layout;

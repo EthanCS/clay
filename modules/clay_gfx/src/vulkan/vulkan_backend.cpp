@@ -920,6 +920,44 @@ void VulkanBackend::destroy_descriptor_set_layout(const Handle<DescriptorSetLayo
     resources.descriptor_set_layouts.free(layout);
 }
 
+Handle<DescriptorSet> VulkanBackend::create_descriptor_set(const CreateDescriptorSetOptions& desc)
+{
+    const VulkanDescriptorSetLayout* vulkan_layout = resources.descriptor_set_layouts.get(desc.layout);
+    if (vulkan_layout == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find descriptor set layout.");
+        return Handle<DescriptorSet>::invalid();
+    }
+
+    VkDescriptorSetAllocateInfo allocate_info = {};
+    allocate_info.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocate_info.descriptorPool              = descriptor_pool;
+    allocate_info.descriptorSetCount          = 1;
+    allocate_info.pSetLayouts                 = &vulkan_layout->layout;
+
+    VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
+    VkResult        result         = vkAllocateDescriptorSets(device, &allocate_info, &descriptor_set);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan descriptor set. ({})", string_VkResult(result));
+        return Handle<DescriptorSet>::invalid();
+    }
+
+    return resources.descriptor_sets.push(VulkanDescriptorSet{ .set = descriptor_set });
+}
+
+void VulkanBackend::destroy_descriptor_set(const Handle<DescriptorSet>& set)
+{
+    const VulkanDescriptorSet* vulkan_set = resources.descriptor_sets.get(set);
+    if (vulkan_set == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find descriptor set.");
+        return;
+    }
+    vkFreeDescriptorSets(device, descriptor_pool, 1, &vulkan_set->set);
+    resources.descriptor_sets.free(set);
+}
+
 Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_type)
 {
     u32 family_index = 0;

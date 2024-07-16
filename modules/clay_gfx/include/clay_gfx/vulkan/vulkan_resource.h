@@ -124,6 +124,10 @@ struct VulkanDescriptorSetLayout {
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 };
 
+struct VulkanDescriptorSet {
+    VkDescriptorSet set;
+};
+
 struct VulkanResources {
     Pool<Swapchain, VulkanSwapchain>                     swapchains;
     Pool<Fence, VulkanFence>                             fences;
@@ -136,6 +140,7 @@ struct VulkanResources {
     Pool<Framebuffer, VulkanFramebuffer>                 framebuffers;
     Pool<Buffer, VulkanBuffer>                           buffers;
     Pool<DescriptorSetLayout, VulkanDescriptorSetLayout> descriptor_set_layouts;
+    Pool<DescriptorSet, VulkanDescriptorSet>             descriptor_sets;
 
     std::vector<VulkanRenderPass> render_passes;
 
@@ -151,6 +156,7 @@ struct VulkanResources {
         , framebuffers(4)
         , buffers(16)
         , descriptor_set_layouts(32)
+        , descriptor_sets(64)
     {
     }
 

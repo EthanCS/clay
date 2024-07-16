@@ -88,6 +88,9 @@ public:
     Handle<DescriptorSetLayout> create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc);
     void                        destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout);
 
+    Handle<DescriptorSet> create_descriptor_set(const CreateDescriptorSetOptions& desc);
+    void                  destroy_descriptor_set(const Handle<DescriptorSet>& set);
+
     Handle<CommandPool> create_command_pool(QueueType::Enum queue_type);
     void                destroy_command_pool(const Handle<CommandPool>& pool);
 
