@@ -5,6 +5,20 @@ namespace clay
 {
 namespace gfx
 {
+CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
+{
+    if (num_descriptor_set_layouts < MAX_DESCRIPTOR_SET_LAYOUTS)
+    {
+        descriptor_set_layouts[num_descriptor_set_layouts] = layout;
+        num_descriptor_set_layouts++;
+        return *this;
+    }
+    else
+    {
+        CLAY_LOG_ERROR("Exceeded maximum number of descriptor set layouts per pipeline");
+        return *this;
+    }
+}
 
 CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::reset()
 {

@@ -655,6 +655,7 @@ public:
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_name)
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
         ADD_STRUCT_ANNOTATION(CreateGraphicsPipelineOptions)
+        ADD_MEMBER_FUNCTION(CreateGraphicsPipelineOptions, add_descriptor_set_layout)
         ADD_STRUCT_ANNOTATION(CmdBeginRenderPassOptions)
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)
         ADD_STRUCT_ANNOTATION(CmdSetScissorOptions)

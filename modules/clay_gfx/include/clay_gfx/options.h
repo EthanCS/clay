@@ -71,7 +71,12 @@ struct CreateGraphicsPipelineOptions {
     ShaderInfo vertex_shader;
     ShaderInfo pixel_shader;
 
+    Handle<DescriptorSetLayout> descriptor_set_layouts[MAX_DESCRIPTOR_SET_LAYOUTS];
+    u8                          num_descriptor_set_layouts = 0;
+
     GraphicsState graphics_state;
+
+    CreateGraphicsPipelineOptions& add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout);
 };
 
 struct CreateDescriptorSetLayoutOptions {

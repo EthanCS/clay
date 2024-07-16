@@ -86,12 +86,9 @@ struct VulkanTexture {
     }
 };
 
-struct VulkanPipelineLayout {
-    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-};
-
 struct VulkanGraphicsPipeline {
-    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipeline       pipeline        = VK_NULL_HANDLE;
+    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
 
     bool init(VulkanResources* res, const VkDevice& device, const CreateGraphicsPipelineOptions& desc);
 };
@@ -133,7 +130,6 @@ struct VulkanResources {
     Pool<Semaphore, VulkanSemaphore>                     semaphores;
     Pool<Shader, VulkanShader>                           shaders;
     Pool<Texture, VulkanTexture>                         textures;
-    Pool<PipelineLayout, VulkanPipelineLayout>           pipeline_layouts;
     Pool<GraphicsPipeline, VulkanGraphicsPipeline>       graphics_pipelines;
     Pool<CommandPool, VulkanCommandPool>                 command_pools;
     Pool<CommandBuffer, VulkanCommandBuffer>             command_buffers;
@@ -149,7 +145,6 @@ struct VulkanResources {
         , semaphores(16)
         , shaders(32)
         , textures(32)
-        , pipeline_layouts(16)
         , graphics_pipelines(32)
         , command_pools(4)
         , command_buffers(8)
