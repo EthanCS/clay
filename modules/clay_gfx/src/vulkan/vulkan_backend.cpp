@@ -1309,6 +1309,38 @@ void VulkanBackend::cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const
     vkCmdBindIndexBuffer(vk_cb->command_buffer, vk_buffer->buffer, options.offset, to_vk_index_type(options.index_type));
 }
 
+void VulkanBackend::cmd_bind_descriptor_sets(const Handle<CommandBuffer>& cb, const CmdBindDescriptorSetsOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    if (vk_cb == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    const VulkanPipelineLayout* vk_layout = resources.pipeline_layouts.get(options.layout);
+    if (vk_layout == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find pipeline layout.");
+        return;
+    }
+
+    std::vector<VkDescriptorSet> vk_sets;
+    vk_sets.reserve(options.num_sets);
+    for (u32 i = 0; i < options.num_sets; i++)
+    {
+        const VulkanDescriptorSet* vk_set = resources.descriptor_sets.get(options.sets[i]);
+        if (vk_set == nullptr) [[unlikely]]
+        {
+            CLAY_LOG_ERROR("Failed to find descriptor set at {}.", i);
+            return;
+        }
+        vk_sets.push_back(vk_set->set);
+    }
+
+    vkCmdBindDescriptorSets(vk_cb->command_buffer, to_vk_pipeline_bind_point(options.bind_point), vk_layout->layout, options.first_set, vk_sets.size(), vk_sets.data(), 0, nullptr);
+}
+
 void VulkanBackend::cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options)
 {
     const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);

@@ -119,6 +119,9 @@ DAS_BASE_BIND_ENUM(clay::gfx::IndexType::Enum, IndexType, Uint16, Uint32)
 DAS_BIND_ENUM_CAST(clay::gfx::DescriptorType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::DescriptorType::Enum, DescriptorType, Sampler, CombinedImageSampler, SampledImage, StorageImage, UniformTexelBuffer, StorageTexelBuffer, UniformBuffer, StorageBuffer, UniformBufferDynamic, StorageBufferDynamic, InputAttachment)
 
+DAS_BIND_ENUM_CAST(clay::gfx::PipelineBindPoint::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::PipelineBindPoint::Enum, PipelineBindPoint, Graphics, Compute)
+
 inline das::TypeDeclPtr makeTextureAspectFlags()
 {
     auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
@@ -173,6 +176,7 @@ HANDLE_DAS_TYPE_BINDING(HPipelineLayout, PipelineLayout)
 HANDLE_DAS_TYPE_BINDING(HGraphicsPipeline, GraphicsPipeline)
 HANDLE_DAS_TYPE_BINDING(HComputePipeline, ComputePipeline)
 HANDLE_DAS_TYPE_BINDING(HFramebuffer, Framebuffer)
+HANDLE_DAS_TYPE_BINDING(HDescriptorSet, DescriptorSet)
 HANDLE_DAS_TYPE_BINDING(HDescriptorSetLayout, DescriptorSetLayout)
 HANDLE_DAS_TYPE_BINDING(HCommandPool, CommandPool)
 HANDLE_DAS_TYPE_BINDING(HCommandBuffer, CommandBuffer)
@@ -565,6 +569,20 @@ struct CmdBindIndexBufferOptionsAnnotation : public das::ManagedStructureAnnotat
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CmdBindDescriptorSetsOptions, clay::gfx::CmdBindDescriptorSetsOptions);
+struct CmdBindDescriptorSetsOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBindDescriptorSetsOptions, true, true> {
+    CmdBindDescriptorSetsOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdBindDescriptorSetsOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(layout)>("layout");
+        addField<DAS_BIND_MANAGED_FIELD(bind_point)>("bind_point");
+        addField<DAS_BIND_MANAGED_FIELD(first_set)>("first_set");
+        addField<DAS_BIND_MANAGED_FIELD(sets)>("sets");
+        addField<DAS_BIND_MANAGED_FIELD(num_sets)>("num_sets");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 MAKE_TYPE_FACTORY(CmdCopyBufferOptions, clay::gfx::CmdCopyBufferOptions);
 struct CmdCopyBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdCopyBufferOptions, true, true> {
     CmdCopyBufferOptionsAnnotation(das::ModuleLibrary& ml)
@@ -609,6 +627,7 @@ public:
         ADD_ENUM_ANNOTATION(SwapchainStatus)
         ADD_ENUM_ANNOTATION(IndexType)
         ADD_ENUM_ANNOTATION(DescriptorType)
+        ADD_ENUM_ANNOTATION(PipelineBindPoint)
         addAlias(makeTextureAspectFlags());
         addAlias(makeShaderStageFlags());
         addAlias(makeColorWriteEnabledFlags());
@@ -627,6 +646,7 @@ public:
         ADD_STRUCT_ANNOTATION(HGraphicsPipeline)
         ADD_STRUCT_ANNOTATION(HComputePipeline)
         ADD_STRUCT_ANNOTATION(HFramebuffer)
+        ADD_STRUCT_ANNOTATION(HDescriptorSet)
         ADD_STRUCT_ANNOTATION(HDescriptorSetLayout)
         ADD_STRUCT_ANNOTATION(HCommandPool)
         ADD_STRUCT_ANNOTATION(HCommandBuffer)
@@ -675,6 +695,7 @@ public:
         ADD_STRUCT_ANNOTATION(CmdBindVertexBufferOptions)
         ADD_STRUCT_ANNOTATION(CmdBindVertexBuffersOptions)
         ADD_STRUCT_ANNOTATION(CmdBindIndexBufferOptions)
+        ADD_STRUCT_ANNOTATION(CmdBindDescriptorSetsOptions)
         ADD_STRUCT_ANNOTATION(CmdCopyBufferOptions)
 
         // bind backend.h
@@ -746,6 +767,7 @@ public:
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffer)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_vertex_buffers)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_index_buffer)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_descriptor_sets)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_copy_buffer)
     }
 };

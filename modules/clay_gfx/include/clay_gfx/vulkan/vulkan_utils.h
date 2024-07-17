@@ -560,5 +560,17 @@ inline VkDescriptorType to_vk_descriptor_type(DescriptorType::Enum type)
     return VK_DESCRIPTOR_TYPE_SAMPLER;
 }
 
+inline VkPipelineBindPoint to_vk_pipeline_bind_point(PipelineBindPoint::Enum bind_point)
+{
+    switch (bind_point)
+    {
+        case PipelineBindPoint::Graphics:
+            return VK_PIPELINE_BIND_POINT_GRAPHICS;
+        case PipelineBindPoint::Compute:
+            return VK_PIPELINE_BIND_POINT_COMPUTE;
+    }
+    return VK_PIPELINE_BIND_POINT_GRAPHICS;
+}
+
 } // namespace gfx
 } // namespace clay

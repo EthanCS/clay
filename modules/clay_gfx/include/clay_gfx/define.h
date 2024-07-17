@@ -259,6 +259,14 @@ struct DescriptorType {
     };
 };
 
+struct PipelineBindPoint {
+    enum Enum
+    {
+        Graphics,
+        Compute,
+    };
+};
+
 struct TextureAspect {
     enum Flag : char
     {

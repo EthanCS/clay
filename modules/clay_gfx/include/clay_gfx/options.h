@@ -1,5 +1,6 @@
 #pragma once
 
+#include "define.h"
 #include <clay_core/macro.h>
 #include <clay_gfx/resource.h>
 
@@ -174,6 +175,14 @@ struct CmdBindIndexBufferOptions {
     Handle<Buffer>  buffer;
     u32             offset = 0;
     IndexType::Enum index_type;
+};
+
+struct CmdBindDescriptorSetsOptions {
+    Handle<PipelineLayout>  layout;
+    PipelineBindPoint::Enum bind_point;
+    u32                     first_set;
+    Handle<DescriptorSet>*  sets     = nullptr;
+    u32                     num_sets = 0;
 };
 
 struct CmdCopyBufferOptions {
