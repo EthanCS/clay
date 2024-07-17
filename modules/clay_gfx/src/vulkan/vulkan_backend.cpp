@@ -923,30 +923,33 @@ void VulkanBackend::destroy_framebuffer(const Handle<Framebuffer>& framebuffer)
 
 Handle<DescriptorSetLayout> VulkanBackend::create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc)
 {
-    VkDescriptorSetLayoutBinding bindings[MAX_DESCRIPTORS_PER_SET] = {};
+    VulkanDescriptorSetLayout layout = {};
+    layout.num_bindings              = desc.num_bindings;
+
     for (u32 i = 0; i < desc.num_bindings; i++)
     {
-        bindings[i].binding            = desc.bindings[i].index;
-        bindings[i].descriptorType     = to_vk_descriptor_type(desc.bindings[i].type);
-        bindings[i].descriptorCount    = desc.bindings[i].count;
-        bindings[i].stageFlags         = VK_SHADER_STAGE_ALL;
-        bindings[i].pImmutableSamplers = nullptr;
+        layout.bindings[i].binding            = desc.bindings[i].index;
+        layout.bindings[i].descriptorType     = to_vk_descriptor_type(desc.bindings[i].type);
+        layout.bindings[i].descriptorCount    = desc.bindings[i].count;
+        layout.bindings[i].stageFlags         = VK_SHADER_STAGE_ALL;
+        layout.bindings[i].pImmutableSamplers = nullptr;
+
+        layout.binding_to_index[desc.bindings[i].index] = i;
     }
 
     VkDescriptorSetLayoutCreateInfo create_info = {};
     create_info.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     create_info.bindingCount                    = desc.num_bindings;
-    create_info.pBindings                       = bindings;
+    create_info.pBindings                       = layout.bindings;
 
-    VkDescriptorSetLayout layout = VK_NULL_HANDLE;
-    VkResult              result = vkCreateDescriptorSetLayout(device, &create_info, nullptr, &layout);
+    VkResult result = vkCreateDescriptorSetLayout(device, &create_info, nullptr, &layout.layout);
     if (result != VK_SUCCESS) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to create Vulkan descriptor set layout. ({})", string_VkResult(result));
         return Handle<DescriptorSetLayout>::invalid();
     }
 
-    return resources.descriptor_set_layouts.push(VulkanDescriptorSetLayout{ .layout = layout });
+    return resources.descriptor_set_layouts.push(layout);
 }
 
 void VulkanBackend::destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
@@ -984,7 +987,68 @@ Handle<DescriptorSet> VulkanBackend::create_descriptor_set(const CreateDescripto
         return Handle<DescriptorSet>::invalid();
     }
 
-    return resources.descriptor_sets.push(VulkanDescriptorSet{ .set = descriptor_set });
+    return resources.descriptor_sets.push(VulkanDescriptorSet{ .set = descriptor_set, .layout = desc.layout });
+}
+
+void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, const UpdateDescriptorSetOptions& desc)
+{
+    const VulkanDescriptorSet* vulkan_set = resources.descriptor_sets.get(set);
+    if (vulkan_set == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find descriptor set.");
+        return;
+    }
+
+    const VulkanDescriptorSetLayout* vulkan_layout = resources.descriptor_set_layouts.get(vulkan_set->layout);
+    if (vulkan_layout == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find descriptor set layout.");
+        return;
+    }
+
+    std::vector<VkWriteDescriptorSet> writes;
+    writes.reserve(desc.count);
+
+    for (u32 i = 0; i < desc.count; i++)
+    {
+        const UpdateDescriptorSetOptions::Info& info = desc.infos[i];
+
+        u32 binding         = info.binding;
+        u32 index_in_layout = vulkan_layout->binding_to_index[binding];
+
+        VkDescriptorSetLayoutBinding vk_binding = vulkan_layout->bindings[index_in_layout];
+
+        VkWriteDescriptorSet w = {};
+        w.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        w.dstSet               = vulkan_set->set;
+        w.dstBinding           = info.binding;
+        w.dstArrayElement      = 0;
+        w.descriptorCount      = 1;
+
+        switch (vk_binding.descriptorType)
+        {
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: {
+                const VulkanBuffer* vulkan_buffer = resources.buffers.get(info.buffer);
+                if (vulkan_buffer == nullptr) [[unlikely]] { continue; }
+
+                VkDescriptorBufferInfo buffer_info = {};
+                buffer_info.buffer                 = vulkan_buffer->buffer;
+                buffer_info.offset                 = 0;
+                buffer_info.range                  = vulkan_buffer->size;
+
+                w.descriptorType = vk_binding.descriptorType;
+                w.pBufferInfo    = &buffer_info;
+            }
+            break;
+            default:
+                CLAY_LOG_ERROR("Unsupported descriptor type.");
+                break;
+        }
+
+        writes.push_back(w);
+    }
+
+    vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 }
 
 void VulkanBackend::destroy_descriptor_set(const Handle<DescriptorSet>& set)

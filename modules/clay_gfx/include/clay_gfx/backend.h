@@ -78,6 +78,7 @@ PRO_DEF_MEMBER_DISPATCH(destroy_descriptor_set_layout, void(const Handle<Descrip
 
 /////// DescriptorSet
 PRO_DEF_MEMBER_DISPATCH(create_descriptor_set, Handle<DescriptorSet>(const CreateDescriptorSetOptions&));
+PRO_DEF_MEMBER_DISPATCH(update_descriptor_set, void(const Handle<DescriptorSet>&, const UpdateDescriptorSetOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_descriptor_set, void(const Handle<DescriptorSet>&));
 
 /////// CommandPool
@@ -143,6 +144,7 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                create_descriptor_set_layout,
                                destroy_descriptor_set_layout,
                                create_descriptor_set,
+                               update_descriptor_set,
                                destroy_descriptor_set,
                                create_command_pool,
                                destroy_command_pool,
@@ -217,6 +219,7 @@ inline Handle<DescriptorSetLayout> create_descriptor_set_layout(const CreateDesc
 inline void                        destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout) { g_backend_proxy.destroy_descriptor_set_layout(layout); }
 
 inline Handle<DescriptorSet> create_descriptor_set(const CreateDescriptorSetOptions& desc) { return g_backend_proxy.create_descriptor_set(desc); }
+inline void                  update_descriptor_set(const Handle<DescriptorSet>& set, const UpdateDescriptorSetOptions& desc) { g_backend_proxy.update_descriptor_set(set, desc); }
 inline void                  destroy_descriptor_set(const Handle<DescriptorSet>& set) { g_backend_proxy.destroy_descriptor_set(set); }
 
 inline Handle<CommandPool> create_command_pool(QueueType::Enum queue_type) { return g_backend_proxy.create_command_pool(queue_type); }

@@ -117,7 +117,19 @@ struct CreateDescriptorSetOptions {
 
     CreateDescriptorSetOptions& reset();
     CreateDescriptorSetOptions& set_layout(const Handle<DescriptorSetLayout>& layout);
-    CreateDescriptorSetOptions& bind_buffer(u32 binding, const Handle<Buffer>& buffer);
+};
+
+struct UpdateDescriptorSetOptions {
+    struct Info {
+        u32            binding;
+        Handle<Buffer> buffer;
+    };
+
+    Info infos[MAX_DESCRIPTORS_PER_SET];
+    u32  count = 0;
+
+    UpdateDescriptorSetOptions& reset();
+    UpdateDescriptorSetOptions& bind_buffer(u32 binding, const Handle<Buffer>& buffer);
 };
 
 struct CmdBeginRenderPassOptions {

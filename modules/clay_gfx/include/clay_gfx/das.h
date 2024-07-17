@@ -391,8 +391,6 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
     GFX_DAS_STRUCT_COMMON
 };
 
-GFX_OPTIONS_STRUCT(CreateDescriptorSetLayoutOptions)
-
 MAKE_TYPE_FACTORY(AcquireNextImageOptions, clay::gfx::AcquireNextImageOptions);
 struct AcquireNextImageOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::AcquireNextImageOptions, true, true> {
     AcquireNextImageOptionsAnnotation(das::ModuleLibrary& ml)
@@ -463,6 +461,10 @@ struct CreateGraphicsPipelineOptionsAnnotation : public das::ManagedStructureAnn
     }
     GFX_DAS_STRUCT_COMMON
 };
+
+GFX_OPTIONS_STRUCT(CreateDescriptorSetLayoutOptions)
+GFX_OPTIONS_STRUCT(CreateDescriptorSetOptions)
+GFX_OPTIONS_STRUCT(UpdateDescriptorSetOptions)
 
 MAKE_TYPE_FACTORY(CmdBeginRenderPassOptions, clay::gfx::CmdBeginRenderPassOptions);
 struct CmdBeginRenderPassOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdBeginRenderPassOptions, true, true> {
@@ -674,11 +676,6 @@ public:
         ADD_STRUCT_ANNOTATION(QueueSubmitOptions)
         ADD_STRUCT_ANNOTATION(QueuePresentOptions)
         ADD_STRUCT_ANNOTATION(CreateFramebufferOptions)
-        ADD_STRUCT_ANNOTATION(CreateDescriptorSetLayoutOptions)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, reset)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_set_index)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_name)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
 
         ADD_STRUCT_ANNOTATION(CreatePipelineLayoutOptions)
         ADD_MEMBER_FUNCTION(CreatePipelineLayoutOptions, reset)
@@ -686,6 +683,20 @@ public:
 
         ADD_STRUCT_ANNOTATION(CreateGraphicsPipelineOptions)
         ADD_MEMBER_FUNCTION(CreateGraphicsPipelineOptions, set_pipeline_layout)
+
+        ADD_STRUCT_ANNOTATION(CreateDescriptorSetLayoutOptions)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, reset)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_set_index)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_name)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
+
+        ADD_STRUCT_ANNOTATION(CreateDescriptorSetOptions)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetOptions, reset)
+        ADD_MEMBER_FUNCTION(CreateDescriptorSetOptions, set_layout)
+
+        ADD_STRUCT_ANNOTATION(UpdateDescriptorSetOptions)
+        ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, reset)
+        ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, bind_buffer)
 
         ADD_STRUCT_ANNOTATION(CmdBeginRenderPassOptions)
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)

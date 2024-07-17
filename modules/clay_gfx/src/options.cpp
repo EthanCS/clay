@@ -5,6 +5,10 @@ namespace clay
 {
 namespace gfx
 {
+
+//////////////////////////////////////////////////////////////////////////
+// CreatePipelineLayoutOptions
+
 CreatePipelineLayoutOptions& CreatePipelineLayoutOptions::reset()
 {
     num_descriptor_set_layouts = 0;
@@ -23,11 +27,17 @@ CreatePipelineLayoutOptions& CreatePipelineLayoutOptions::add_descriptor_set_lay
     return *this;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// CreateGraphicsPipelineOptions
+
 CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::set_pipeline_layout(const Handle<PipelineLayout>& layout)
 {
     this->layout = layout;
     return *this;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// CreateDescriptorSetLayoutOptions
 
 CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::reset()
 {
@@ -66,6 +76,9 @@ CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::set_name(con
     return *this;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// CreateDescriptorSetOptions
+
 CreateDescriptorSetOptions& CreateDescriptorSetOptions::reset()
 {
     layout       = Handle<DescriptorSetLayout>::invalid();
@@ -79,13 +92,22 @@ CreateDescriptorSetOptions& CreateDescriptorSetOptions::set_layout(const Handle<
     return *this;
 }
 
-CreateDescriptorSetOptions& CreateDescriptorSetOptions::bind_buffer(u32 binding, const Handle<Buffer>& buffer)
+//////////////////////////////////////////////////////////////////////////
+// UpdateDescriptorSetOptions
+
+UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::reset()
 {
-    if (num_bindings < MAX_DESCRIPTORS_PER_SET)
+    count = 0;
+    return *this;
+}
+
+UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_buffer(u32 binding, const Handle<Buffer>& buffer)
+{
+    if (count < MAX_DESCRIPTORS_PER_SET)
     {
-        bindings[num_bindings].binding = binding;
-        bindings[num_bindings].buffer  = buffer;
-        num_bindings++;
+        infos[count].binding = binding;
+        infos[count].buffer  = buffer;
+        count++;
         return *this;
     }
     else

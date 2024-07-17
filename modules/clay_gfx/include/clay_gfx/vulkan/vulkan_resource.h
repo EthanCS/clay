@@ -125,10 +125,15 @@ struct VulkanBuffer {
 
 struct VulkanDescriptorSetLayout {
     VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+
+    u32                          num_bindings = 0;
+    VkDescriptorSetLayoutBinding bindings[MAX_DESCRIPTOR_SET_LAYOUTS];
+    u32                          binding_to_index[MAX_DESCRIPTOR_SET_LAYOUTS];
 };
 
 struct VulkanDescriptorSet {
-    VkDescriptorSet set;
+    VkDescriptorSet             set;
+    Handle<DescriptorSetLayout> layout;
 };
 
 struct VulkanResources {
