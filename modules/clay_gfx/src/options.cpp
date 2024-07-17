@@ -5,8 +5,13 @@ namespace clay
 {
 namespace gfx
 {
+CreatePipelineLayoutOptions& CreatePipelineLayoutOptions::reset()
+{
+    num_descriptor_set_layouts = 0;
+    return *this;
+}
 
-CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
+CreatePipelineLayoutOptions& CreatePipelineLayoutOptions::add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout)
 {
     if (num_descriptor_set_layouts < MAX_DESCRIPTOR_SET_LAYOUTS)
     {
@@ -14,11 +19,14 @@ CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::add_descriptor_set
         num_descriptor_set_layouts++;
         return *this;
     }
-    else
-    {
-        CLAY_LOG_ERROR("Exceeded maximum number of descriptor set layouts per pipeline");
-        return *this;
-    }
+    CLAY_LOG_ERROR("Exceeded maximum number of descriptor set layouts per pipeline layout");
+    return *this;
+}
+
+CreateGraphicsPipelineOptions& CreateGraphicsPipelineOptions::set_pipeline_layout(const Handle<PipelineLayout>& layout)
+{
+    this->layout = layout;
+    return *this;
 }
 
 CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::reset()

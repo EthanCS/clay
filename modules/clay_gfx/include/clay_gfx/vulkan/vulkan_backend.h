@@ -70,6 +70,9 @@ public:
     Handle<Shader> create_shader(const CreateShaderOptions& desc);
     void           destroy_shader(const Handle<Shader>& shader);
 
+    Handle<PipelineLayout> create_pipeline_layout(const CreatePipelineLayoutOptions& desc);
+    void                   destroy_pipeline_layout(const Handle<PipelineLayout>& layout);
+
     Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc);
     void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline);
 

@@ -22,6 +22,16 @@
         GFX_DAS_STRUCT_COMMON                                                                                                     \
     };
 
+#define GFX_OPTIONS_STRUCT(TYPE)                                                                    \
+    MAKE_TYPE_FACTORY(TYPE, clay::gfx::TYPE);                                                       \
+    struct TYPE##Annotation : public das::ManagedStructureAnnotation<clay::gfx::TYPE, true, true> { \
+        TYPE##Annotation(das::ModuleLibrary& ml)                                                    \
+            : ManagedStructureAnnotation(#TYPE, ml)                                                 \
+        {                                                                                           \
+        }                                                                                           \
+        GFX_DAS_STRUCT_COMMON                                                                       \
+    };
+
 #define ADD_ENUM_ANNOTATION(S) addEnumeration(das::make_smart<Enumeration##S>());
 #define ADD_STRUCT_ANNOTATION(S) addAnnotation(das::make_smart<S##Annotation>(lib));
 
@@ -377,14 +387,7 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
     GFX_DAS_STRUCT_COMMON
 };
 
-MAKE_TYPE_FACTORY(CreateDescriptorSetLayoutOptions, clay::gfx::CreateDescriptorSetLayoutOptions);
-struct CreateDescriptorSetLayoutOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateDescriptorSetLayoutOptions, true, true> {
-    CreateDescriptorSetLayoutOptionsAnnotation(das::ModuleLibrary& ml)
-        : ManagedStructureAnnotation("CreateDescriptorSetLayoutOptions", ml)
-    {
-    }
-    GFX_DAS_STRUCT_COMMON
-};
+GFX_OPTIONS_STRUCT(CreateDescriptorSetLayoutOptions)
 
 MAKE_TYPE_FACTORY(AcquireNextImageOptions, clay::gfx::AcquireNextImageOptions);
 struct AcquireNextImageOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::AcquireNextImageOptions, true, true> {
@@ -441,6 +444,8 @@ struct CreateFramebufferOptionsAnnotation : public das::ManagedStructureAnnotati
     }
     GFX_DAS_STRUCT_COMMON
 };
+
+GFX_OPTIONS_STRUCT(CreatePipelineLayoutOptions)
 
 MAKE_TYPE_FACTORY(CreateGraphicsPipelineOptions, clay::gfx::CreateGraphicsPipelineOptions);
 struct CreateGraphicsPipelineOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateGraphicsPipelineOptions, true, true> {
@@ -654,8 +659,14 @@ public:
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_set_index)
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, set_name)
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
+
+        ADD_STRUCT_ANNOTATION(CreatePipelineLayoutOptions)
+        ADD_MEMBER_FUNCTION(CreatePipelineLayoutOptions, reset)
+        ADD_MEMBER_FUNCTION(CreatePipelineLayoutOptions, add_descriptor_set_layout)
+
         ADD_STRUCT_ANNOTATION(CreateGraphicsPipelineOptions)
-        ADD_MEMBER_FUNCTION(CreateGraphicsPipelineOptions, add_descriptor_set_layout)
+        ADD_MEMBER_FUNCTION(CreateGraphicsPipelineOptions, set_pipeline_layout)
+
         ADD_STRUCT_ANNOTATION(CmdBeginRenderPassOptions)
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)
         ADD_STRUCT_ANNOTATION(CmdSetScissorOptions)
@@ -694,6 +705,9 @@ public:
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_shader)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_shader)
+
+        ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_pipeline_layout)
+        ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_pipeline_layout)
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_graphics_pipeline)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_graphics_pipeline)

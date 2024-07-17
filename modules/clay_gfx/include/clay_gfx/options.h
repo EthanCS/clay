@@ -65,18 +65,24 @@ struct CreateFramebufferOptions {
     RenderPassLayout render_pass_layout;
 };
 
-struct CreateGraphicsPipelineOptions {
-    const char* name = nullptr;
-
-    ShaderInfo vertex_shader;
-    ShaderInfo pixel_shader;
-
+struct CreatePipelineLayoutOptions {
     Handle<DescriptorSetLayout> descriptor_set_layouts[MAX_DESCRIPTOR_SET_LAYOUTS];
     u8                          num_descriptor_set_layouts = 0;
 
+    CreatePipelineLayoutOptions& reset();
+    CreatePipelineLayoutOptions& add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout);
+};
+
+struct CreateGraphicsPipelineOptions {
+    const char* name = nullptr;
+
+    Handle<PipelineLayout> layout;
+    ShaderInfo             vertex_shader;
+    ShaderInfo             pixel_shader;
+
     GraphicsState graphics_state;
 
-    CreateGraphicsPipelineOptions& add_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout);
+    CreateGraphicsPipelineOptions& set_pipeline_layout(const Handle<PipelineLayout>& layout);
 };
 
 struct CreateDescriptorSetLayoutOptions {

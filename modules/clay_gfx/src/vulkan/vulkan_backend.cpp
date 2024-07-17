@@ -733,6 +733,47 @@ void VulkanBackend::destroy_shader(const Handle<Shader>& shader)
     resources.shaders.free(shader);
 }
 
+Handle<PipelineLayout> VulkanBackend::create_pipeline_layout(const CreatePipelineLayoutOptions& desc)
+{
+    VkDescriptorSetLayout set_layouts[MAX_DESCRIPTOR_SET_LAYOUTS];
+    for (u8 i = 0; i < desc.num_descriptor_set_layouts; i++)
+    {
+        const VulkanDescriptorSetLayout* layout = resources.descriptor_set_layouts.get(desc.descriptor_set_layouts[i]);
+        if (layout == nullptr) [[unlikely]]
+        {
+            CLAY_LOG_ERROR("Failed to find descriptor set layout!");
+            return Handle<PipelineLayout>::invalid();
+        }
+        set_layouts[i] = layout->layout;
+    }
+
+    VkPipelineLayout           pipeline_layout;
+    VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+    pipeline_layout_info.sType                      = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_info.pushConstantRangeCount     = 0;
+    pipeline_layout_info.pPushConstantRanges        = nullptr;
+    pipeline_layout_info.setLayoutCount             = desc.num_descriptor_set_layouts;
+    pipeline_layout_info.pSetLayouts                = set_layouts;
+    {
+        VkResult res = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout);
+        if (res != VK_SUCCESS) [[unlikely]]
+        {
+            CLAY_LOG_ERROR("Failed to create pipeline layout! ({})", string_VkResult(res));
+            return Handle<PipelineLayout>::invalid();
+        }
+    }
+
+    return resources.pipeline_layouts.push(VulkanPipelineLayout{ .layout = pipeline_layout });
+}
+
+void VulkanBackend::destroy_pipeline_layout(const Handle<PipelineLayout>& layout)
+{
+    const VulkanPipelineLayout* vulkan_layout = resources.pipeline_layouts.get(layout);
+    if (vulkan_layout == nullptr) [[unlikely]] { return; }
+    vkDestroyPipelineLayout(device, vulkan_layout->layout, nullptr);
+    resources.pipeline_layouts.free(layout);
+}
+
 Handle<GraphicsPipeline> VulkanBackend::create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc)
 {
     VulkanGraphicsPipeline pipeline;

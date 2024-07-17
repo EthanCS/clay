@@ -49,6 +49,10 @@ PRO_DEF_MEMBER_DISPATCH(destroy_semaphore, void(const Handle<Semaphore>&));
 PRO_DEF_MEMBER_DISPATCH(create_shader, Handle<Shader>(const CreateShaderOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_shader, void(const Handle<Shader>&));
 
+/////// PipelineLayout
+PRO_DEF_MEMBER_DISPATCH(create_pipeline_layout, Handle<PipelineLayout>(const CreatePipelineLayoutOptions&));
+PRO_DEF_MEMBER_DISPATCH(destroy_pipeline_layout, void(const Handle<PipelineLayout>&));
+
 /////// GraphicsPipeline
 PRO_DEF_MEMBER_DISPATCH(create_graphics_pipeline, Handle<GraphicsPipeline>(const CreateGraphicsPipelineOptions&));
 PRO_DEF_MEMBER_DISPATCH(destroy_graphics_pipeline, void(const Handle<GraphicsPipeline>&));
@@ -122,6 +126,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                destroy_semaphore,
                                create_shader,
                                destroy_shader,
+                               create_pipeline_layout,
+                               destroy_pipeline_layout,
                                create_graphics_pipeline,
                                destroy_graphics_pipeline,
                                get_texture_width,
@@ -186,6 +192,9 @@ inline void              destroy_semaphore(const Handle<Semaphore>& semaphore) {
 
 inline Handle<Shader> create_shader(const CreateShaderOptions& desc) { return g_backend_proxy.create_shader(desc); }
 inline void           destroy_shader(const Handle<Shader>& shader) { g_backend_proxy.destroy_shader(shader); }
+
+inline Handle<PipelineLayout> create_pipeline_layout(const CreatePipelineLayoutOptions& desc) { return g_backend_proxy.create_pipeline_layout(desc); }
+inline void                   destroy_pipeline_layout(const Handle<PipelineLayout>& layout) { g_backend_proxy.destroy_pipeline_layout(layout); }
 
 inline Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }
 inline void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.destroy_graphics_pipeline(pipeline); }

@@ -15,6 +15,7 @@ var swapchain_height = 720u
 
 var render_pass_layout = [[RenderPassLayout]]
 var pipeline = [[HGraphicsPipeline]]
+var pipeline_layout = [[HPipelineLayout]]
 
 var command_pool = [[HCommandPool]]
 var command_buffers : array<HCommandBuffer>
@@ -86,6 +87,9 @@ def on_init()
         load_op = RenderPassLoadOp Clear]]
     
     // Create pipeline
+    var pipeline_layout_options = [[CreatePipelineLayoutOptions]]
+    pipeline_layout = create_pipeline_layout(pipeline_layout_options)
+
     var pipeline_options = [[CreateGraphicsPipelineOptions name = "triangle"]]
     pipeline_options.vertex_shader = [[ShaderInfo compiled_shader = hello_vs, entry_func = "main"]]
     pipeline_options.pixel_shader = [[ShaderInfo compiled_shader = hello_fs, entry_func = "main"]]
@@ -96,6 +100,7 @@ def on_init()
     set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(1), uint16(typeinfo(offsetof<color> type<Vertex>)), Format R32G32B32_SFLOAT)
     pipeline_options.graphics_state.depth_test_enabled = false
     pipeline_options.graphics_state.render_pass_layout = render_pass_layout
+    set_pipeline_layout(pipeline_options, pipeline_layout)
     pipeline = create_graphics_pipeline(pipeline_options)
 
     // Command

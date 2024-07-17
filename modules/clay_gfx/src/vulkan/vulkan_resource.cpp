@@ -207,32 +207,11 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     dynamic_state.pDynamicStates                   = dynamic_states;
 
     //// Pipeline layout
-    VkDescriptorSetLayout set_layouts[MAX_DESCRIPTOR_SET_LAYOUTS];
-    for (u8 i = 0; i < desc.num_descriptor_set_layouts; i++)
+    const VulkanPipelineLayout* vulkan_layout = resources->pipeline_layouts.get(desc.layout);
+    if (vulkan_layout == nullptr) [[unlikely]]
     {
-        const VulkanDescriptorSetLayout* layout = resources->descriptor_set_layouts.get(desc.descriptor_set_layouts[i]);
-        if (layout == nullptr) [[unlikely]]
-        {
-            CLAY_LOG_ERROR("Failed to find descriptor set layout!");
-            return false;
-        }
-
-        set_layouts[i] = layout->layout;
-    }
-
-    VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-    pipeline_layout_info.sType                      = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.pushConstantRangeCount     = 0;
-    pipeline_layout_info.pPushConstantRanges        = nullptr;
-    pipeline_layout_info.setLayoutCount             = desc.num_descriptor_set_layouts;
-    pipeline_layout_info.pSetLayouts                = set_layouts;
-    {
-        VkResult res = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &pipeline_layout);
-        if (res != VK_SUCCESS) [[unlikely]]
-        {
-            CLAY_LOG_ERROR("Failed to create pipeline layout! ({})", string_VkResult(res));
-            return false;
-        }
+        CLAY_LOG_ERROR("Failed to get pipeline layout!");
+        return false;
     }
 
     //// Create Pipeline
@@ -248,7 +227,7 @@ bool VulkanGraphicsPipeline::init(VulkanResources* resources, const VkDevice& de
     create_info.pDepthStencilState           = &depth_stencil;
     create_info.pColorBlendState             = &color_blending;
     create_info.pDynamicState                = &dynamic_state;
-    create_info.layout                       = pipeline_layout;
+    create_info.layout                       = vulkan_layout->layout;
     create_info.renderPass                   = render_pass;
     create_info.subpass                      = 0;
     create_info.basePipelineHandle           = VK_NULL_HANDLE;
@@ -371,9 +350,8 @@ void VulkanResources::destroy(const VkDevice& device, const VmaAllocator& vma_al
     semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
     textures.each([&](VulkanTexture& t) { t.destroy(device); });
     shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
-    graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { 
-        vkDestroyPipelineLayout(device, p.pipeline_layout, nullptr);
-        vkDestroyPipeline(device, p.pipeline, nullptr); });
+    pipeline_layouts.each([&](VulkanPipelineLayout& p) { vkDestroyPipelineLayout(device, p.layout, nullptr); });
+    graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
     command_pools.each([&](VulkanCommandPool& p) { vkDestroyCommandPool(device, p.command_pool, nullptr); });
     framebuffers.each([&](VulkanFramebuffer& f) { vkDestroyFramebuffer(device, f.framebuffer, nullptr); });
     buffers.each([&](VulkanBuffer& b) { vmaDestroyBuffer(vma_allocator, b.buffer, b.allocation); });
@@ -387,6 +365,7 @@ void VulkanResources::destroy(const VkDevice& device, const VmaAllocator& vma_al
     semaphores.clear();
     shaders.clear();
     textures.clear();
+    pipeline_layouts.clear();
     graphics_pipelines.clear();
     command_pools.clear();
     command_buffers.clear();
