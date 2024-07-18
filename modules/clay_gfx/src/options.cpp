@@ -77,22 +77,6 @@ CreateDescriptorSetLayoutOptions& CreateDescriptorSetLayoutOptions::set_name(con
 }
 
 //////////////////////////////////////////////////////////////////////////
-// CreateDescriptorSetOptions
-
-CreateDescriptorSetOptions& CreateDescriptorSetOptions::reset()
-{
-    layout       = Handle<DescriptorSetLayout>::invalid();
-    num_bindings = 0;
-    return *this;
-}
-
-CreateDescriptorSetOptions& CreateDescriptorSetOptions::set_layout(const Handle<DescriptorSetLayout>& layout)
-{
-    this->layout = layout;
-    return *this;
-}
-
-//////////////////////////////////////////////////////////////////////////
 // UpdateDescriptorSetOptions
 
 UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::reset()

@@ -458,12 +458,24 @@ struct CreateGraphicsPipelineOptionsAnnotation : public das::ManagedStructureAnn
         addField<DAS_BIND_MANAGED_FIELD(vertex_shader)>("vertex_shader");
         addField<DAS_BIND_MANAGED_FIELD(pixel_shader)>("pixel_shader");
         addField<DAS_BIND_MANAGED_FIELD(graphics_state)>("graphics_state");
+        addField<DAS_BIND_MANAGED_FIELD(layout)>("layout");
     }
     GFX_DAS_STRUCT_COMMON
 };
 
 GFX_OPTIONS_STRUCT(CreateDescriptorSetLayoutOptions)
-GFX_OPTIONS_STRUCT(CreateDescriptorSetOptions)
+
+MAKE_TYPE_FACTORY(CreateDescriptorSetOptions, clay::gfx::CreateDescriptorSetOptions);
+struct CreateDescriptorSetOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateDescriptorSetOptions, true, true> {
+    CreateDescriptorSetOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CreateDescriptorSetOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(layout)>("layout");
+        addField<DAS_BIND_MANAGED_FIELD(set_index)>("set_index");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 GFX_OPTIONS_STRUCT(UpdateDescriptorSetOptions)
 
 MAKE_TYPE_FACTORY(CmdBeginRenderPassOptions, clay::gfx::CmdBeginRenderPassOptions);
@@ -691,8 +703,6 @@ public:
         ADD_MEMBER_FUNCTION(CreateDescriptorSetLayoutOptions, add_binding)
 
         ADD_STRUCT_ANNOTATION(CreateDescriptorSetOptions)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetOptions, reset)
-        ADD_MEMBER_FUNCTION(CreateDescriptorSetOptions, set_layout)
 
         ADD_STRUCT_ANNOTATION(UpdateDescriptorSetOptions)
         ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, reset)
@@ -758,6 +768,10 @@ public:
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_descriptor_set_layout)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_descriptor_set_layout)
+
+        ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_descriptor_set)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(update_descriptor_set)
+        ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_descriptor_set)
 
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_command_pool)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_command_pool)

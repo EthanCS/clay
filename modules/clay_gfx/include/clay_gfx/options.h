@@ -106,17 +106,8 @@ struct CreateDescriptorSetLayoutOptions {
 };
 
 struct CreateDescriptorSetOptions {
-    struct Binding {
-        u32            binding;
-        Handle<Buffer> buffer;
-    };
-
     Handle<DescriptorSetLayout> layout;
-    Binding                     bindings[MAX_DESCRIPTORS_PER_SET];
-    u32                         num_bindings = 0;
-
-    CreateDescriptorSetOptions& reset();
-    CreateDescriptorSetOptions& set_layout(const Handle<DescriptorSetLayout>& layout);
+    u32                         set_index;
 };
 
 struct UpdateDescriptorSetOptions {

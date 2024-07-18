@@ -26,30 +26,37 @@ let indices = [[auto uint16(0); uint16(1); uint16(2); uint16(2); uint16(3); uint
 
 var window = [[Window]]
 
-var hello_vs = [[HShader]]
-var hello_fs = [[HShader]]
-
+var swapchain = [[HSwapchain]]
 var swapchain_width = 1280u
 var swapchain_height = 720u
 
+var hello_vs = [[HShader]]
+var hello_fs = [[HShader]]
+
 var render_pass_layout = [[RenderPassLayout]]
 var pipeline = [[HGraphicsPipeline]]
+var pipeline_layout = [[HPipelineLayout]]
+var descriptor_set_layout = [[HDescriptorSetLayout]]
 
 var command_pool = [[HCommandPool]]
+
+var index_buffer = [[HBuffer]]
+var vertex_buffer = [[HBuffer]]
+
+/////////////////////////////////////////////////////////////////
+// Per frame data
+var current_frame = 0u
+
 var command_buffers : array<HCommandBuffer>
+
+var uniform_buffers : array<HBuffer>
+var descriptor_sets : array<HDescriptorSet>
 
 var in_flight_fences : array<HFence>
 var image_available_semaphores : array<HSemaphore>
 var render_finished_semaphores : array<HSemaphore>
 
-var swapchain = [[HSwapchain]]
 var swapchain_framebuffers : array<HFramebuffer>
-
-var current_frame = 0u
-
-var index_buffer = [[HBuffer]]
-var vertex_buffer = [[HBuffer]]
-var uniform_buffers : array<HBuffer>
 
 [export]
 def main
@@ -96,10 +103,14 @@ def on_init()
     // Create descriptor set layout
     var descriptor_set_layout_options = [[CreateDescriptorSetLayoutOptions]]
     add_binding(descriptor_set_layout_options, DescriptorType UniformBuffer, 0u, 1u, "MyBuffer")
-    var descriptor_set_layout = create_descriptor_set_layout(descriptor_set_layout_options)
+    descriptor_set_layout = create_descriptor_set_layout(descriptor_set_layout_options)
 
     // Create pipeline
-    var pipeline_options = [[CreateGraphicsPipelineOptions name = "triangle"]]
+    var pipeline_layout_options = [[CreatePipelineLayoutOptions]]
+    add_descriptor_set_layout(pipeline_layout_options, descriptor_set_layout)
+    pipeline_layout = create_pipeline_layout(pipeline_layout_options)
+
+    var pipeline_options = [[CreateGraphicsPipelineOptions name = "triangle", layout = pipeline_layout]]
     pipeline_options.vertex_shader = [[ShaderInfo compiled_shader = hello_vs, entry_func = "main"]]
     pipeline_options.pixel_shader = [[ShaderInfo compiled_shader = hello_fs, entry_func = "main"]]
 
@@ -109,7 +120,6 @@ def on_init()
     set_vertex_buffer_attribute(pipeline_options.graphics_state, uint8(0), uint8(1), uint16(typeinfo(offsetof<color> type<Vertex>)), Format R32G32B32_SFLOAT)
     pipeline_options.graphics_state.depth_test_enabled = false
     pipeline_options.graphics_state.render_pass_layout = render_pass_layout
-    add_descriptor_set_layout(pipeline_options, descriptor_set_layout)
     pipeline = create_graphics_pipeline(pipeline_options)
 
     // Command
@@ -129,11 +139,23 @@ def on_init()
     
     // Swapchain
     create_swapchain(window.width, window.height)
+    
+    let uniform_buffer_size = typeinfo(sizeof type<MyBuffer>)
+    resize(uniform_buffers, MAX_FRAMES_IN_FLIGHT)
+    for i in range(0, MAX_FRAMES_IN_FLIGHT)
+        uniform_buffers[i] = create_buffer([[CreateBufferOptions size = uint64(uniform_buffer_size), usage = BufferUsage UniformBuffer, exclusive = true]])
+
+    // Descriptor set
+    resize(descriptor_sets, MAX_FRAMES_IN_FLIGHT)
+    for i in range(0, MAX_FRAMES_IN_FLIGHT)
+        descriptor_sets[i] = create_descriptor_set([[CreateDescriptorSetOptions layout = descriptor_set_layout]])
+        var update_info = [[UpdateDescriptorSetOptions]]
+        bind_buffer(update_info, 0u, uniform_buffers[i])
+        update_descriptor_set(descriptor_sets[i], update_info)
 
     // Buffers
     create_index_buffer()
     create_vertex_buffer()
-    create_uniform_buffers()
 
 def on_update()
     draw_frame()
@@ -207,6 +229,8 @@ def record_commands(cb: HCommandBuffer; image_index: uint)
     cmd_set_scissor(cb, [[CmdSetScissorOptions offset = [[int[2] 0; 0]], extent = [[uint[2] swapchain_width; swapchain_height]]]])
     cmd_bind_vertex_buffer(cb, [[CmdBindVertexBufferOptions binding = 0u, buffer = vertex_buffer, offset = 0u]])
     cmd_bind_index_buffer(cb, [[CmdBindIndexBufferOptions buffer = index_buffer, offset = 0u, index_type = IndexType Uint16]])
+    unsafe
+        cmd_bind_descriptor_sets(cb, [[CmdBindDescriptorSetsOptions layout = pipeline_layout, bind_point = PipelineBindPoint Graphics, first_set = 0u, sets = addr(descriptor_sets[image_index]), num_sets = 1u]])
     cmd_draw_indexed(cb, [[CmdDrawIndexedOptions index_count = uint(length(indices)), instance_count = 1u, first_index = 0u, vertex_offset = 0, first_instance = 0u]])
     cmd_end_render_pass(cb)
     cmd_end(cb)
@@ -294,9 +318,3 @@ def create_index_buffer
 
     copy_buffer(staging_buffer, index_buffer, uint64(buffer_size))
     destroy_buffer(staging_buffer)
-
-def create_uniform_buffers
-    let buffer_size = typeinfo(sizeof type<MyBuffer>)
-    resize(uniform_buffers, MAX_FRAMES_IN_FLIGHT)
-    for i in range(0, MAX_FRAMES_IN_FLIGHT)
-        uniform_buffers[i] = create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage UniformBuffer, exclusive = true]])
