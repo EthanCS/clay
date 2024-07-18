@@ -1,3 +1,4 @@
+#include "clay_gfx/define.h"
 #include <vector>
 
 #include <SDL.h>
@@ -1006,8 +1007,8 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
         return;
     }
 
-    std::vector<VkWriteDescriptorSet> writes;
-    writes.reserve(desc.count);
+    VkWriteDescriptorSet   writes[MAX_DESCRIPTORS_PER_SET];
+    VkDescriptorBufferInfo buffer_infos[MAX_DESCRIPTORS_PER_SET];
 
     for (u32 i = 0; i < desc.count; i++)
     {
@@ -1031,13 +1032,13 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
                 const VulkanBuffer* vulkan_buffer = resources.buffers.get(info.buffer);
                 if (vulkan_buffer == nullptr) [[unlikely]] { continue; }
 
-                VkDescriptorBufferInfo buffer_info = {};
-                buffer_info.buffer                 = vulkan_buffer->buffer;
-                buffer_info.offset                 = 0;
-                buffer_info.range                  = vulkan_buffer->size;
+                buffer_infos[i]        = {};
+                buffer_infos[i].buffer = vulkan_buffer->buffer;
+                buffer_infos[i].offset = 0;
+                buffer_infos[i].range  = vulkan_buffer->size;
 
                 w.descriptorType = vk_binding.descriptorType;
-                w.pBufferInfo    = &buffer_info;
+                w.pBufferInfo    = &buffer_infos[i];
             }
             break;
             default:
@@ -1045,10 +1046,10 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
                 break;
         }
 
-        writes.push_back(w);
+        writes[i] = w;
     }
 
-    vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(device, desc.count, writes, 0, nullptr);
 }
 
 void VulkanBackend::destroy_descriptor_set(const Handle<DescriptorSet>& set)
