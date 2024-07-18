@@ -4,7 +4,7 @@ require clay_app
 require clay_gfx
 require ShaderConductor
 
-let MAX_FRAMES_IN_FLIGHT = 2
+let MAX_FRAMES_IN_FLIGHT = 3
 let title = "Hello Constant Buffer"
 
 struct Vertex
@@ -143,7 +143,11 @@ def on_init()
     let uniform_buffer_size = typeinfo(sizeof type<MyBuffer>)
     resize(uniform_buffers, MAX_FRAMES_IN_FLIGHT)
     for i in range(0, MAX_FRAMES_IN_FLIGHT)
-        uniform_buffers[i] = create_buffer([[CreateBufferOptions size = uint64(uniform_buffer_size), usage = BufferUsage UniformBuffer, exclusive = true]])
+        uniform_buffers[i] = create_buffer([[CreateBufferOptions 
+            size = uint64(uniform_buffer_size), 
+            usage = BufferUsage UniformBuffer, 
+            memory_usage = MemoryUsage CpuToGpu,
+            exclusive = true]])
 
     // Descriptor set
     resize(descriptor_sets, MAX_FRAMES_IN_FLIGHT)
@@ -291,13 +295,18 @@ def create_vertex_buffer
     var staging_buffer = create_buffer([[CreateBufferOptions 
         size = uint64(buffer_size), 
         usage = BufferUsage TransferSrc, 
+        memory_usage = MemoryUsage CpuToGpu,
         exclusive = true]])
     var data = map_buffer(staging_buffer)
     unsafe 
         memcpy(data, addr(vertices), buffer_size)
     unmap_buffer(staging_buffer)
 
-    vertex_buffer = create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage VertexBuffer | BufferUsage TransferDst, exclusive = true]])
+    vertex_buffer = create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage VertexBuffer | BufferUsage TransferDst,
+        memory_usage = MemoryUsage CpuToGpu, 
+        exclusive = true]])
 
     copy_buffer(staging_buffer, vertex_buffer, uint64(buffer_size))
     destroy_buffer(staging_buffer)
@@ -308,13 +317,18 @@ def create_index_buffer
     var staging_buffer = create_buffer([[CreateBufferOptions 
         size = uint64(buffer_size), 
         usage = BufferUsage TransferSrc, 
+        memory_usage = MemoryUsage CpuToGpu, 
         exclusive = true]])
     var data = map_buffer(staging_buffer)
     unsafe 
         memcpy(data, addr(indices), buffer_size)
     unmap_buffer(staging_buffer)
 
-    index_buffer = create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage IndexBuffer | BufferUsage TransferDst, exclusive = true]])
+    index_buffer = create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage IndexBuffer | BufferUsage TransferDst,
+        memory_usage = MemoryUsage CpuToGpu,
+        exclusive = true]])
 
     copy_buffer(staging_buffer, index_buffer, uint64(buffer_size))
     destroy_buffer(staging_buffer)

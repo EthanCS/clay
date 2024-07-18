@@ -3,7 +3,7 @@ require clay_app
 require clay_gfx
 require ShaderConductor
 
-let MAX_FRAMES_IN_FLIGHT = 2
+let MAX_FRAMES_IN_FLIGHT = 3
 
 var window = [[Window]]
 
@@ -248,13 +248,18 @@ def create_vertex_buffer
     var staging_buffer = create_buffer([[CreateBufferOptions 
         size = uint64(buffer_size), 
         usage = BufferUsage TransferSrc, 
+        memory_usage = MemoryUsage CpuToGpu,
         exclusive = true]])
     var data = map_buffer(staging_buffer)
     unsafe 
         memcpy(data, addr(vertices), buffer_size)
     unmap_buffer(staging_buffer)
 
-    vertex_buffer = create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage VertexBuffer | BufferUsage TransferDst, exclusive = true]])
+    vertex_buffer = create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage VertexBuffer | BufferUsage TransferDst,
+        memory_usage = MemoryUsage CpuToGpu, 
+        exclusive = true]])
 
     copy_buffer(staging_buffer, vertex_buffer, uint64(buffer_size))
     destroy_buffer(staging_buffer)
@@ -265,13 +270,18 @@ def create_index_buffer
     var staging_buffer = create_buffer([[CreateBufferOptions 
         size = uint64(buffer_size), 
         usage = BufferUsage TransferSrc, 
+        memory_usage = MemoryUsage CpuToGpu, 
         exclusive = true]])
     var data = map_buffer(staging_buffer)
     unsafe 
         memcpy(data, addr(indices), buffer_size)
     unmap_buffer(staging_buffer)
 
-    index_buffer = create_buffer([[CreateBufferOptions size = uint64(buffer_size), usage = BufferUsage IndexBuffer | BufferUsage TransferDst, exclusive = true]])
+    index_buffer = create_buffer([[CreateBufferOptions 
+        size = uint64(buffer_size), 
+        usage = BufferUsage IndexBuffer | BufferUsage TransferDst,
+        memory_usage = MemoryUsage CpuToGpu,
+        exclusive = true]])
 
     copy_buffer(staging_buffer, index_buffer, uint64(buffer_size))
     destroy_buffer(staging_buffer)

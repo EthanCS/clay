@@ -122,6 +122,9 @@ DAS_BASE_BIND_ENUM(clay::gfx::DescriptorType::Enum, DescriptorType, Sampler, Com
 DAS_BIND_ENUM_CAST(clay::gfx::PipelineBindPoint::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::PipelineBindPoint::Enum, PipelineBindPoint, Graphics, Compute)
 
+DAS_BIND_ENUM_CAST(clay::gfx::MemoryUsage::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::MemoryUsage::Enum, MemoryUsage, GpuOnly, CpuOnly, CpuToGpu, GpuToCpu)
+
 inline das::TypeDeclPtr makeTextureAspectFlags()
 {
     auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
@@ -386,6 +389,7 @@ struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<cl
     {
         addField<DAS_BIND_MANAGED_FIELD(size)>("size");
         addFieldEx("usage", "usage", offsetof(clay::gfx::CreateBufferOptions, usage), makeBufferUsageFlags());
+        addField<DAS_BIND_MANAGED_FIELD(memory_usage)>("memory_usage");
         addField<DAS_BIND_MANAGED_FIELD(exclusive)>("exclusive");
     }
     GFX_DAS_STRUCT_COMMON
@@ -642,6 +646,7 @@ public:
         ADD_ENUM_ANNOTATION(IndexType)
         ADD_ENUM_ANNOTATION(DescriptorType)
         ADD_ENUM_ANNOTATION(PipelineBindPoint)
+        ADD_ENUM_ANNOTATION(MemoryUsage)
         addAlias(makeTextureAspectFlags());
         addAlias(makeShaderStageFlags());
         addAlias(makeColorWriteEnabledFlags());

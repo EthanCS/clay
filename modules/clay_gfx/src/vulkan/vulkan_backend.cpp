@@ -826,9 +826,26 @@ Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
     buffer_info.usage              = to_vk_buffer_usage_flags(desc.usage);
     buffer_info.sharingMode        = desc.exclusive ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
 
+    VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_UNKNOWN;
+    switch (desc.memory_usage)
+    {
+        case MemoryUsage::GpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            break;
+        case MemoryUsage::CpuToGpu:
+            vma_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            break;
+        case MemoryUsage::GpuToCpu:
+            vma_usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+            break;
+        case MemoryUsage::CpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_CPU_ONLY;
+            break;
+    }
+
     VmaAllocationCreateInfo memory_info = {};
     memory_info.flags                   = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
-    memory_info.usage                   = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    memory_info.usage                   = vma_usage;
 
     VmaAllocationInfo allocation_info = {};
     VkResult          res             = vmaCreateBuffer(vma_allocator, &buffer_info, &memory_info,

@@ -31,6 +31,7 @@ struct CreateShaderOptions {
 struct CreateBufferOptions {
     u64               size = 0;
     BufferUsage::Flag usage;
+    MemoryUsage::Enum memory_usage;
     bool              exclusive{ true };
 };
 

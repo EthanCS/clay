@@ -267,6 +267,16 @@ struct PipelineBindPoint {
     };
 };
 
+struct MemoryUsage {
+    enum Enum
+    {
+        GpuOnly = 1,
+        CpuOnly,
+        CpuToGpu,
+        GpuToCpu,
+    };
+};
+
 struct TextureAspect {
     enum Flag : char
     {
