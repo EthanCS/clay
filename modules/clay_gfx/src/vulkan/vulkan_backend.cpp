@@ -1,4 +1,3 @@
-#include "clay_gfx/define.h"
 #include <vector>
 
 #include <SDL.h>
@@ -793,6 +792,46 @@ void VulkanBackend::destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pi
     resources.graphics_pipelines.free(pipeline);
 }
 
+Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
+{
+    VulkanTexture texture = {};
+    texture.width         = desc.width;
+    texture.height        = desc.height;
+    texture.format        = to_vk_format(desc.format);
+
+    VkImageCreateInfo image_info = {};
+    image_info.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType         = to_vk_image_type(desc.texture_type);
+    image_info.extent.width      = desc.width;
+    image_info.extent.height     = desc.height;
+    image_info.extent.depth      = desc.depth;
+    image_info.mipLevels         = desc.mip_levels;
+    image_info.arrayLayers       = desc.array_size;
+    image_info.format            = texture.format;
+    image_info.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    image_info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.usage             = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.samples           = VK_SAMPLE_COUNT_1_BIT;
+    image_info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo memory_info = {};
+    memory_info.flags                   = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
+    memory_info.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    VmaAllocationInfo allocation_info = {};
+    VkResult          res             = vmaCreateImage(vma_allocator, &image_info, &memory_info, &texture.image, &texture.allocation, &allocation_info);
+
+    if (res != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan image. ({})", string_VkResult(res));
+        return Handle<Texture>::invalid();
+    }
+
+    texture.device_memory = allocation_info.deviceMemory;
+
+    return resources.textures.push(texture);
+}
+
 u32 VulkanBackend::get_texture_width(const Handle<Texture>& texture)
 {
     const VulkanTexture* vulkan_texture = resources.textures.get(texture);
@@ -811,7 +850,7 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
 {
     const VulkanTexture* vulkan_texture = resources.textures.get(texture);
     if (vulkan_texture == nullptr) [[unlikely]] { return; }
-    vulkan_texture->destroy(device);
+    vulkan_texture->destroy(device, vma_allocator);
     resources.textures.free(texture);
 }
 

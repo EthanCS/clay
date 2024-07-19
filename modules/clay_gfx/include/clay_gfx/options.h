@@ -1,6 +1,5 @@
 #pragma once
 
-#include "define.h"
 #include <clay_core/macro.h>
 #include <clay_gfx/resource.h>
 
@@ -26,6 +25,18 @@ struct CreateSwapchainOptions {
 struct CreateShaderOptions {
     const void* code      = nullptr;
     u32         code_size = 0;
+};
+
+struct CreateTextureOptions {
+    const char*       name         = nullptr;
+    u32               width        = 1;
+    u32               height       = 1;
+    u32               depth        = 1;
+    u32               array_size   = 1;
+    u32               mip_levels   = 1;
+    Format::Enum      format       = Format::Undefined;
+    TextureType::Enum texture_type = TextureType::Texture2D;
+    void*             initial_data = nullptr;
 };
 
 struct CreateBufferOptions {

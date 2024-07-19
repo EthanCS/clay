@@ -75,14 +75,19 @@ struct VulkanTexture {
     std::vector<VkImageView>           views;
     std::vector<VulkanTextureViewDesc> view_descs;
 
+    VmaAllocation  allocation    = VK_NULL_HANDLE;
+    VkDeviceMemory device_memory = VK_NULL_HANDLE;
+
     VkImageView get_view(const VkDevice& device, VulkanTextureViewDesc desc);
-    inline void destroy(const VkDevice& device) const
+    inline void destroy(const VkDevice& device, VmaAllocator vma_allocator) const
     {
         for (const auto& view : views)
         {
             vkDestroyImageView(device, view, nullptr);
         }
-        vkDestroyImage(device, image, nullptr);
+
+        if (allocation != nullptr) { vmaDestroyImage(vma_allocator, image, allocation); }
+        else { vkDestroyImage(device, image, nullptr); }
     }
 };
 

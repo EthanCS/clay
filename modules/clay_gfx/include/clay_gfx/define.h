@@ -108,6 +108,15 @@ struct TextureComponentSwizzle {
     };
 };
 
+struct TextureType {
+    enum Enum
+    {
+        Texture1D,
+        Texture2D,
+        Texture3D,
+    };
+};
+
 struct TextureViewType {
     enum Enum
     {

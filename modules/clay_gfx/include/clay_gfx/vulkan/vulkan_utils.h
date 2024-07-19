@@ -1,9 +1,8 @@
 #pragma once
 
-#include "clay_gfx/resource.h"
-#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <vector>
 #include <clay_gfx/define.h>
+#include <clay_gfx/vulkan/vulkan_resource.h>
 #include <clay_gfx/vulkan/vulkan_header.h>
 
 namespace clay
@@ -570,6 +569,20 @@ inline VkPipelineBindPoint to_vk_pipeline_bind_point(PipelineBindPoint::Enum bin
             return VK_PIPELINE_BIND_POINT_COMPUTE;
     }
     return VK_PIPELINE_BIND_POINT_GRAPHICS;
+}
+
+inline VkImageType to_vk_image_type(TextureType::Enum type)
+{
+    switch (type)
+    {
+        case TextureType::Texture1D:
+            return VK_IMAGE_TYPE_1D;
+        case TextureType::Texture2D:
+            return VK_IMAGE_TYPE_2D;
+        case TextureType::Texture3D:
+            return VK_IMAGE_TYPE_3D;
+    }
+    return VK_IMAGE_TYPE_2D;
 }
 
 } // namespace gfx

@@ -76,9 +76,10 @@ public:
     Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc);
     void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline);
 
-    u32  get_texture_width(const Handle<Texture>& texture);
-    u32  get_texture_height(const Handle<Texture>& texture);
-    void destroy_texture(const Handle<Texture>& texture);
+    Handle<Texture> create_texture(const CreateTextureOptions& desc);
+    u32             get_texture_width(const Handle<Texture>& texture);
+    u32             get_texture_height(const Handle<Texture>& texture);
+    void            destroy_texture(const Handle<Texture>& texture);
 
     Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
     void*          map_buffer(const Handle<Buffer>& buffer);
