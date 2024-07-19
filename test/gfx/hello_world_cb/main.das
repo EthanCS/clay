@@ -214,8 +214,12 @@ def draw_frame()
 
 def update_uniform_buffer(image_index: uint)
     var data = map_buffer(uniform_buffers[image_index])
+    let aspect = float(swapchain_width) / float(swapchain_height)
     unsafe
         var my_buffer = [[MyBuffer]]
+        my_buffer.model = identity4x4()
+        my_buffer.view = look_at(float3(2.0f, 2.0f, 2.0f), float3(0.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 1.0f))
+        my_buffer.proj = persp_forward(45.0f * PI / 180.0f, aspect, 0.1f, 10.0f)
         memcpy(data, addr(my_buffer), typeinfo(sizeof type<MyBuffer>))
     unmap_buffer(uniform_buffers[image_index])
 
