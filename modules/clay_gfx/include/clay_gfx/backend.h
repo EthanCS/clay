@@ -58,6 +58,7 @@ PRO_DEF_MEMBER_DISPATCH(create_graphics_pipeline, Handle<GraphicsPipeline>(const
 PRO_DEF_MEMBER_DISPATCH(destroy_graphics_pipeline, void(const Handle<GraphicsPipeline>&));
 
 /////// Texture
+PRO_DEF_MEMBER_DISPATCH(create_texture, Handle<Texture>(const CreateTextureOptions&));
 PRO_DEF_MEMBER_DISPATCH(get_texture_width, u32(const Handle<Texture>&));
 PRO_DEF_MEMBER_DISPATCH(get_texture_height, u32(const Handle<Texture>&));
 PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
@@ -132,6 +133,7 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                destroy_pipeline_layout,
                                create_graphics_pipeline,
                                destroy_graphics_pipeline,
+                               create_texture,
                                get_texture_width,
                                get_texture_height,
                                destroy_texture,
@@ -203,9 +205,10 @@ inline void                   destroy_pipeline_layout(const Handle<PipelineLayou
 inline Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc) { return g_backend_proxy.create_graphics_pipeline(desc); }
 inline void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.destroy_graphics_pipeline(pipeline); }
 
-inline u32  get_texture_width(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_width(texture); }
-inline u32  get_texture_height(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_height(texture); }
-inline void destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
+inline Handle<Texture> create_texture(const CreateTextureOptions& desc) { return g_backend_proxy.create_texture(desc); }
+inline u32             get_texture_width(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_width(texture); }
+inline u32             get_texture_height(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_height(texture); }
+inline void            destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
 
 inline Handle<Buffer> create_buffer(const CreateBufferOptions& desc) { return g_backend_proxy.create_buffer(desc); }
 inline void*          map_buffer(const Handle<Buffer>& buffer) { return g_backend_proxy.map_buffer(buffer); }

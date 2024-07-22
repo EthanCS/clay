@@ -83,6 +83,9 @@ DAS_BASE_BIND_ENUM(clay::gfx::RenderPassStoreOp::Enum, RenderPassStoreOp, DontCa
 DAS_BIND_ENUM_CAST(clay::gfx::TextureComponentSwizzle::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::TextureComponentSwizzle::Enum, TextureComponentSwizzle, Identity, Zero, One, R, G, B, A)
 
+DAS_BIND_ENUM_CAST(clay::gfx::TextureType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::TextureType::Enum, TextureType, Texture1D, Texture2D, Texture3D)
+
 DAS_BIND_ENUM_CAST(clay::gfx::TextureViewType::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::TextureViewType::Enum, TextureViewType, Texture1D, Texture2D, Texture3D, TextureCube, Texture1DArray, Texture2DArray, TextureCubeArray)
 
@@ -382,6 +385,23 @@ struct CreateShaderOptionsAnnotation : public das::ManagedStructureAnnotation<cl
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CreateTextureOptions, clay::gfx::CreateTextureOptions);
+struct CreateTextureOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateTextureOptions, true, true> {
+    CreateTextureOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CreateTextureOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(name)>("name");
+        addField<DAS_BIND_MANAGED_FIELD(width)>("width");
+        addField<DAS_BIND_MANAGED_FIELD(height)>("height");
+        addField<DAS_BIND_MANAGED_FIELD(depth)>("depth");
+        addField<DAS_BIND_MANAGED_FIELD(array_size)>("array_size");
+        addField<DAS_BIND_MANAGED_FIELD(mip_levels)>("mip_levels");
+        addField<DAS_BIND_MANAGED_FIELD(format)>("format");
+        addField<DAS_BIND_MANAGED_FIELD(texture_type)>("texture_type");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 MAKE_TYPE_FACTORY(CreateBufferOptions, clay::gfx::CreateBufferOptions);
 struct CreateBufferOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateBufferOptions, true, true> {
     CreateBufferOptionsAnnotation(das::ModuleLibrary& ml)
@@ -633,6 +653,7 @@ public:
         ADD_ENUM_ANNOTATION(RenderPassLoadOp)
         ADD_ENUM_ANNOTATION(RenderPassStoreOp)
         ADD_ENUM_ANNOTATION(TextureComponentSwizzle)
+        ADD_ENUM_ANNOTATION(TextureType)
         ADD_ENUM_ANNOTATION(TextureViewType)
         ADD_ENUM_ANNOTATION(FillMode)
         ADD_ENUM_ANNOTATION(FrontFace)
@@ -688,6 +709,7 @@ public:
         ADD_STRUCT_ANNOTATION(InitBackendOptions)
         ADD_STRUCT_ANNOTATION(CreateSwapchainOptions)
         ADD_STRUCT_ANNOTATION(CreateShaderOptions)
+        ADD_STRUCT_ANNOTATION(CreateTextureOptions)
         ADD_STRUCT_ANNOTATION(CreateBufferOptions)
         ADD_STRUCT_ANNOTATION(AcquireNextImageOptions)
         ADD_STRUCT_ANNOTATION(QueueSubmitOptions)
@@ -759,6 +781,7 @@ public:
         ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_graphics_pipeline)
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(destroy_graphics_pipeline)
 
+        ADD_FUNC_RET_REF_MODIFY_EXTERNAL(create_texture)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(get_texture_width)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(get_texture_height)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(destroy_texture)

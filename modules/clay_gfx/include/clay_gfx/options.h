@@ -36,7 +36,6 @@ struct CreateTextureOptions {
     u32               mip_levels   = 1;
     Format::Enum      format       = Format::Undefined;
     TextureType::Enum texture_type = TextureType::Texture2D;
-    void*             initial_data = nullptr;
 };
 
 struct CreateBufferOptions {
