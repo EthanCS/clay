@@ -1,3 +1,4 @@
+#include "clay_gfx/define.h"
 #include <vector>
 
 #include <SDL.h>
@@ -1485,6 +1486,46 @@ void VulkanBackend::cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCo
     copy_region.size         = options.size;
 
     vkCmdCopyBuffer(vk_cb->command_buffer, src_buffer->buffer, dst_buffer->buffer, 1, &copy_region);
+}
+
+void VulkanBackend::cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    if (vk_cb == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    VkImageMemoryBarrier image_memory_barriers[MAX_BARRIERS];
+    for (u32 i = 0; i < options.num_texture_barriers; i++)
+    {
+        const TextureBarrier& barrier = options.texture_barriers[i];
+        const VulkanTexture*  texture = resources.textures.get(barrier.texture);
+        if (texture == nullptr) [[unlikely]]
+        {
+            CLAY_LOG_ERROR("Failed to find texture.");
+            continue;
+        }
+
+        VkImageMemoryBarrier& image_barrier           = image_memory_barriers[i];
+        image_barrier                                 = {};
+        image_barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_barrier.srcAccessMask                   = 0;
+        image_barrier.dstAccessMask                   = 0;
+        image_barrier.oldLayout                       = to_vk_image_layout(barrier.old_layout);
+        image_barrier.newLayout                       = to_vk_image_layout(barrier.new_layout);
+        image_barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+        image_barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+        image_barrier.image                           = texture->image;
+        image_barrier.subresourceRange.aspectMask     = to_vk_image_aspect_flags(barrier.aspect_flags);
+        image_barrier.subresourceRange.baseMipLevel   = barrier.base_mip_level;
+        image_barrier.subresourceRange.levelCount     = barrier.level_count;
+        image_barrier.subresourceRange.baseArrayLayer = barrier.base_array_layer;
+        image_barrier.subresourceRange.layerCount     = barrier.layer_count;
+    }
+
+    vkCmdPipelineBarrier(vk_cb->command_buffer, 0, 0, 0, 0, nullptr, 0, nullptr, options.num_texture_barriers, image_memory_barriers);
 }
 
 } // namespace gfx

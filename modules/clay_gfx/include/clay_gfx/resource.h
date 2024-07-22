@@ -178,5 +178,16 @@ struct DescriptorBinding {
     const char*          name;
 };
 
+struct TextureBarrier {
+    Handle<Texture>     texture;
+    ImageLayout::Enum   old_layout;
+    ImageLayout::Enum   new_layout;
+    TextureAspect::Flag aspect_flags;
+    u32                 base_mip_level;
+    u32                 level_count;
+    u32                 base_array_layer;
+    u32                 layer_count;
+};
+
 } // namespace gfx
 } // namespace clay

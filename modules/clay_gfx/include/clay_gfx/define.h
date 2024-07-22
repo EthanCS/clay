@@ -14,6 +14,7 @@ static const u8 MAX_VERTEX_ATTRIBUTES      = 16;
 static const u8 MAX_VERTEX_BINDINGS        = 16;
 static const u8 MAX_DESCRIPTOR_SET_LAYOUTS = 8;
 static const u8 MAX_DESCRIPTORS_PER_SET    = 16;
+static const u8 MAX_BARRIERS               = 8;
 
 struct ClearValue {
     f32 color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };

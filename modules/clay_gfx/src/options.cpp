@@ -1,3 +1,4 @@
+#include "clay_gfx/define.h"
 #include <clay_core/log.h>
 #include <clay_gfx/options.h>
 
@@ -97,6 +98,24 @@ UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_buffer(u32 binding,
     else
     {
         CLAY_LOG_ERROR("Exceeded maximum number of descriptor bindings per set");
+        return *this;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// CmdPipelineBarrierOptions
+
+CmdPipelineBarrierOptions& CmdPipelineBarrierOptions::add_texture_barrier(const TextureBarrier& barrier)
+{
+    if (num_texture_barriers < MAX_BARRIERS)
+    {
+        texture_barriers[num_texture_barriers] = barrier;
+        num_texture_barriers++;
+        return *this;
+    }
+    else
+    {
+        CLAY_LOG_ERROR("Exceeded maximum number of texture barriers per pipeline barrier");
         return *this;
     }
 }

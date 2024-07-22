@@ -207,5 +207,12 @@ struct CmdCopyBufferOptions {
     u64            size;
 };
 
+struct CmdPipelineBarrierOptions {
+    TextureBarrier texture_barriers[MAX_BARRIERS];
+    u32            num_texture_barriers = 0;
+
+    CmdPipelineBarrierOptions& add_texture_barrier(const TextureBarrier& barrier);
+};
+
 } // namespace gfx
 } // namespace clay

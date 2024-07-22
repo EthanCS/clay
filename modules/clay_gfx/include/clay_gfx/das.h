@@ -344,6 +344,23 @@ struct TextureViewDescAnnotation : public das::ManagedStructureAnnotation<clay::
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(TextureBarrier, clay::gfx::TextureBarrier);
+struct TextureBarrierAnnotation : public das::ManagedStructureAnnotation<clay::gfx::TextureBarrier, true, true> {
+    TextureBarrierAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("TextureBarrier", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(texture)>("texture");
+        addField<DAS_BIND_MANAGED_FIELD(old_layout)>("old_layout");
+        addField<DAS_BIND_MANAGED_FIELD(new_layout)>("new_layout");
+        addFieldEx("aspect_flags", "aspect_flags", offsetof(clay::gfx::TextureBarrier, aspect_flags), makeTextureAspectFlags());
+        addField<DAS_BIND_MANAGED_FIELD(base_mip_level)>("base_mip_level");
+        addField<DAS_BIND_MANAGED_FIELD(level_count)>("level_count");
+        addField<DAS_BIND_MANAGED_FIELD(base_array_layer)>("base_array_layer");
+        addField<DAS_BIND_MANAGED_FIELD(layer_count)>("layer_count");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 //////////////////////////////////////////////////////////////////////////
 //////// options.h
 
@@ -635,6 +652,8 @@ struct CmdCopyBufferOptionsAnnotation : public das::ManagedStructureAnnotation<c
     GFX_DAS_STRUCT_COMMON
 };
 
+GFX_OPTIONS_STRUCT(CmdPipelineBarrierOptions)
+
 class Module_clay_gfx : public das::Module
 {
 public:
@@ -704,6 +723,7 @@ public:
         ADD_MEMBER_FUNCTION(GraphicsState, set_vertex_buffer_binding)
         ADD_MEMBER_FUNCTION(GraphicsState, set_vertex_buffer_attribute)
         ADD_STRUCT_ANNOTATION(TextureViewDesc)
+        ADD_STRUCT_ANNOTATION(TextureBarrier)
 
         // bind options.h
         ADD_STRUCT_ANNOTATION(InitBackendOptions)
@@ -745,6 +765,8 @@ public:
         ADD_STRUCT_ANNOTATION(CmdBindIndexBufferOptions)
         ADD_STRUCT_ANNOTATION(CmdBindDescriptorSetsOptions)
         ADD_STRUCT_ANNOTATION(CmdCopyBufferOptions)
+        ADD_STRUCT_ANNOTATION(CmdPipelineBarrierOptions)
+        ADD_MEMBER_FUNCTION(CmdPipelineBarrierOptions, add_texture_barrier)
 
         // bind backend.h
         ADD_FUNC_RET_SIMPLE_MODIFY_EXTERNAL(init)
