@@ -81,6 +81,9 @@ public:
     u32             get_texture_height(const Handle<Texture>& texture);
     void            destroy_texture(const Handle<Texture>& texture);
 
+    Handle<Sampler> create_sampler(const CreateSamplerOptions& desc);
+    void            destroy_sampler(const Handle<Sampler>& sampler);
+
     Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
     void*          map_buffer(const Handle<Buffer>& buffer);
     void           unmap_buffer(const Handle<Buffer>& buffer);

@@ -63,6 +63,10 @@ PRO_DEF_MEMBER_DISPATCH(get_texture_width, u32(const Handle<Texture>&));
 PRO_DEF_MEMBER_DISPATCH(get_texture_height, u32(const Handle<Texture>&));
 PRO_DEF_MEMBER_DISPATCH(destroy_texture, void(const Handle<Texture>&));
 
+/////// Sampler
+PRO_DEF_MEMBER_DISPATCH(create_sampler, Handle<Sampler>(const CreateSamplerOptions&));
+PRO_DEF_MEMBER_DISPATCH(destroy_sampler, void(const Handle<Sampler>&));
+
 /////// Buffer
 PRO_DEF_MEMBER_DISPATCH(create_buffer, Handle<Buffer>(const CreateBufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(map_buffer, void*(const Handle<Buffer>&));
@@ -139,6 +143,8 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                get_texture_width,
                                get_texture_height,
                                destroy_texture,
+                               create_sampler,
+                               destroy_sampler,
                                create_buffer,
                                map_buffer,
                                unmap_buffer,
@@ -213,6 +219,9 @@ inline Handle<Texture> create_texture(const CreateTextureOptions& desc) { return
 inline u32             get_texture_width(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_width(texture); }
 inline u32             get_texture_height(const Handle<Texture>& texture) { return g_backend_proxy.get_texture_height(texture); }
 inline void            destroy_texture(const Handle<Texture>& texture) { g_backend_proxy.destroy_texture(texture); }
+
+inline Handle<Sampler> create_sampler(const CreateSamplerOptions& desc) { return g_backend_proxy.create_sampler(desc); }
+inline void            destroy_sampler(const Handle<Sampler>& sampler) { g_backend_proxy.destroy_sampler(sampler); }
 
 inline Handle<Buffer> create_buffer(const CreateBufferOptions& desc) { return g_backend_proxy.create_buffer(desc); }
 inline void*          map_buffer(const Handle<Buffer>& buffer) { return g_backend_proxy.map_buffer(buffer); }

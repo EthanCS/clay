@@ -22,6 +22,9 @@ struct ClearValue {
     u32 stencil;
 };
 
+////////////////////////////////////////////////////////////////////////
+// Enums
+
 struct BackendType {
     enum Enum
     {
@@ -286,6 +289,35 @@ struct MemoryUsage {
         GpuToCpu,
     };
 };
+
+struct FilterType {
+    enum Enum
+    {
+        Nearest,
+        Linear,
+    };
+};
+
+struct MipmapType {
+    enum Enum
+    {
+        Nearest,
+        Linear,
+    };
+};
+
+struct AddressMode {
+    enum Enum
+    {
+        Mirror,
+        Repeat,
+        ClampToEdge,
+        ClampToBorder,
+    };
+};
+
+////////////////////////////////////////////////////////////////////////
+// Flags
 
 struct TextureAspect {
     enum Flag : char

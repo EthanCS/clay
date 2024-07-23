@@ -1,4 +1,3 @@
-#include "clay_gfx/define.h"
 #include <vector>
 
 #include <SDL.h>
@@ -853,6 +852,45 @@ void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
     if (vulkan_texture == nullptr) [[unlikely]] { return; }
     vulkan_texture->destroy(device, vma_allocator);
     resources.textures.free(texture);
+}
+
+Handle<Sampler> VulkanBackend::create_sampler(const CreateSamplerOptions& desc)
+{
+    VkSamplerCreateInfo sampler_info     = {};
+    sampler_info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter               = to_vk_filter(desc.mag_filter);
+    sampler_info.minFilter               = to_vk_filter(desc.min_filter);
+    sampler_info.mipmapMode              = to_vk_mipmap_mode(desc.mipmap_mode);
+    sampler_info.addressModeU            = to_vk_address_mode(desc.address_u);
+    sampler_info.addressModeV            = to_vk_address_mode(desc.address_v);
+    sampler_info.addressModeW            = to_vk_address_mode(desc.address_w);
+    sampler_info.mipLodBias              = desc.mip_lod_bias;
+    sampler_info.anisotropyEnable        = (desc.max_anisotropy > 0.0f) ? VK_TRUE : VK_FALSE;
+    sampler_info.maxAnisotropy           = desc.max_anisotropy;
+    sampler_info.compareEnable           = desc.compare_op != CompareOp::Never;
+    sampler_info.compareOp               = to_vk_compare_op(desc.compare_op);
+    sampler_info.minLod                  = 0.0f;
+    sampler_info.maxLod                  = ((desc.mipmap_mode == MipmapType::Linear) ? FLT_MAX : 0.0f);
+    sampler_info.borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    sampler_info.unnormalizedCoordinates = VK_FALSE;
+
+    VkSampler sampler = VK_NULL_HANDLE;
+    VkResult  result  = vkCreateSampler(device, &sampler_info, nullptr, &sampler);
+    if (result != VK_SUCCESS) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to create Vulkan sampler. ({})", string_VkResult(result));
+        return Handle<Sampler>::invalid();
+    }
+
+    return resources.samplers.push(VulkanSampler{ .sampler = sampler });
+}
+
+void VulkanBackend::destroy_sampler(const Handle<Sampler>& sampler)
+{
+    const VulkanSampler* vulkan_sampler = resources.samplers.get(sampler);
+    if (vulkan_sampler == nullptr) [[unlikely]] { return; }
+    vkDestroySampler(device, vulkan_sampler->sampler, nullptr);
+    resources.samplers.free(sampler);
 }
 
 Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)

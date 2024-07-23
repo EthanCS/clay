@@ -39,6 +39,18 @@ struct CreateTextureOptions {
     TextureType::Enum texture_type = TextureType::Texture2D;
 };
 
+struct CreateSamplerOptions {
+    FilterType::Enum  min_filter;
+    FilterType::Enum  mag_filter;
+    MipmapType::Enum  mipmap_mode;
+    AddressMode::Enum address_u;
+    AddressMode::Enum address_v;
+    AddressMode::Enum address_w;
+    float             mip_lod_bias;
+    float             max_anisotropy;
+    CompareOp::Enum   compare_op;
+};
+
 struct CreateBufferOptions {
     u64               size = 0;
     BufferUsage::Flag usage;

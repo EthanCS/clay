@@ -128,6 +128,15 @@ DAS_BASE_BIND_ENUM(clay::gfx::PipelineBindPoint::Enum, PipelineBindPoint, Graphi
 DAS_BIND_ENUM_CAST(clay::gfx::MemoryUsage::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::MemoryUsage::Enum, MemoryUsage, GpuOnly, CpuOnly, CpuToGpu, GpuToCpu)
 
+DAS_BIND_ENUM_CAST(clay::gfx::FilterType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::FilterType::Enum, FilterType, Nearest, Linear)
+
+DAS_BIND_ENUM_CAST(clay::gfx::MipmapType::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::MipmapType::Enum, MipmapType, Nearest, Linear)
+
+DAS_BIND_ENUM_CAST(clay::gfx::AddressMode::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::AddressMode::Enum, AddressMode, Mirror, Repeat, ClampToEdge, ClampToBorder)
+
 inline das::TypeDeclPtr makeTextureAspectFlags()
 {
     auto ft      = make_smart<das::TypeDecl>(das::Type::tBitfield);
@@ -415,6 +424,24 @@ struct CreateTextureOptionsAnnotation : public das::ManagedStructureAnnotation<c
         addField<DAS_BIND_MANAGED_FIELD(mip_levels)>("mip_levels");
         addField<DAS_BIND_MANAGED_FIELD(format)>("format");
         addField<DAS_BIND_MANAGED_FIELD(texture_type)>("texture_type");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
+MAKE_TYPE_FACTORY(CreateSamplerOptions, clay::gfx::CreateSamplerOptions);
+struct CreateSamplerOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CreateSamplerOptions, true, true> {
+    CreateSamplerOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CreateSamplerOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(min_filter)>("min_filter");
+        addField<DAS_BIND_MANAGED_FIELD(mag_filter)>("mag_filter");
+        addField<DAS_BIND_MANAGED_FIELD(mipmap_mode)>("mipmap_mode");
+        addField<DAS_BIND_MANAGED_FIELD(address_u)>("address_u");
+        addField<DAS_BIND_MANAGED_FIELD(address_v)>("address_v");
+        addField<DAS_BIND_MANAGED_FIELD(address_w)>("address_w");
+        addField<DAS_BIND_MANAGED_FIELD(mip_lod_bias)>("mip_lod_bias");
+        addField<DAS_BIND_MANAGED_FIELD(max_anisotropy)>("max_anisotropy");
+        addField<DAS_BIND_MANAGED_FIELD(compare_op)>("compare_op");
     }
     GFX_DAS_STRUCT_COMMON
 };
@@ -709,6 +736,10 @@ public:
         ADD_ENUM_ANNOTATION(DescriptorType)
         ADD_ENUM_ANNOTATION(PipelineBindPoint)
         ADD_ENUM_ANNOTATION(MemoryUsage)
+        ADD_ENUM_ANNOTATION(FilterType)
+        ADD_ENUM_ANNOTATION(MipmapType)
+        ADD_ENUM_ANNOTATION(AddressMode)
+
         addAlias(makeTextureAspectFlags());
         addAlias(makeShaderStageFlags());
         addAlias(makeColorWriteEnabledFlags());
@@ -752,6 +783,7 @@ public:
         ADD_STRUCT_ANNOTATION(CreateSwapchainOptions)
         ADD_STRUCT_ANNOTATION(CreateShaderOptions)
         ADD_STRUCT_ANNOTATION(CreateTextureOptions)
+        ADD_STRUCT_ANNOTATION(CreateSamplerOptions)
         ADD_STRUCT_ANNOTATION(CreateBufferOptions)
         ADD_STRUCT_ANNOTATION(AcquireNextImageOptions)
         ADD_STRUCT_ANNOTATION(QueueSubmitOptions)

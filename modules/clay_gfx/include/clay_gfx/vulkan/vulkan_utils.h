@@ -585,5 +585,45 @@ inline VkImageType to_vk_image_type(TextureType::Enum type)
     return VK_IMAGE_TYPE_2D;
 }
 
+inline VkFilter to_vk_filter(FilterType::Enum filter)
+{
+    switch (filter)
+    {
+        case FilterType::Nearest:
+            return VK_FILTER_NEAREST;
+        case FilterType::Linear:
+            return VK_FILTER_LINEAR;
+    }
+    return VK_FILTER_NEAREST;
+}
+
+inline VkSamplerMipmapMode to_vk_mipmap_mode(MipmapType::Enum mipmap)
+{
+    switch (mipmap)
+    {
+        case MipmapType::Nearest:
+            return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        case MipmapType::Linear:
+            return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    }
+    return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+}
+
+inline VkSamplerAddressMode to_vk_address_mode(AddressMode::Enum address)
+{
+    switch (address)
+    {
+        case AddressMode::Repeat:
+            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        case AddressMode::Mirror:
+            return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        case AddressMode::ClampToBorder:
+            return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        case AddressMode::ClampToEdge:
+            return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    }
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+}
+
 } // namespace gfx
 } // namespace clay

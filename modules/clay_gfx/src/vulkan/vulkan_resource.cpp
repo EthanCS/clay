@@ -349,6 +349,7 @@ void VulkanResources::destroy(const VkDevice& device, const VmaAllocator& vma_al
     fences.each([&](VulkanFence& f) { vkDestroyFence(device, f.fence, nullptr); });
     semaphores.each([&](VulkanSemaphore& s) { vkDestroySemaphore(device, s.semaphore, nullptr); });
     textures.each([&](VulkanTexture& t) { t.destroy(device, vma_allocator); });
+    samplers.each([&](VulkanSampler& s) { vkDestroySampler(device, s.sampler, nullptr); });
     shaders.each([&](VulkanShader& s) { vkDestroyShaderModule(device, s.shader_module, nullptr); });
     pipeline_layouts.each([&](VulkanPipelineLayout& p) { vkDestroyPipelineLayout(device, p.layout, nullptr); });
     graphics_pipelines.each([&](VulkanGraphicsPipeline& p) { vkDestroyPipeline(device, p.pipeline, nullptr); });
@@ -365,6 +366,7 @@ void VulkanResources::destroy(const VkDevice& device, const VmaAllocator& vma_al
     semaphores.clear();
     shaders.clear();
     textures.clear();
+    samplers.clear();
     pipeline_layouts.clear();
     graphics_pipelines.clear();
     command_pools.clear();

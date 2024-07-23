@@ -91,6 +91,10 @@ struct VulkanTexture {
     }
 };
 
+struct VulkanSampler {
+    VkSampler sampler = VK_NULL_HANDLE;
+};
+
 struct VulkanPipelineLayout {
     VkPipelineLayout layout = VK_NULL_HANDLE;
 };
@@ -147,6 +151,7 @@ struct VulkanResources {
     Pool<Semaphore, VulkanSemaphore>                     semaphores;
     Pool<Shader, VulkanShader>                           shaders;
     Pool<Texture, VulkanTexture>                         textures;
+    Pool<Sampler, VulkanSampler>                         samplers;
     Pool<PipelineLayout, VulkanPipelineLayout>           pipeline_layouts;
     Pool<GraphicsPipeline, VulkanGraphicsPipeline>       graphics_pipelines;
     Pool<CommandPool, VulkanCommandPool>                 command_pools;
@@ -164,6 +169,7 @@ struct VulkanResources {
         , semaphores(16)
         , shaders(32)
         , textures(32)
+        , samplers(8)
         , pipeline_layouts(32)
         , graphics_pipelines(32)
         , command_pools(4)
