@@ -808,6 +808,8 @@ public:
         ADD_STRUCT_ANNOTATION(UpdateDescriptorSetOptions)
         ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, reset)
         ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, bind_buffer)
+        ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, bind_texture)
+        ADD_MEMBER_FUNCTION(UpdateDescriptorSetOptions, bind_texture_sampler)
 
         ADD_STRUCT_ANNOTATION(CmdBeginRenderPassOptions)
         ADD_STRUCT_ANNOTATION(CmdSetViewportOptions)

@@ -102,6 +102,39 @@ UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_buffer(u32 binding,
     }
 }
 
+UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_texture(u32 binding, const Handle<Texture>& texture)
+{
+    if (count < MAX_DESCRIPTORS_PER_SET)
+    {
+        infos[count].binding = binding;
+        infos[count].texture = texture;
+        count++;
+        return *this;
+    }
+    else
+    {
+        CLAY_LOG_ERROR("Exceeded maximum number of descriptor bindings per set");
+        return *this;
+    }
+}
+
+UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_texture_sampler(u32 binding, const Handle<Texture>& texture, const Handle<Sampler>& sampler)
+{
+    if (count < MAX_DESCRIPTORS_PER_SET)
+    {
+        infos[count].binding = binding;
+        infos[count].texture = texture;
+        infos[count].sampler = sampler;
+        count++;
+        return *this;
+    }
+    else
+    {
+        CLAY_LOG_ERROR("Exceeded maximum number of descriptor bindings per set");
+        return *this;
+    }
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CmdPipelineBarrierOptions
 

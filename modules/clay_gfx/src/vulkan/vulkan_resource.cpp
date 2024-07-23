@@ -13,6 +13,7 @@ namespace clay
 {
 namespace gfx
 {
+
 VkImageView VulkanTexture::get_view(const VkDevice& device, VulkanTextureViewDesc desc)
 {
     if (desc.format == VK_FORMAT_UNDEFINED) { desc.format = format; }

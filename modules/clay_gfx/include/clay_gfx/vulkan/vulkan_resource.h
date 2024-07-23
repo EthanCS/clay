@@ -78,7 +78,9 @@ struct VulkanTexture {
     VmaAllocation  allocation    = VK_NULL_HANDLE;
     VkDeviceMemory device_memory = VK_NULL_HANDLE;
 
+    VkImageView get_default_view() const { return views[0]; }
     VkImageView get_view(const VkDevice& device, VulkanTextureViewDesc desc);
+
     inline void destroy(const VkDevice& device, VmaAllocator vma_allocator) const
     {
         for (const auto& view : views)

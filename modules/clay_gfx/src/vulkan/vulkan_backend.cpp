@@ -1104,6 +1104,7 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
 
     VkWriteDescriptorSet   writes[MAX_DESCRIPTORS_PER_SET];
     VkDescriptorBufferInfo buffer_infos[MAX_DESCRIPTORS_PER_SET];
+    VkDescriptorImageInfo  image_infos[MAX_DESCRIPTORS_PER_SET];
 
     for (u32 i = 0; i < desc.count; i++)
     {
@@ -1114,12 +1115,14 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
 
         VkDescriptorSetLayoutBinding vk_binding = vulkan_layout->bindings[index_in_layout];
 
-        VkWriteDescriptorSet w = {};
-        w.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        w.dstSet               = vulkan_set->set;
-        w.dstBinding           = info.binding;
-        w.dstArrayElement      = 0;
-        w.descriptorCount      = 1;
+        VkWriteDescriptorSet& w = writes[i];
+        w                       = {};
+        w.sType                 = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        w.dstSet                = vulkan_set->set;
+        w.dstBinding            = info.binding;
+        w.dstArrayElement       = 0;
+        w.descriptorCount       = 1;
+        w.descriptorType        = vk_binding.descriptorType;
 
         switch (vk_binding.descriptorType)
         {
@@ -1132,16 +1135,27 @@ void VulkanBackend::update_descriptor_set(const Handle<DescriptorSet>& set, cons
                 buffer_infos[i].offset = 0;
                 buffer_infos[i].range  = vulkan_buffer->size;
 
-                w.descriptorType = vk_binding.descriptorType;
-                w.pBufferInfo    = &buffer_infos[i];
+                w.pBufferInfo = &buffer_infos[i];
+            }
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+                const VulkanTexture* vulkan_texture = resources.textures.get(info.texture);
+                if (vulkan_texture == nullptr) [[unlikely]] { continue; }
+
+                const VulkanSampler* vulkan_sampler = resources.samplers.get(info.sampler);
+                if (vulkan_sampler == nullptr) [[unlikely]] { continue; }
+
+                image_infos[i]             = {};
+                image_infos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                image_infos[i].imageView   = vulkan_texture->get_default_view();
+                image_infos[i].sampler     = vulkan_sampler->sampler;
+
+                w.pImageInfo = &image_infos[i];
             }
             break;
             default:
                 CLAY_LOG_ERROR("Unsupported descriptor type.");
                 break;
         }
-
-        writes[i] = w;
     }
 
     vkUpdateDescriptorSets(device, desc.count, writes, 0, nullptr);

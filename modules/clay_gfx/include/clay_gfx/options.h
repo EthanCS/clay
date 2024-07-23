@@ -136,8 +136,10 @@ struct CreateDescriptorSetOptions {
 
 struct UpdateDescriptorSetOptions {
     struct Info {
-        u32            binding;
-        Handle<Buffer> buffer;
+        u32             binding;
+        Handle<Buffer>  buffer;
+        Handle<Texture> texture;
+        Handle<Sampler> sampler;
     };
 
     Info infos[MAX_DESCRIPTORS_PER_SET];
@@ -145,6 +147,8 @@ struct UpdateDescriptorSetOptions {
 
     UpdateDescriptorSetOptions& reset();
     UpdateDescriptorSetOptions& bind_buffer(u32 binding, const Handle<Buffer>& buffer);
+    UpdateDescriptorSetOptions& bind_texture(u32 binding, const Handle<Texture>& texture);
+    UpdateDescriptorSetOptions& bind_texture_sampler(u32 binding, const Handle<Texture>& texture, const Handle<Sampler>& sampler);
 };
 
 struct CmdBeginRenderPassOptions {
