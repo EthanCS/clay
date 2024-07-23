@@ -1488,6 +1488,38 @@ void VulkanBackend::cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCo
     vkCmdCopyBuffer(vk_cb->command_buffer, src_buffer->buffer, dst_buffer->buffer, 1, &copy_region);
 }
 
+void VulkanBackend::cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& cb, const CmdCopyBufferToTextureOptions& options)
+{
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    if (vk_cb == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find command buffer.");
+        return;
+    }
+
+    const VulkanBuffer*  src_buffer  = resources.buffers.get(options.buffer);
+    const VulkanTexture* dst_texture = resources.textures.get(options.texture);
+    if (src_buffer == nullptr || dst_texture == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Failed to find source buffer or destination texture.");
+        return;
+    }
+
+    VkBufferImageCopy copy_region               = {};
+    copy_region.bufferOffset                    = options.buffer_offset;
+    copy_region.bufferRowLength                 = options.buffer_row_length;
+    copy_region.bufferImageHeight               = options.buffer_texture_height;
+    copy_region.imageSubresource                = {};
+    copy_region.imageSubresource.aspectMask     = to_vk_image_aspect_flags(options.aspect_flags);
+    copy_region.imageSubresource.mipLevel       = options.mip_level;
+    copy_region.imageSubresource.baseArrayLayer = options.base_array_layer;
+    copy_region.imageSubresource.layerCount     = options.layer_count;
+    copy_region.imageOffset                     = { options.texture_offset[0], options.texture_offset[1], options.texture_offset[2] };
+    copy_region.imageExtent                     = { options.texture_extent[0], options.texture_extent[1], options.texture_extent[2] };
+
+    vkCmdCopyBufferToImage(vk_cb->command_buffer, src_buffer->buffer, dst_texture->image, to_vk_image_layout(options.dst_layout), 1, &copy_region);
+}
+
 void VulkanBackend::cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options)
 {
     const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);

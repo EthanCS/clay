@@ -652,6 +652,28 @@ struct CmdCopyBufferOptionsAnnotation : public das::ManagedStructureAnnotation<c
     GFX_DAS_STRUCT_COMMON
 };
 
+MAKE_TYPE_FACTORY(CmdCopyBufferToTextureOptions, clay::gfx::CmdCopyBufferToTextureOptions);
+struct CmdCopyBufferToTextureOptionsAnnotation : public das::ManagedStructureAnnotation<clay::gfx::CmdCopyBufferToTextureOptions, true, true> {
+    CmdCopyBufferToTextureOptionsAnnotation(das::ModuleLibrary& ml)
+        : ManagedStructureAnnotation("CmdCopyBufferToTextureOptions", ml)
+    {
+        addField<DAS_BIND_MANAGED_FIELD(buffer)>("buffer");
+        addField<DAS_BIND_MANAGED_FIELD(buffer_offset)>("buffer_offset");
+        addField<DAS_BIND_MANAGED_FIELD(buffer_row_length)>("buffer_row_length");
+        addField<DAS_BIND_MANAGED_FIELD(buffer_texture_height)>("buffer_texture_height");
+
+        addField<DAS_BIND_MANAGED_FIELD(texture)>("texture");
+        addField<DAS_BIND_MANAGED_FIELD(texture_offset)>("texture_offset");
+        addField<DAS_BIND_MANAGED_FIELD(texture_extent)>("texture_extent");
+        addFieldEx("aspect_flags", "aspect_flags", offsetof(clay::gfx::CmdCopyBufferToTextureOptions, aspect_flags), makeTextureAspectFlags());
+        addField<DAS_BIND_MANAGED_FIELD(mip_level)>("mip_level");
+        addField<DAS_BIND_MANAGED_FIELD(base_array_layer)>("base_array_layer");
+        addField<DAS_BIND_MANAGED_FIELD(layer_count)>("layer_count");
+        addField<DAS_BIND_MANAGED_FIELD(dst_layout)>("dst_layout");
+    }
+    GFX_DAS_STRUCT_COMMON
+};
+
 GFX_OPTIONS_STRUCT(CmdPipelineBarrierOptions)
 
 class Module_clay_gfx : public das::Module
@@ -765,6 +787,7 @@ public:
         ADD_STRUCT_ANNOTATION(CmdBindIndexBufferOptions)
         ADD_STRUCT_ANNOTATION(CmdBindDescriptorSetsOptions)
         ADD_STRUCT_ANNOTATION(CmdCopyBufferOptions)
+        ADD_STRUCT_ANNOTATION(CmdCopyBufferToTextureOptions)
         ADD_STRUCT_ANNOTATION(CmdPipelineBarrierOptions)
         ADD_MEMBER_FUNCTION(CmdPipelineBarrierOptions, add_texture_barrier)
 
@@ -844,5 +867,7 @@ public:
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_index_buffer)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_descriptor_sets)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_copy_buffer)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_copy_buffer_to_texture)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_pipeline_barrier)
     }
 };

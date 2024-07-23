@@ -106,6 +106,7 @@ PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffers, void(const Handle<CommandBuffer
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_index_buffer, void(const Handle<CommandBuffer>&, const CmdBindIndexBufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_descriptor_sets, void(const Handle<CommandBuffer>&, const CmdBindDescriptorSetsOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_copy_buffer, void(const Handle<CommandBuffer>&, const CmdCopyBufferOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_copy_buffer_to_texture, void(const Handle<CommandBuffer>&, const CmdCopyBufferToTextureOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_pipeline_barrier, void(const Handle<CommandBuffer>&, const CmdPipelineBarrierOptions&));
 
 PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
@@ -168,6 +169,7 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                cmd_bind_index_buffer,
                                cmd_bind_descriptor_sets,
                                cmd_copy_buffer,
+                               cmd_copy_buffer_to_texture,
                                cmd_pipeline_barrier));
 } // namespace spec
 
@@ -248,6 +250,7 @@ inline void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& buffer, const C
 inline void cmd_bind_index_buffer(const Handle<CommandBuffer>& buffer, const CmdBindIndexBufferOptions& index_buffer) { g_backend_proxy.cmd_bind_index_buffer(buffer, index_buffer); }
 inline void cmd_bind_descriptor_sets(const Handle<CommandBuffer>& buffer, const CmdBindDescriptorSetsOptions& descriptor_sets) { g_backend_proxy.cmd_bind_descriptor_sets(buffer, descriptor_sets); }
 inline void cmd_copy_buffer(const Handle<CommandBuffer>& buffer, const CmdCopyBufferOptions& copy_buffer) { g_backend_proxy.cmd_copy_buffer(buffer, copy_buffer); }
+inline void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& buffer, const CmdCopyBufferToTextureOptions& copy_buffer) { g_backend_proxy.cmd_copy_buffer_to_texture(buffer, copy_buffer); }
 inline void cmd_pipeline_barrier(const Handle<CommandBuffer>& buffer, const CmdPipelineBarrierOptions& barrier) { g_backend_proxy.cmd_pipeline_barrier(buffer, barrier); }
 
 } // namespace gfx

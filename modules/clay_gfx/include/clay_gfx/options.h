@@ -1,5 +1,6 @@
 #pragma once
 
+#include <clay_gfx/define.h>
 #include <clay_core/macro.h>
 #include <clay_gfx/resource.h>
 
@@ -205,6 +206,22 @@ struct CmdCopyBufferOptions {
     Handle<Buffer> dst_buffer;
     u64            dst_offset;
     u64            size;
+};
+
+struct CmdCopyBufferToTextureOptions {
+    Handle<Buffer> buffer;
+    u64            buffer_offset;
+    u32            buffer_row_length;
+    u32            buffer_texture_height;
+
+    Handle<Texture>     texture;
+    i32                 texture_offset[3];
+    u32                 texture_extent[3];
+    TextureAspect::Flag aspect_flags;
+    u32                 mip_level;
+    u32                 base_array_layer;
+    u32                 layer_count;
+    ImageLayout::Enum   dst_layout;
 };
 
 struct CmdPipelineBarrierOptions {

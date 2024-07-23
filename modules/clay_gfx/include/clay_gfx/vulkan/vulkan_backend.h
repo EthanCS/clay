@@ -117,6 +117,7 @@ public:
     void cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options);
     void cmd_bind_descriptor_sets(const Handle<CommandBuffer>& cb, const CmdBindDescriptorSetsOptions& options);
     void cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options);
+    void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& cb, const CmdCopyBufferToTextureOptions& options);
     void cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options);
 
 private:
