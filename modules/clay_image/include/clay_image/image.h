@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clay_core/blob.h>
+#include <memory>
 
 namespace clay
 {
@@ -17,7 +18,13 @@ struct ImageChannel {
     };
 };
 
-struct Image : clay::core::IBlob {
+struct IImage : public clay::core::IBlob {
+    virtual u32 get_width() const noexcept    = 0;
+    virtual u32 get_height() const noexcept   = 0;
+    virtual u32 get_channels() const noexcept = 0;
+};
+
+struct STB_Image : IImage {
 
 private:
     u32 width    = 0;
@@ -26,20 +33,22 @@ private:
     u8* data     = nullptr;
 
 public:
-    Image(u32 _width, u32 _height, u32 _channel, u8* _data) noexcept;
-    ~Image() noexcept override;
+    STB_Image(u32 _width, u32 _height, u32 _channel, u8* _data) noexcept;
+    virtual ~STB_Image() noexcept override;
 
     ////// Begin IBlob
     u8* get_data() const noexcept override { return data; }
     u64 get_size() const noexcept override { return width * height * channels; }
     ////// End IBlob
 
-    u32 get_width() const noexcept { return width; }
-    u32 get_height() const noexcept { return height; }
-    u32 get_channels() const noexcept { return channels; }
+    ////// Begin IImage
+    u32 get_width() const noexcept override { return width; }
+    u32 get_height() const noexcept override { return height; }
+    u32 get_channels() const noexcept override { return channels; }
+    ////// End IImage
 };
 
-// Image load_image(const char* path, ImageChannel::Enum channel);
+std::shared_ptr<IImage> load_image(const char* path, ImageChannel::Enum channel);
 
 } // namespace image
 } // namespace clay
