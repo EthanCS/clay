@@ -12,6 +12,7 @@ add_defines("DAS_FUSION=2", "DAS_DEBUGGER=0", "DAS_SMART_PTR_TRACKER=0", "DAS_SM
 
 includes("thirdparty")
 includes("modules")
+includes("tools")
 
 target("clay")
     set_kind("binary")
