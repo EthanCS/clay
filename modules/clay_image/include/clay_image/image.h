@@ -24,8 +24,9 @@ struct IImage : public clay::core::IBlob {
     virtual u32 get_channels() const noexcept = 0;
 };
 
-struct STB_Image : IImage {
+std::shared_ptr<IImage> load_image(const char* path, ImageChannel::Enum channel);
 
+struct STB_Image : IImage {
 private:
     u32 width    = 0;
     u32 height   = 0;
@@ -47,8 +48,6 @@ public:
     u32 get_channels() const noexcept override { return channels; }
     ////// End IImage
 };
-
-std::shared_ptr<IImage> load_image(const char* path, ImageChannel::Enum channel);
 
 } // namespace image
 } // namespace clay

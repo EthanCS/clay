@@ -6,13 +6,16 @@
 using namespace das;
 
 #include <clay_app/das.h>
-REGISTER_MODULE(Module_clay_app);
-
 #include <clay_gfx/das.h>
-REGISTER_MODULE(Module_clay_gfx);
-
+#include <clay_image/das.h>
 #include <ShaderConductor-clay/das.h>
+
+REGISTER_MODULE(Module_clay_app);
+REGISTER_MODULE(Module_clay_gfx);
+REGISTER_MODULE(Module_clay_image);
 REGISTER_MODULE(Module_ShaderConductor);
+
+void require_clay_external_modules();
 
 void use_utf8();
 
@@ -379,11 +382,8 @@ int das_aot_main(int argc, char* argv[])
         NEED_MODULE(Module_DASBIND);
     }
 
-    NEED_MODULE(Module_clay_app);
-    NEED_MODULE(Module_clay_gfx);
-    NEED_MODULE(Module_ShaderConductor);
-
     // require_project_specific_modules();
+    require_clay_external_modules();
 
     Module::Initialize();
     daScriptEnvironment::bound->g_isInAot = true;
@@ -750,11 +750,9 @@ int MAIN_FUNC_NAME(int argc, char* argv[])
     NEED_MODULE(Module_JobQue);
     NEED_MODULE(Module_FIO);
     NEED_MODULE(Module_DASBIND);
-    // require_project_specific_modules();
 
-    NEED_MODULE(Module_clay_app);
-    NEED_MODULE(Module_clay_gfx);
-    NEED_MODULE(Module_ShaderConductor);
+    // require_project_specific_modules();
+    require_clay_external_modules();
 
     Module::Initialize();
     daScriptEnvironment::bound->g_isInAot = true;
@@ -809,4 +807,12 @@ void use_utf8()
     // from the command line. make sure appropriate font is selected
     SetConsoleOutputCP(CP_UTF8);
 #endif
+}
+
+void require_clay_external_modules()
+{
+    NEED_MODULE(Module_clay_app);
+    NEED_MODULE(Module_clay_gfx);
+    NEED_MODULE(Module_clay_image);
+    NEED_MODULE(Module_ShaderConductor);
 }
