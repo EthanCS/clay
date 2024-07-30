@@ -4,7 +4,7 @@ add_rules("plugin.compile_commands.autoupdate", { outputdir = ".vscode" })
 
 add_repositories("clay-xrepo xrepo", {rootdir = os.scriptdir()})
 
-add_requires("vulkansdk", "mimalloc", "spdlog", "libsdl 2.30.3", "stb")
+add_requires("vulkansdk", "mimalloc", "spdlog", "libsdl 2.30.3", "stb", "rtm v2.3.1")
 add_requires("vulkan-memory-allocator v3.1.0")
 
 add_requires("daScript 0.4.10")

@@ -7,39 +7,26 @@
 #include <clay_app/window.h>
 #include <clay_gfx/backend.h>
 
-using namespace clay;
-using namespace ShaderConductor;
-
-const int   MAX_FRAMES_IN_FLIGHT = 3;
-const u32   WIDTH                = 1280;
-const u32   HEIGHT               = 720;
-const char* TITLE                = "Model Viewer";
+#include <rtm/math.h>
 
 const char* VERTEX_SHADER = R"(
 #pragma target 5.0
 
-struct VS_OUTPUT {
-    float4 Position : SV_Position;
-    float3 Color : COLOR;
+struct VSInput {
+  float2 inPosition : POSITION;
+  float3 inColor : COLOR;
 };
 
-VS_OUTPUT main(uint VertexID : SV_VertexID) {
-    VS_OUTPUT output;
+struct VSOutput {
+  float3 fragColor : COLOR;
+  float4 outPosition : SV_Position;
+};
 
-    if (VertexID == 0) {
-        output.Position = float4(0.0, -0.5, 0.0, 1.0);
-        output.Color = float3(1.0, 0.0, 0.0);
-    }
-    else if (VertexID == 1) {
-        output.Position = float4(0.5, 0.5, 0.0, 1.0);
-        output.Color = float3(0.0, 1.0, 0.0);
-    }
-    else if (VertexID == 2) {
-        output.Position = float4(-0.5, 0.5, 0.0, 1.0);
-        output.Color = float3(0.0, 0.0, 1.0);
-    }
-
-    return output;
+VSOutput main(VSInput input) {
+  VSOutput output;
+  output.outPosition = float4(input.inPosition, 0.0f, 1.0f);
+  output.fragColor = input.inColor;
+  return output;
 }
 )";
 
@@ -60,6 +47,28 @@ PSOutput main(PSInput input) {
   return output;
 }
 )";
+
+struct Vertex {
+    rtm::float2f position;
+    rtm::float3f color;
+};
+
+const std::vector<Vertex> vertices = {
+    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
+    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
+    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
+    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } }
+};
+
+const std::vector<u16> indices = { 0, 1, 2, 2, 3, 0 };
+
+using namespace clay;
+using namespace ShaderConductor;
+
+const int   MAX_FRAMES_IN_FLIGHT = 3;
+const u32   WIDTH                = 1280;
+const u32   HEIGHT               = 720;
+const char* TITLE                = "Model Viewer";
 
 class ModelViewerApp
 {
@@ -93,6 +102,9 @@ private:
     u32 swapchain_width  = 0;
     u32 swapchain_height = 0;
 
+    gfx::Handle<gfx::Buffer> model_vb;
+    gfx::Handle<gfx::Buffer> model_ib;
+
     void init()
     {
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
@@ -114,17 +126,22 @@ private:
         // Pipeline layout
         auto pipeline_layout = gfx::create_pipeline_layout({});
 
-        // Create pipeline
+        // Compile shaders
         auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
         auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
         hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
         hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
-        pipeline              = gfx::create_graphics_pipeline(
-        { .name           = "triangle",
-                       .layout         = pipeline_layout,
-                       .vertex_shader  = { .compiled_shader = hello_vs, .entry_func = "main" },
-                       .pixel_shader   = { .compiled_shader = hello_fs, .entry_func = "main" },
-                       .graphics_state = { .depth_test_enabled = false, .render_pass_layout = render_pass_layout } });
+
+        // Create pipeline
+        gfx::CreateGraphicsPipelineOptions pipeline_options = { .name           = "triangle",
+                                                                .layout         = pipeline_layout,
+                                                                .vertex_shader  = { .compiled_shader = hello_vs, .entry_func = "main" },
+                                                                .pixel_shader   = { .compiled_shader = hello_fs, .entry_func = "main" },
+                                                                .graphics_state = { .depth_test_enabled = false, .render_pass_layout = render_pass_layout } };
+        pipeline_options.graphics_state.set_vertex_buffer_binding(0, sizeof(Vertex));
+        pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 0, offsetof(Vertex, position), gfx::Format::R32G32_SFLOAT);
+        pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 1, offsetof(Vertex, color), gfx::Format::R32G32B32_SFLOAT);
+        pipeline = gfx::create_graphics_pipeline(pipeline_options);
 
         // Command
         command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
@@ -146,6 +163,10 @@ private:
         }
 
         create_swapchain(window.width, window.height);
+
+        // Create buffers
+        model_vb = create_vertex_buffer(vertices.data(), vertices.size() * sizeof(Vertex));
+        model_ib = create_index_buffer(indices.data(), indices.size() * sizeof(u16));
     }
 
     void main_loop()
@@ -234,22 +255,62 @@ private:
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
         gfx::cmd_begin(cmd, false);
-        {
-            gfx::cmd_begin_render_pass(cmd,
-                                       { .framebuffer        = swapchain_framebuffers[image_index],
-                                         .render_pass_layout = render_pass_layout,
-                                         .extent             = { swapchain_width, swapchain_height },
-                                         .clear              = true,
-                                         .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } } } });
-            {
-                gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
-                gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
-                gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
-                gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
-            }
-            gfx::cmd_end_render_pass(cmd);
-        }
+        gfx::cmd_begin_render_pass(cmd,
+                                   { .framebuffer        = swapchain_framebuffers[image_index],
+                                     .render_pass_layout = render_pass_layout,
+                                     .extent             = { swapchain_width, swapchain_height },
+                                     .clear              = true,
+                                     .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } } } });
+
+        gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
+        gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
+        gfx::cmd_bind_vertex_buffer(cmd, { .binding = 0, .buffer = model_vb, .offset = 0 });
+        gfx::cmd_bind_index_buffer(cmd, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint16 });
+        gfx::cmd_draw_indexed(cmd, { .index_count = (u32)indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
+        gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
+        gfx::cmd_end_render_pass(cmd);
         gfx::cmd_end(cmd);
+    }
+
+    void copy_buffer(const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
+    {
+        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(command_pool);
+        gfx::cmd_begin(cb, true);
+        gfx::cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
+        gfx::cmd_end(cb);
+
+        gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
+        gfx::queue_wait_idle(gfx::QueueType::Graphics);
+        gfx::free_command_buffer(cb);
+    }
+
+    gfx::Handle<gfx::Buffer> create_vertex_buffer(const void* data, usize size)
+    {
+        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        memcpy(mapped_data, data, size);
+        gfx::unmap_buffer(staging_buffer);
+
+        gfx::Handle<gfx::Buffer> vertex_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::VertexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
+        copy_buffer(staging_buffer, vertex_buffer, size);
+
+        gfx::destroy_buffer(staging_buffer);
+        return vertex_buffer;
+    }
+
+    gfx::Handle<gfx::Buffer> create_index_buffer(const void* data, usize size)
+    {
+        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        memcpy(mapped_data, data, size);
+        gfx::unmap_buffer(staging_buffer);
+
+        gfx::Handle<gfx::Buffer> index_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::IndexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
+        copy_buffer(staging_buffer, index_buffer, size);
+
+        gfx::destroy_buffer(staging_buffer);
+        return index_buffer;
     }
 
     void shutdown()
