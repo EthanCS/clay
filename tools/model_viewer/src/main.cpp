@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 #include <cstdlib>
@@ -6,6 +7,7 @@
 #include <ShaderConductor-clay/ShaderConductor.hpp>
 #include <clay_app/window.h>
 #include <clay_gfx/backend.h>
+#include <clay_image/image.h>
 
 #include <rtm/math.h>
 
@@ -15,6 +17,7 @@ const char* VERTEX_SHADER = R"(
 struct VSInput {
   float2 inPosition : POSITION;
   float3 inColor : COLOR;
+  float2 inUV : TEXCOORD0;
 };
 
 struct VSOutput {
@@ -26,6 +29,7 @@ VSOutput main(VSInput input) {
   VSOutput output;
   output.outPosition = float4(input.inPosition, 0.0f, 1.0f);
   output.fragColor = input.inColor;
+  // output.fragColor = float3(input.inUV, 0.0f);
   return output;
 }
 )";
@@ -51,13 +55,14 @@ PSOutput main(PSInput input) {
 struct Vertex {
     rtm::float2f position;
     rtm::float3f color;
+    rtm::float2f uv;
 };
 
 const std::vector<Vertex> vertices = {
-    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f } },
-    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
-    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f } }
+    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
+    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
+    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }
 };
 
 const std::vector<u16> indices = { 0, 1, 2, 2, 3, 0 };
@@ -90,9 +95,6 @@ private:
     std::vector<gfx::Handle<gfx::Semaphore>>   image_available_semaphores;
     std::vector<gfx::Handle<gfx::Semaphore>>   render_finished_semaphores;
 
-    gfx::Handle<gfx::Shader> hello_vs;
-    gfx::Handle<gfx::Shader> hello_fs;
-
     gfx::RenderPassLayout              render_pass_layout;
     gfx::Handle<gfx::GraphicsPipeline> pipeline;
 
@@ -102,8 +104,16 @@ private:
     u32 swapchain_width  = 0;
     u32 swapchain_height = 0;
 
+    //////////////////////////////////////////////////////////////////////////
+    // Assets
+    gfx::Handle<gfx::Shader> hello_vs;
+    gfx::Handle<gfx::Shader> hello_fs;
     gfx::Handle<gfx::Buffer> model_vb;
     gfx::Handle<gfx::Buffer> model_ib;
+
+    std::shared_ptr<image::IImage> image;
+    gfx::Handle<gfx::Texture>      model_tex;
+    //////////////////////////////////////////////////////////////////////////
 
     void init()
     {
@@ -114,6 +124,39 @@ private:
                                  .app_name = TITLE,
                                  .debug    = true });
         if (!bInit) { throw std::runtime_error("failed to initialize clay gfx!"); }
+
+        // Create common stuff
+        {
+            command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
+            command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
+            for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                command_buffers[i] = gfx::allocate_command_buffer(command_pool);
+            }
+
+            in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+            image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+            render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+            for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                in_flight_fences[i]           = gfx::create_fence(true);
+                image_available_semaphores[i] = gfx::create_semaphore();
+                render_finished_semaphores[i] = gfx::create_semaphore();
+            }
+        }
+
+        // Load assets
+        {
+            auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
+            auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
+            hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
+            hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
+
+            model_vb = create_vertex_buffer(command_pool, vertices.data(), vertices.size() * sizeof(Vertex));
+            model_ib = create_index_buffer(command_pool, indices.data(), indices.size() * sizeof(u16));
+
+            image = image::load_image("C:/Workspace/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
+        }
 
         // Render pass layout
         render_pass_layout           = {};
@@ -126,12 +169,6 @@ private:
         // Pipeline layout
         auto pipeline_layout = gfx::create_pipeline_layout({});
 
-        // Compile shaders
-        auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
-        auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
-        hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
-        hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
-
         // Create pipeline
         gfx::CreateGraphicsPipelineOptions pipeline_options = { .name           = "triangle",
                                                                 .layout         = pipeline_layout,
@@ -141,32 +178,10 @@ private:
         pipeline_options.graphics_state.set_vertex_buffer_binding(0, sizeof(Vertex));
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 0, offsetof(Vertex, position), gfx::Format::R32G32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 1, offsetof(Vertex, color), gfx::Format::R32G32B32_SFLOAT);
+        pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 2, offsetof(Vertex, uv), gfx::Format::R32G32_SFLOAT);
         pipeline = gfx::create_graphics_pipeline(pipeline_options);
 
-        // Command
-        command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
-        command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
-        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            command_buffers[i] = gfx::allocate_command_buffer(command_pool);
-        }
-
-        // Sync objects
-        in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
-        image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            in_flight_fences[i]           = gfx::create_fence(true);
-            image_available_semaphores[i] = gfx::create_semaphore();
-            render_finished_semaphores[i] = gfx::create_semaphore();
-        }
-
         create_swapchain(window.width, window.height);
-
-        // Create buffers
-        model_vb = create_vertex_buffer(vertices.data(), vertices.size() * sizeof(Vertex));
-        model_ib = create_index_buffer(indices.data(), indices.size() * sizeof(u16));
     }
 
     void main_loop()
@@ -273,9 +288,9 @@ private:
         gfx::cmd_end(cmd);
     }
 
-    void copy_buffer(const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
+    static void copy_buffer(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
     {
-        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(command_pool);
+        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
         gfx::cmd_begin(cb, true);
         gfx::cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
         gfx::cmd_end(cb);
@@ -285,7 +300,7 @@ private:
         gfx::free_command_buffer(cb);
     }
 
-    gfx::Handle<gfx::Buffer> create_vertex_buffer(const void* data, usize size)
+    static gfx::Handle<gfx::Buffer> create_vertex_buffer(const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
     {
         gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
         void*                    mapped_data    = gfx::map_buffer(staging_buffer);
@@ -293,13 +308,13 @@ private:
         gfx::unmap_buffer(staging_buffer);
 
         gfx::Handle<gfx::Buffer> vertex_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::VertexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
-        copy_buffer(staging_buffer, vertex_buffer, size);
+        copy_buffer(pool, staging_buffer, vertex_buffer, size);
 
         gfx::destroy_buffer(staging_buffer);
         return vertex_buffer;
     }
 
-    gfx::Handle<gfx::Buffer> create_index_buffer(const void* data, usize size)
+    static gfx::Handle<gfx::Buffer> create_index_buffer(const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
     {
         gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
         void*                    mapped_data    = gfx::map_buffer(staging_buffer);
@@ -307,10 +322,36 @@ private:
         gfx::unmap_buffer(staging_buffer);
 
         gfx::Handle<gfx::Buffer> index_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::IndexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
-        copy_buffer(staging_buffer, index_buffer, size);
+        copy_buffer(pool, staging_buffer, index_buffer, size);
 
         gfx::destroy_buffer(staging_buffer);
         return index_buffer;
+    }
+
+    static gfx::Handle<gfx::Texture> create_texture(const gfx::Handle<gfx::CommandPool>& pool, const image::IImage* pImage)
+    {
+        // gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        // void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        // memcpy(mapped_data, pImage->get_data(), pImage->get_size());
+        // gfx::unmap_buffer(staging_buffer);
+
+        // gfx::Handle<gfx::Texture> texture      = gfx::create_texture({ .width = pImage->get_width(), .height = pImage->get_height(), .format = gfx::Format::R8G8B8A8_UNORM, .usage = gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst, .memory_usage = gfx::MemoryUsage::GpuOnly });
+        // gfx::Handle<gfx::Buffer>  image_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        // copy_buffer(pool, staging_buffer, image_buffer, pImage->size());
+
+        // gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
+        // gfx::cmd_begin(cb, true);
+        // gfx::cmd_copy_buffer_to_texture(cb, { .src_buffer = image_buffer, .dst_texture = texture, .width = pImage->get_width(), .height = pImage->get_height() });
+        // gfx::cmd_end(cb);
+
+        // gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
+        // gfx::queue_wait_idle(gfx::QueueType::Graphics);
+        // gfx::free_command_buffer(cb);
+
+        // gfx::destroy_buffer(staging_buffer);
+        // gfx::destroy_buffer(image_buffer);
+        // return texture;
+        return {};
     }
 
     void shutdown()
