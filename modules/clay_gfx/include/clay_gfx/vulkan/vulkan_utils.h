@@ -625,5 +625,18 @@ inline VkSamplerAddressMode to_vk_address_mode(AddressMode::Enum address)
     return VK_SAMPLER_ADDRESS_MODE_REPEAT;
 }
 
+inline VkImageUsageFlags to_vk_image_usage_flags(TextureUsage::Flag usage)
+{
+    VkImageUsageFlags flags = 0;
+    if (usage & TextureUsage::TransferSrc) { flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT; }
+    if (usage & TextureUsage::TransferDst) { flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT; }
+    if (usage & TextureUsage::Sampled) { flags |= VK_IMAGE_USAGE_SAMPLED_BIT; }
+    if (usage & TextureUsage::Storage) { flags |= VK_IMAGE_USAGE_STORAGE_BIT; }
+    if (usage & TextureUsage::ColorAttachment) { flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; }
+    if (usage & TextureUsage::DepthStencilAttachment) { flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT; }
+    if (usage & TextureUsage::TransientAttachment) { flags |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT; }
+    if (usage & TextureUsage::InputAttachment) { flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT; }
+    return flags;
+}
 } // namespace gfx
 } // namespace clay

@@ -1,3 +1,4 @@
+#include "clay_gfx/resource.h"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -330,28 +331,21 @@ private:
 
     static gfx::Handle<gfx::Texture> create_texture(const gfx::Handle<gfx::CommandPool>& pool, const image::IImage* pImage)
     {
-        // gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-        // void*                    mapped_data    = gfx::map_buffer(staging_buffer);
-        // memcpy(mapped_data, pImage->get_data(), pImage->get_size());
-        // gfx::unmap_buffer(staging_buffer);
+        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        memcpy(mapped_data, pImage->get_data(), pImage->get_size());
+        gfx::unmap_buffer(staging_buffer);
 
-        // gfx::Handle<gfx::Texture> texture      = gfx::create_texture({ .width = pImage->get_width(), .height = pImage->get_height(), .format = gfx::Format::R8G8B8A8_UNORM, .usage = gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst, .memory_usage = gfx::MemoryUsage::GpuOnly });
-        // gfx::Handle<gfx::Buffer>  image_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-        // copy_buffer(pool, staging_buffer, image_buffer, pImage->size());
+        gfx::Handle<gfx::Texture> image = gfx::create_texture({ .width        = pImage->get_width(),
+                                                                .height       = pImage->get_height(),
+                                                                .format       = gfx::Format::R8G8B8A8_UNORM,
+                                                                .usage        = (gfx::TextureUsage::Flag)(gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst),
+                                                                .memory_usage = gfx::MemoryUsage::GpuOnly });
+        ///////
+        // ......
 
-        // gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
-        // gfx::cmd_begin(cb, true);
-        // gfx::cmd_copy_buffer_to_texture(cb, { .src_buffer = image_buffer, .dst_texture = texture, .width = pImage->get_width(), .height = pImage->get_height() });
-        // gfx::cmd_end(cb);
-
-        // gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
-        // gfx::queue_wait_idle(gfx::QueueType::Graphics);
-        // gfx::free_command_buffer(cb);
-
-        // gfx::destroy_buffer(staging_buffer);
-        // gfx::destroy_buffer(image_buffer);
-        // return texture;
-        return {};
+        gfx::destroy_buffer(staging_buffer);
+        return image;
     }
 
     void shutdown()

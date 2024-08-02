@@ -29,14 +29,16 @@ struct CreateShaderOptions {
 };
 
 struct CreateTextureOptions {
-    const char*       name         = nullptr;
-    u32               width        = 1;
-    u32               height       = 1;
-    u32               depth        = 1;
-    u32               array_size   = 1;
-    u32               mip_levels   = 1;
-    Format::Enum      format       = Format::Undefined;
-    TextureType::Enum texture_type = TextureType::Texture2D;
+    const char*        name         = nullptr;
+    u32                width        = 1;
+    u32                height       = 1;
+    u32                depth        = 1;
+    u32                array_size   = 1;
+    u32                mip_levels   = 1;
+    Format::Enum       format       = Format::Undefined;
+    TextureType::Enum  texture_type = TextureType::Texture2D;
+    TextureUsage::Flag usage        = TextureUsage::Sampled;
+    MemoryUsage::Enum  memory_usage = MemoryUsage::GpuOnly;
 };
 
 struct CreateSamplerOptions {

@@ -40,6 +40,27 @@ static VkBool32 debug_utils_callback(VkDebugUtilsMessageSeverityFlagBitsEXT     
     return VK_FALSE;
 }
 
+static inline VmaMemoryUsage to_vma_memory_usage(const MemoryUsage::Enum& usage)
+{
+    VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_UNKNOWN;
+    switch (usage)
+    {
+        case MemoryUsage::GpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            break;
+        case MemoryUsage::CpuToGpu:
+            vma_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            break;
+        case MemoryUsage::GpuToCpu:
+            vma_usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+            break;
+        case MemoryUsage::CpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_CPU_ONLY;
+            break;
+    }
+    return vma_usage;
+}
+
 VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 {
     VkDebugUtilsMessengerCreateInfoEXT creation_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
@@ -810,13 +831,13 @@ Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
     image_info.format            = texture.format;
     image_info.tiling            = VK_IMAGE_TILING_OPTIMAL;
     image_info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
-    image_info.usage             = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    image_info.usage             = to_vk_image_usage_flags(desc.usage);
     image_info.samples           = VK_SAMPLE_COUNT_1_BIT;
     image_info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo memory_info = {};
     memory_info.flags                   = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
-    memory_info.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+    memory_info.usage                   = to_vma_memory_usage(desc.memory_usage);
 
     VmaAllocationInfo allocation_info = {};
     VkResult          res             = vmaCreateImage(vma_allocator, &image_info, &memory_info, &texture.image, &texture.allocation, &allocation_info);
@@ -904,26 +925,9 @@ Handle<Buffer> VulkanBackend::create_buffer(const CreateBufferOptions& desc)
     buffer_info.usage              = to_vk_buffer_usage_flags(desc.usage);
     buffer_info.sharingMode        = desc.exclusive ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT;
 
-    VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_UNKNOWN;
-    switch (desc.memory_usage)
-    {
-        case MemoryUsage::GpuOnly:
-            vma_usage = VMA_MEMORY_USAGE_GPU_ONLY;
-            break;
-        case MemoryUsage::CpuToGpu:
-            vma_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-            break;
-        case MemoryUsage::GpuToCpu:
-            vma_usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
-            break;
-        case MemoryUsage::CpuOnly:
-            vma_usage = VMA_MEMORY_USAGE_CPU_ONLY;
-            break;
-    }
-
     VmaAllocationCreateInfo memory_info = {};
     memory_info.flags                   = VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT;
-    memory_info.usage                   = vma_usage;
+    memory_info.usage                   = to_vma_memory_usage(desc.memory_usage);
 
     VmaAllocationInfo allocation_info = {};
     VkResult          res             = vmaCreateBuffer(vma_allocator, &buffer_info, &memory_info,
