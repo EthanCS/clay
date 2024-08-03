@@ -183,10 +183,12 @@ struct TextureBarrier {
     ImageLayout::Enum   old_layout;
     ImageLayout::Enum   new_layout;
     TextureAspect::Flag aspect_flags;
-    u32                 base_mip_level;
-    u32                 level_count;
-    u32                 base_array_layer;
-    u32                 layer_count;
+    AccessMask::Flag    src_access;
+    AccessMask::Flag    dst_access;
+    u32                 base_mip_level   = 0;
+    u32                 level_count      = 1;
+    u32                 base_array_layer = 0;
+    u32                 layer_count      = 1;
 };
 
 } // namespace gfx

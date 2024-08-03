@@ -1209,7 +1209,7 @@ Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_typ
         return Handle<CommandPool>::invalid();
     }
 
-    return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool });
+    return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool, .queue_type = queue_type });
 }
 
 void VulkanBackend::destroy_command_pool(const Handle<CommandPool>& pool)
@@ -1599,8 +1599,8 @@ void VulkanBackend::cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const 
         VkImageMemoryBarrier& image_barrier           = image_memory_barriers[i];
         image_barrier                                 = {};
         image_barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barrier.srcAccessMask                   = 0;
-        image_barrier.dstAccessMask                   = 0;
+        image_barrier.srcAccessMask                   = to_vk_access_flags(barrier.src_access);
+        image_barrier.dstAccessMask                   = to_vk_access_flags(barrier.dst_access);
         image_barrier.oldLayout                       = to_vk_image_layout(barrier.old_layout);
         image_barrier.newLayout                       = to_vk_image_layout(barrier.new_layout);
         image_barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
@@ -1613,7 +1613,7 @@ void VulkanBackend::cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const 
         image_barrier.subresourceRange.layerCount     = barrier.layer_count;
     }
 
-    vkCmdPipelineBarrier(vk_cb->command_buffer, 0, 0, 0, 0, nullptr, 0, nullptr, options.num_texture_barriers, image_memory_barriers);
+    vkCmdPipelineBarrier(vk_cb->command_buffer, to_vk_pipeline_stage_flags(options.src_stage), to_vk_pipeline_stage_flags(options.dst_stage), 0, 0, nullptr, 0, nullptr, options.num_texture_barriers, image_memory_barriers);
 }
 
 } // namespace gfx

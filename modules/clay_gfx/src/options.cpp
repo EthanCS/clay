@@ -138,6 +138,18 @@ UpdateDescriptorSetOptions& UpdateDescriptorSetOptions::bind_texture_sampler(u32
 //////////////////////////////////////////////////////////////////////////
 // CmdPipelineBarrierOptions
 
+CmdPipelineBarrierOptions& CmdPipelineBarrierOptions::source_stage(const PipelineStage::Flag& stage)
+{
+    src_stage = stage;
+    return *this;
+}
+
+CmdPipelineBarrierOptions& CmdPipelineBarrierOptions::destination_stage(const PipelineStage::Flag& stage)
+{
+    dst_stage = stage;
+    return *this;
+}
+
 CmdPipelineBarrierOptions& CmdPipelineBarrierOptions::add_texture_barrier(const TextureBarrier& barrier)
 {
     if (num_texture_barriers < MAX_BARRIERS)

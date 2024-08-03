@@ -39,7 +39,7 @@ public:
 
     ////// Begin IBlob
     u8* get_data() const noexcept override { return data; }
-    u64 get_size() const noexcept override { return width * height * channels; }
+    u64 get_size() const noexcept override { return width * height * 4; }
     ////// End IBlob
 
     ////// Begin IImage

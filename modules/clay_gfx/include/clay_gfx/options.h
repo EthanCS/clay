@@ -228,24 +228,30 @@ struct CmdCopyBufferOptions {
 
 struct CmdCopyBufferToTextureOptions {
     Handle<Buffer> buffer;
-    u64            buffer_offset;
-    u32            buffer_row_length;
-    u32            buffer_texture_height;
+    u64            buffer_offset         = 0;
+    u32            buffer_row_length     = 0;
+    u32            buffer_texture_height = 0;
 
     Handle<Texture>     texture;
-    i32                 texture_offset[3];
-    u32                 texture_extent[3];
+    i32                 texture_offset[3] = { 0, 0, 0 };
+    u32                 texture_extent[3] = { 0, 0, 1 };
     TextureAspect::Flag aspect_flags;
-    u32                 mip_level;
-    u32                 base_array_layer;
-    u32                 layer_count;
-    ImageLayout::Enum   dst_layout;
+    u32                 mip_level        = 0;
+    u32                 base_array_layer = 0;
+    u32                 layer_count      = 1;
+
+    ImageLayout::Enum dst_layout;
 };
 
 struct CmdPipelineBarrierOptions {
+    PipelineStage::Flag src_stage;
+    PipelineStage::Flag dst_stage;
+
     TextureBarrier texture_barriers[MAX_BARRIERS];
     u32            num_texture_barriers = 0;
 
+    CmdPipelineBarrierOptions& source_stage(const PipelineStage::Flag& stage);
+    CmdPipelineBarrierOptions& destination_stage(const PipelineStage::Flag& stage);
     CmdPipelineBarrierOptions& add_texture_barrier(const TextureBarrier& barrier);
 };
 

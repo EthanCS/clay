@@ -638,5 +638,29 @@ inline VkImageUsageFlags to_vk_image_usage_flags(TextureUsage::Flag usage)
     if (usage & TextureUsage::InputAttachment) { flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT; }
     return flags;
 }
+
+inline VkAccessFlags to_vk_access_flags(AccessMask::Flag access)
+{
+    VkAccessFlags flags = 0;
+    if (access & AccessMask::IndirectCommandRead) { flags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT; }
+    if (access & AccessMask::IndexRead) { flags |= VK_ACCESS_INDEX_READ_BIT; }
+    if (access & AccessMask::VertexAttributeRead) { flags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT; }
+    if (access & AccessMask::UniformRead) { flags |= VK_ACCESS_UNIFORM_READ_BIT; }
+    if (access & AccessMask::InputAttachmentRead) { flags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT; }
+    if (access & AccessMask::ShaderRead) { flags |= VK_ACCESS_SHADER_READ_BIT; }
+    if (access & AccessMask::ShaderWrite) { flags |= VK_ACCESS_SHADER_WRITE_BIT; }
+    if (access & AccessMask::ColorAttachmentRead) { flags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT; }
+    if (access & AccessMask::ColorAttachmentWrite) { flags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; }
+    if (access & AccessMask::DepthStencilAttachmentRead) { flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT; }
+    if (access & AccessMask::DepthStencilAttachmentWrite) { flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; }
+    if (access & AccessMask::TransferRead) { flags |= VK_ACCESS_TRANSFER_READ_BIT; }
+    if (access & AccessMask::TransferWrite) { flags |= VK_ACCESS_TRANSFER_WRITE_BIT; }
+    if (access & AccessMask::HostRead) { flags |= VK_ACCESS_HOST_READ_BIT; }
+    if (access & AccessMask::HostWrite) { flags |= VK_ACCESS_HOST_WRITE_BIT; }
+    if (access & AccessMask::MemoryRead) { flags |= VK_ACCESS_MEMORY_READ_BIT; }
+    if (access & AccessMask::MemoryWrite) { flags |= VK_ACCESS_MEMORY_WRITE_BIT; }
+    return flags;
+}
+
 } // namespace gfx
 } // namespace clay

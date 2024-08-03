@@ -1,3 +1,4 @@
+#include "clay_gfx/define.h"
 #include "clay_gfx/resource.h"
 #include <iostream>
 #include <memory>
@@ -156,7 +157,8 @@ private:
             model_vb = create_vertex_buffer(command_pool, vertices.data(), vertices.size() * sizeof(Vertex));
             model_ib = create_index_buffer(command_pool, indices.data(), indices.size() * sizeof(u16));
 
-            image = image::load_image("C:/Workspace/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
+            image     = image::load_image("E:/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
+            model_tex = create_texture(command_pool, image.get());
         }
 
         // Render pass layout
@@ -291,14 +293,24 @@ private:
 
     static void copy_buffer(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
     {
-        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
-        gfx::cmd_begin(cb, true);
-        gfx::cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
-        gfx::cmd_end(cb);
+        gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
+        {
+            gfx::cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
+        }
+        end_single_command(cb);
+    }
 
-        gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
-        gfx::queue_wait_idle(gfx::QueueType::Graphics);
-        gfx::free_command_buffer(cb);
+    static void copy_buffer_to_image(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& buffer, const gfx::Handle<gfx::Texture>& image, u32 width, u32 height)
+    {
+        gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
+        {
+            gfx::cmd_copy_buffer_to_texture(cb, { .buffer         = buffer,
+                                                  .texture        = image,
+                                                  .texture_extent = { width, height, 1 },
+                                                  .aspect_flags   = gfx::TextureAspect::Color,
+                                                  .dst_layout     = gfx::ImageLayout::TransferDstOptimal });
+        }
+        end_single_command(cb);
     }
 
     static gfx::Handle<gfx::Buffer> create_vertex_buffer(const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
@@ -341,11 +353,57 @@ private:
                                                                 .format       = gfx::Format::R8G8B8A8_UNORM,
                                                                 .usage        = (gfx::TextureUsage::Flag)(gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst),
                                                                 .memory_usage = gfx::MemoryUsage::GpuOnly });
-        ///////
-        // ......
+
+        transition_image_layout(pool, image, gfx::ImageLayout::Undefined, gfx::ImageLayout::TransferDstOptimal);
+        copy_buffer_to_image(pool, staging_buffer, image, pImage->get_width(), pImage->get_height());
+        transition_image_layout(pool, image, gfx::ImageLayout::TransferDstOptimal, gfx::ImageLayout::ShaderReadOnlyOptimal);
 
         gfx::destroy_buffer(staging_buffer);
         return image;
+    }
+
+    static inline gfx::Handle<gfx::CommandBuffer> begin_single_command(const gfx::Handle<gfx::CommandPool>& pool)
+    {
+        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
+        gfx::cmd_begin(cb, true);
+        return cb;
+    }
+
+    static inline void end_single_command(gfx::Handle<gfx::CommandBuffer> cb)
+    {
+        gfx::cmd_end(cb);
+        gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
+        gfx::queue_wait_idle(gfx::QueueType::Graphics);
+        gfx::free_command_buffer(cb);
+    }
+
+    static void transition_image_layout(const gfx::Handle<gfx::CommandPool>& pool, gfx::Handle<gfx::Texture> image, gfx::ImageLayout::Enum old_layout, gfx::ImageLayout::Enum new_layout)
+    {
+        gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
+        {
+            gfx::CmdPipelineBarrierOptions barrier_options = {};
+            if (old_layout == gfx::ImageLayout::Undefined && new_layout == gfx::ImageLayout::TransferDstOptimal)
+            {
+                barrier_options
+                .source_stage(gfx::PipelineStage::TopOfPipe)
+                .destination_stage(gfx::PipelineStage::Transfer)
+                .add_texture_barrier({ .texture = image, .old_layout = old_layout, .new_layout = new_layout, .aspect_flags = gfx::TextureAspect::Color, .dst_access = gfx::AccessMask::TransferWrite });
+            }
+            else if (old_layout == gfx::ImageLayout::TransferDstOptimal && new_layout == gfx::ImageLayout::ShaderReadOnlyOptimal)
+            {
+                barrier_options
+                .source_stage(gfx::PipelineStage::Transfer)
+                .destination_stage(gfx::PipelineStage::FragmentShader)
+                .add_texture_barrier({ .texture = image, .old_layout = old_layout, .new_layout = new_layout, .aspect_flags = gfx::TextureAspect::Color, .src_access = gfx::AccessMask::TransferWrite, .dst_access = gfx::AccessMask::ShaderRead });
+            }
+            else
+            {
+                throw std::runtime_error("unsupported layout transition!");
+            }
+
+            gfx::cmd_pipeline_barrier(cb, barrier_options);
+        }
+        end_single_command(cb);
     }
 
     void shutdown()

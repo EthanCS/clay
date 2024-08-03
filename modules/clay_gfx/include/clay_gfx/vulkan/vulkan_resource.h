@@ -115,7 +115,8 @@ struct VulkanRenderPass {
 };
 
 struct VulkanCommandPool {
-    VkCommandPool command_pool = VK_NULL_HANDLE;
+    VkCommandPool   command_pool = VK_NULL_HANDLE;
+    QueueType::Enum queue_type;
 };
 
 struct VulkanCommandBuffer {
