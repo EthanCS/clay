@@ -1,20 +1,42 @@
-#include "clay_gfx/define.h"
-#include "clay_gfx/resource.h"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 #include <cstdlib>
+#include <chrono>
 
 #include <ShaderConductor-clay/ShaderConductor.hpp>
 #include <clay_app/window.h>
 #include <clay_gfx/backend.h>
 #include <clay_image/image.h>
 
+#include <rtm/camera_utilsf.h>
+#include <rtm/matrix4x4f.h>
 #include <rtm/math.h>
 
+struct Vertex {
+    rtm::float2f position;
+    rtm::float3f color;
+    rtm::float2f uv;
+};
+
+struct UBO {
+    rtm::matrix4x4f model;
+    rtm::matrix4x4f view;
+    rtm::matrix4x4f proj;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Assets
+
 const char* VERTEX_SHADER = R"(
-#pragma target 5.0
+#pragma target 6.0
+
+cbuffer UBO : register(b0) {
+  float4x4 model;
+  float4x4 view;
+  float4x4 proj;
+};
 
 struct VSInput {
   float2 inPosition : POSITION;
@@ -29,15 +51,14 @@ struct VSOutput {
 
 VSOutput main(VSInput input) {
   VSOutput output;
-  output.outPosition = float4(input.inPosition, 0.0f, 1.0f);
+  output.outPosition = mul(mul(mul(float4(input.inPosition, 0.0, 1.0), model), view), proj);
   output.fragColor = input.inColor;
-  // output.fragColor = float3(input.inUV, 0.0f);
   return output;
 }
 )";
 
 const char* FRAGMENT_SHADER = R"(
-#pragma target 5.0
+#pragma target 6.0
 
 struct PSInput {
   float3 fragColor : TEXCOORD0;
@@ -54,12 +75,6 @@ PSOutput main(PSInput input) {
 }
 )";
 
-struct Vertex {
-    rtm::float2f position;
-    rtm::float3f color;
-    rtm::float2f uv;
-};
-
 const std::vector<Vertex> vertices = {
     { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
     { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
@@ -68,6 +83,8 @@ const std::vector<Vertex> vertices = {
 };
 
 const std::vector<u16> indices = { 0, 1, 2, 2, 3, 0 };
+
+//////////////////////////////////////////////////////////////////////////
 
 using namespace clay;
 using namespace ShaderConductor;
@@ -90,21 +107,28 @@ public:
 private:
     app::Window window;
 
-    u32                                        current_frame = 0;
-    gfx::Handle<gfx::Swapchain>                swapchain;
-    std::vector<gfx::Handle<gfx::Framebuffer>> swapchain_framebuffers;
-    std::vector<gfx::Handle<gfx::Fence>>       in_flight_fences;
-    std::vector<gfx::Handle<gfx::Semaphore>>   image_available_semaphores;
-    std::vector<gfx::Handle<gfx::Semaphore>>   render_finished_semaphores;
-
-    gfx::RenderPassLayout              render_pass_layout;
-    gfx::Handle<gfx::GraphicsPipeline> pipeline;
-
-    gfx::Handle<gfx::CommandPool>                command_pool;
+    //////////////////////////////////////////////////////////////////////////
+    // Per frame data
+    u32                                          current_frame = 0;
+    std::vector<gfx::Handle<gfx::Framebuffer>>   swapchain_framebuffers;
+    std::vector<gfx::Handle<gfx::Fence>>         in_flight_fences;
+    std::vector<gfx::Handle<gfx::Semaphore>>     image_available_semaphores;
+    std::vector<gfx::Handle<gfx::Semaphore>>     render_finished_semaphores;
     std::vector<gfx::Handle<gfx::CommandBuffer>> command_buffers;
 
-    u32 swapchain_width  = 0;
-    u32 swapchain_height = 0;
+    std::vector<gfx::Handle<gfx::Buffer>>        uniform_buffers;
+    std::vector<gfx::Handle<gfx::DescriptorSet>> descriptor_sets;
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    // Common
+    gfx::RenderPassLayout         render_pass_layout;
+    gfx::Handle<gfx::CommandPool> command_pool;
+
+    gfx::Handle<gfx::Swapchain> swapchain;
+    u32                         swapchain_width  = 0;
+    u32                         swapchain_height = 0;
+    //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
     // Assets
@@ -115,6 +139,11 @@ private:
 
     std::shared_ptr<image::IImage> image;
     gfx::Handle<gfx::Texture>      model_tex;
+    gfx::Handle<gfx::Sampler>      model_sampler;
+
+    gfx::Handle<gfx::DescriptorSetLayout> descriptor_set_layout;
+    gfx::Handle<gfx::PipelineLayout>      pipeline_layout;
+    gfx::Handle<gfx::GraphicsPipeline>    pipeline;
     //////////////////////////////////////////////////////////////////////////
 
     void init()
@@ -127,39 +156,59 @@ private:
                                  .debug    = true });
         if (!bInit) { throw std::runtime_error("failed to initialize clay gfx!"); }
 
-        // Create common stuff
-        {
-            command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
-            command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
-            for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                command_buffers[i] = gfx::allocate_command_buffer(command_pool);
-            }
+        command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
 
-            in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
-            image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-            render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
-            for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                in_flight_fences[i]           = gfx::create_fence(true);
-                image_available_semaphores[i] = gfx::create_semaphore();
-                render_finished_semaphores[i] = gfx::create_semaphore();
-            }
+        create_assets();
+
+        command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
+        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            command_buffers[i] = gfx::allocate_command_buffer(command_pool);
         }
 
-        // Load assets
+        in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
+        image_available_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
-            auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
-            hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
-            hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
-
-            model_vb = create_vertex_buffer(command_pool, vertices.data(), vertices.size() * sizeof(Vertex));
-            model_ib = create_index_buffer(command_pool, indices.data(), indices.size() * sizeof(u16));
-
-            image     = image::load_image("E:/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
-            model_tex = create_texture(command_pool, image.get());
+            in_flight_fences[i]           = gfx::create_fence(true);
+            image_available_semaphores[i] = gfx::create_semaphore();
+            render_finished_semaphores[i] = gfx::create_semaphore();
         }
+
+        uniform_buffers.resize(MAX_FRAMES_IN_FLIGHT);
+        descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
+        for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            uniform_buffers[i] = gfx::create_buffer({ .size = sizeof(UBO), .usage = gfx::BufferUsage::UniformBuffer, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+            descriptor_sets[i] = gfx::create_descriptor_set({ .layout = descriptor_set_layout });
+
+            gfx::UpdateDescriptorSetOptions update_info = {};
+            update_info.bind_buffer(0u, uniform_buffers[i]);
+            gfx::update_descriptor_set(descriptor_sets[i], update_info);
+        }
+
+        create_swapchain(window.width, window.height);
+    }
+
+    void create_assets()
+    {
+        auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
+        auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
+        hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
+        hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
+
+        model_vb = create_vertex_buffer(command_pool, vertices.data(), vertices.size() * sizeof(Vertex));
+        model_ib = create_index_buffer(command_pool, indices.data(), indices.size() * sizeof(u16));
+
+        image         = image::load_image("E:/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
+        model_tex     = create_texture(command_pool, image.get());
+        model_sampler = gfx::create_sampler({});
+
+        // Create descriptor set layout
+        gfx::CreateDescriptorSetLayoutOptions layout_options = {};
+        layout_options.add_binding(gfx::DescriptorType::UniformBuffer, 0u, 1u, "UBO");
+        descriptor_set_layout = gfx::create_descriptor_set_layout(layout_options);
 
         // Render pass layout
         render_pass_layout           = {};
@@ -170,7 +219,9 @@ private:
         };
 
         // Pipeline layout
-        auto pipeline_layout = gfx::create_pipeline_layout({});
+        gfx::CreatePipelineLayoutOptions pipeline_layout_options = {};
+        pipeline_layout_options.add_descriptor_set_layout(descriptor_set_layout);
+        pipeline_layout = gfx::create_pipeline_layout(pipeline_layout_options);
 
         // Create pipeline
         gfx::CreateGraphicsPipelineOptions pipeline_options = { .name           = "triangle",
@@ -183,8 +234,6 @@ private:
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 1, offsetof(Vertex, color), gfx::Format::R32G32B32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 2, offsetof(Vertex, uv), gfx::Format::R32G32_SFLOAT);
         pipeline = gfx::create_graphics_pipeline(pipeline_options);
-
-        create_swapchain(window.width, window.height);
     }
 
     void main_loop()
@@ -207,6 +256,8 @@ private:
             recreate_swapchain();
             return;
         }
+
+        update_uniform_buffer(current_frame);
 
         gfx::reset_fences(&in_flight_fences[current_frame], 1);
 
@@ -270,6 +321,23 @@ private:
         swapchain_height = height;
     }
 
+    void update_uniform_buffer(u32 image_index)
+    {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+
+        auto  currentTime = std::chrono::high_resolution_clock::now();
+        float time        = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        UBO ubo   = {};
+        ubo.model = rtm::matrix_identity();
+        ubo.view  = rtm::matrix_identity();
+        ubo.proj  = rtm::matrix_identity();
+
+        void* data = gfx::map_buffer(uniform_buffers[image_index]);
+        memcpy(data, &ubo, sizeof(UBO));
+        gfx::unmap_buffer(uniform_buffers[image_index]);
+    }
+
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
         gfx::cmd_begin(cmd, false);
@@ -279,14 +347,13 @@ private:
                                      .extent             = { swapchain_width, swapchain_height },
                                      .clear              = true,
                                      .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } } } });
-
         gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
         gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
         gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
         gfx::cmd_bind_vertex_buffer(cmd, { .binding = 0, .buffer = model_vb, .offset = 0 });
         gfx::cmd_bind_index_buffer(cmd, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint16 });
+        gfx::cmd_bind_descriptor_sets(cmd, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
         gfx::cmd_draw_indexed(cmd, { .index_count = (u32)indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
-        gfx::cmd_draw(cmd, { .vertex_count = 3, .instance_count = 1, .first_vertex = 0, .first_instance = 0 });
         gfx::cmd_end_render_pass(cmd);
         gfx::cmd_end(cmd);
     }

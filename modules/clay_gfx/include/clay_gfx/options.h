@@ -42,15 +42,15 @@ struct CreateTextureOptions {
 };
 
 struct CreateSamplerOptions {
-    FilterType::Enum  min_filter;
-    FilterType::Enum  mag_filter;
-    MipmapType::Enum  mipmap_mode;
-    AddressMode::Enum address_u;
-    AddressMode::Enum address_v;
-    AddressMode::Enum address_w;
-    float             mip_lod_bias;
-    float             max_anisotropy;
-    CompareOp::Enum   compare_op;
+    FilterType::Enum  min_filter     = FilterType::Linear;
+    FilterType::Enum  mag_filter     = FilterType::Linear;
+    MipmapType::Enum  mipmap_mode    = MipmapType::Linear;
+    AddressMode::Enum address_u      = AddressMode::Repeat;
+    AddressMode::Enum address_v      = AddressMode::Repeat;
+    AddressMode::Enum address_w      = AddressMode::Repeat;
+    float             mip_lod_bias   = 0;
+    float             max_anisotropy = 0;
+    CompareOp::Enum   compare_op     = CompareOp::Never;
 };
 
 struct CreateBufferOptions {
