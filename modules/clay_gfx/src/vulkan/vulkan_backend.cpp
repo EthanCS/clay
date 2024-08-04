@@ -850,6 +850,27 @@ Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
 
     texture.device_memory = allocation_info.deviceMemory;
 
+    VulkanTextureViewDesc view_desc = {};
+    view_desc.format                = texture.format;
+    view_desc.aspect_flags          = VK_IMAGE_ASPECT_COLOR_BIT;
+    view_desc.component_r           = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view_desc.component_g           = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view_desc.component_b           = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view_desc.component_a           = VK_COMPONENT_SWIZZLE_IDENTITY;
+    view_desc.base_mip_level        = 0;
+    view_desc.level_count           = desc.mip_levels;
+    view_desc.base_array_layer      = 0;
+    view_desc.layer_count           = desc.array_size;
+
+    if (image_info.imageType == VK_IMAGE_TYPE_1D && desc.array_size == 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_1D; }
+    else if (image_info.imageType == VK_IMAGE_TYPE_1D && desc.array_size > 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY; }
+    else if (image_info.imageType == VK_IMAGE_TYPE_2D && desc.array_size == 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_2D; }
+    else if (image_info.imageType == VK_IMAGE_TYPE_2D && desc.array_size > 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY; }
+    else if (image_info.imageType == VK_IMAGE_TYPE_3D && desc.array_size == 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_3D; }
+    else if (image_info.imageType == VK_IMAGE_TYPE_3D && desc.array_size > 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; }
+
+    texture.get_view(device, view_desc);
+    
     return resources.textures.push(texture);
 }
 
