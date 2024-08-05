@@ -32,6 +32,7 @@ struct UBO {
 const char* VERTEX_SHADER = R"(
 #pragma target 6.0
 
+[[vk::binding(0)]]
 cbuffer UBO : register(b0) {
   float4x4 model;
   float4x4 view;
@@ -46,6 +47,7 @@ struct VSInput {
 
 struct VSOutput {
   float3 fragColor : COLOR;
+  float2 uv : TEXCOORD0;
   float4 outPosition : SV_Position;
 };
 
@@ -53,6 +55,7 @@ VSOutput main(VSInput input) {
   VSOutput output;
   output.outPosition = mul(mul(mul(float4(input.inPosition, 0.0, 1.0), model), view), proj);
   output.fragColor = input.inColor;
+  output.uv = input.inUV;
   return output;
 }
 )";
@@ -60,26 +63,27 @@ VSOutput main(VSInput input) {
 const char* FRAGMENT_SHADER = R"(
 #pragma target 6.0
 
+[[vk::combinedImageSampler]][[vk::binding(1)]]
+Texture2D<float4> myTexture : register(t0);
+
+[[vk::combinedImageSampler]][[vk::binding(1)]]
+SamplerState mySampler;
+
 struct PSInput {
-  float3 fragColor : TEXCOORD0;
+  float3 fragColor : COLOR;
+  float2 uv : TEXCOORD0;
 };
 
-struct PSOutput {
-  float4 outColor : SV_Target0;
-};
-
-PSOutput main(PSInput input) {
-  PSOutput output;
-  output.outColor = float4(input.fragColor, 1.0f);
-  return output;
+float4 main(PSInput input) : SV_Target {
+  return float4(input.fragColor, 1.0f) * myTexture.Sample(mySampler, input.uv);
 }
 )";
 
 const std::vector<Vertex> vertices = {
-    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
-    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
-    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
-    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }
+    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
 };
 
 const std::vector<u16> indices = { 0, 1, 2, 2, 3, 0 };
@@ -185,6 +189,7 @@ private:
 
             gfx::UpdateDescriptorSetOptions update_info = {};
             update_info.bind_buffer(0u, uniform_buffers[i]);
+            update_info.bind_texture_sampler(1u, model_tex, model_sampler);
             gfx::update_descriptor_set(descriptor_sets[i], update_info);
         }
 
@@ -207,7 +212,9 @@ private:
 
         // Create descriptor set layout
         gfx::CreateDescriptorSetLayoutOptions layout_options = {};
-        layout_options.add_binding(gfx::DescriptorType::UniformBuffer, 0u, 1u, "UBO");
+        layout_options
+        .add_binding(gfx::DescriptorType::UniformBuffer, 0u, 1u, "UBO")
+        .add_binding(gfx::DescriptorType::CombinedImageSampler, 1u, 1u, "myTexture");
         descriptor_set_layout = gfx::create_descriptor_set_layout(layout_options);
 
         // Render pass layout
