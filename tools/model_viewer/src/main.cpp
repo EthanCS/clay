@@ -1,3 +1,8 @@
+#include "rtm/impl/matrix_cast.h"
+#include "rtm/impl/vector_common.h"
+#include "rtm/quatf.h"
+#include "rtm/scalarf.h"
+#include "rtm/types.h"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -11,8 +16,13 @@
 #include <clay_image/image.h>
 
 #include <rtm/camera_utilsf.h>
+#include <rtm/matrix3x4f.h>
 #include <rtm/matrix4x4f.h>
 #include <rtm/math.h>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 struct Vertex {
     rtm::float2f position;
@@ -21,9 +31,12 @@ struct Vertex {
 };
 
 struct UBO {
-    rtm::matrix4x4f model;
-    rtm::matrix4x4f view;
-    rtm::matrix4x4f proj;
+    // rtm::matrix4x4f model;
+    // rtm::matrix4x4f view;
+    // rtm::matrix4x4f proj;
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -336,9 +349,10 @@ private:
         float time        = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UBO ubo   = {};
-        ubo.model = rtm::matrix_identity();
-        ubo.view  = rtm::matrix_identity();
-        ubo.proj  = rtm::matrix_identity();
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj  = glm::perspective(glm::radians(45.0f), swapchain_width / (float)swapchain_height, 0.1f, 10.0f);
+        ubo.proj[1][1] *= -1;
 
         void* data = gfx::map_buffer(uniform_buffers[image_index]);
         memcpy(data, &ubo, sizeof(UBO));
