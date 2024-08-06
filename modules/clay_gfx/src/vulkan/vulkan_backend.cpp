@@ -850,9 +850,23 @@ Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
 
     texture.device_memory = allocation_info.deviceMemory;
 
+    VkImageAspectFlags aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (texture.format == VK_FORMAT_D16_UNORM || texture.format == VK_FORMAT_D32_SFLOAT)
+    {
+        aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    else if (texture.format == VK_FORMAT_D24_UNORM_S8_UINT)
+    {
+        aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    else if (texture.format == VK_FORMAT_S8_UINT)
+    {
+        aspect_flags = VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+
     VulkanTextureViewDesc view_desc = {};
     view_desc.format                = texture.format;
-    view_desc.aspect_flags          = VK_IMAGE_ASPECT_COLOR_BIT;
+    view_desc.aspect_flags          = aspect_flags;
     view_desc.component_r           = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_desc.component_g           = VK_COMPONENT_SWIZZLE_IDENTITY;
     view_desc.component_b           = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -870,7 +884,7 @@ Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
     else if (image_info.imageType == VK_IMAGE_TYPE_3D && desc.array_size > 1) { view_desc.view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; }
 
     texture.get_view(device, view_desc);
-    
+
     return resources.textures.push(texture);
 }
 

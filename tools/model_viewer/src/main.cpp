@@ -1,8 +1,3 @@
-#include "rtm/impl/matrix_cast.h"
-#include "rtm/impl/vector_common.h"
-#include "rtm/quatf.h"
-#include "rtm/scalarf.h"
-#include "rtm/types.h"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -20,12 +15,13 @@
 #include <rtm/matrix4x4f.h>
 #include <rtm/math.h>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 struct Vertex {
-    rtm::float2f position;
+    rtm::float3f position;
     rtm::float3f color;
     rtm::float2f uv;
 };
@@ -53,7 +49,7 @@ cbuffer UBO : register(b0) {
 };
 
 struct VSInput {
-  float2 inPosition : POSITION;
+  float3 inPosition : POSITION;
   float3 inColor : COLOR;
   float2 inUV : TEXCOORD0;
 };
@@ -66,7 +62,7 @@ struct VSOutput {
 
 VSOutput main(VSInput input) {
   VSOutput output;
-  output.outPosition = mul(mul(mul(float4(input.inPosition, 0.0, 1.0), model), view), proj);
+  output.outPosition = mul(mul(mul(float4(input.inPosition, 1.0), model), view), proj);
   output.fragColor = input.inColor;
   output.uv = input.inUV;
   return output;
@@ -93,13 +89,21 @@ float4 main(PSInput input) : SV_Target {
 )";
 
 const std::vector<Vertex> vertices = {
-    { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
-    { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
-    { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-    { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
+    { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+    { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+    { { 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+    { { -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
+
+    { { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
+    { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
+    { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
+    { { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
 };
 
-const std::vector<u16> indices = { 0, 1, 2, 2, 3, 0 };
+const std::vector<u16> indices = {
+    0, 1, 2, 2, 3, 0,
+    4, 5, 6, 6, 7, 4
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -145,6 +149,7 @@ private:
     gfx::Handle<gfx::Swapchain> swapchain;
     u32                         swapchain_width  = 0;
     u32                         swapchain_height = 0;
+    gfx::Handle<gfx::Texture>   depth_texture;
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
@@ -237,6 +242,11 @@ private:
             .layout  = gfx::ImageLayout::PresentSrc,
             .load_op = gfx::RenderPassLoadOp::Clear
         };
+        render_pass_layout.depth_stencil = {
+            .format   = gfx::Format::D32_SFLOAT,
+            .layout   = gfx::ImageLayout::DepthStencilAttachmentOptimal,
+            .depth_op = gfx::RenderPassLoadOp::Clear
+        };
 
         // Pipeline layout
         gfx::CreatePipelineLayoutOptions pipeline_layout_options = {};
@@ -248,9 +258,9 @@ private:
                                                                 .layout         = pipeline_layout,
                                                                 .vertex_shader  = { .compiled_shader = hello_vs, .entry_func = "main" },
                                                                 .pixel_shader   = { .compiled_shader = hello_fs, .entry_func = "main" },
-                                                                .graphics_state = { .depth_test_enabled = false, .render_pass_layout = render_pass_layout } };
+                                                                .graphics_state = { .depth_test_enabled = true, .render_pass_layout = render_pass_layout } };
         pipeline_options.graphics_state.set_vertex_buffer_binding(0, sizeof(Vertex));
-        pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 0, offsetof(Vertex, position), gfx::Format::R32G32_SFLOAT);
+        pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 0, offsetof(Vertex, position), gfx::Format::R32G32B32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 1, offsetof(Vertex, color), gfx::Format::R32G32B32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 2, offsetof(Vertex, uv), gfx::Format::R32G32_SFLOAT);
         pipeline = gfx::create_graphics_pipeline(pipeline_options);
@@ -318,6 +328,7 @@ private:
         {
             gfx::destroy_framebuffer(framebuffer);
         }
+        gfx::destroy_texture(depth_texture);
         gfx::destroy_swapchain(swapchain);
 
         create_swapchain(window.width, window.height);
@@ -327,14 +338,30 @@ private:
     {
         swapchain      = gfx::create_swapchain({ .width = width, .height = height, .vsync = true, .format = gfx::Format::B8G8R8A8_UNORM });
         u32 num_images = gfx::get_swapchain_image_count(swapchain);
+
+        depth_texture = gfx::create_texture({ .width = width, .height = height, .format = gfx::Format::D32_SFLOAT, .usage = gfx::TextureUsage::DepthStencilAttachment, .memory_usage = gfx::MemoryUsage::GpuOnly });
+
+        gfx::RenderPassLayout swapchain_render_pass_layout = {};
+        swapchain_render_pass_layout.colors[0]             = {
+                        .format  = gfx::Format::B8G8R8A8_UNORM,
+                        .layout  = gfx::ImageLayout::PresentSrc,
+                        .load_op = gfx::RenderPassLoadOp::Clear
+        };
+        swapchain_render_pass_layout.depth_stencil = {
+            .format   = gfx::Format::D32_SFLOAT,
+            .layout   = gfx::ImageLayout::DepthStencilAttachmentOptimal,
+            .depth_op = gfx::RenderPassLoadOp::Clear
+        };
+
         swapchain_framebuffers.resize(num_images);
         for (u32 i = 0; i < num_images; i++)
         {
             swapchain_framebuffers[i] = gfx::create_framebuffer(
-            { .width              = width,
-              .height             = height,
-              .color_attachments  = { { .texture = gfx::get_swapchain_back_buffer(swapchain, i), .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Color } },
-              .render_pass_layout = { .colors = { { .format = gfx::Format::B8G8R8A8_UNORM, .layout = gfx::ImageLayout::PresentSrc, .load_op = gfx::RenderPassLoadOp::Clear } } } });
+            { .width                    = width,
+              .height                   = height,
+              .color_attachments        = { { .texture = gfx::get_swapchain_back_buffer(swapchain, i), .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Color } },
+              .depth_stencil_attachment = { .texture = depth_texture, .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Depth },
+              .render_pass_layout       = swapchain_render_pass_layout });
         }
 
         swapchain_width  = width;
@@ -367,7 +394,7 @@ private:
                                      .render_pass_layout = render_pass_layout,
                                      .extent             = { swapchain_width, swapchain_height },
                                      .clear              = true,
-                                     .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } } } });
+                                     .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } }, { .depth = 1.0f } } });
         gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
         gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
         gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
