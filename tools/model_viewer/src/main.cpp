@@ -1,9 +1,10 @@
 #include <iostream>
-#include <memory>
 #include <stdexcept>
-#include <vector>
-#include <cstdlib>
 #include <chrono>
+#include <vector>
+#include <cstring>
+#include <cstdlib>
+#include <unordered_map>
 
 #include <ShaderConductor-clay/ShaderConductor.hpp>
 #include <clay_app/window.h>
@@ -20,20 +21,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-struct Vertex {
-    rtm::float3f position;
-    rtm::float3f color;
-    rtm::float2f uv;
-};
-
-struct UBO {
-    // rtm::matrix4x4f model;
-    // rtm::matrix4x4f view;
-    // rtm::matrix4x4f proj;
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-};
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Assets
@@ -88,23 +77,6 @@ float4 main(PSInput input) : SV_Target {
 }
 )";
 
-const std::vector<Vertex> vertices = {
-    { { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
-    { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
-    { { 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-    { { -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } },
-
-    { { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f } },
-    { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f } },
-    { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f } },
-    { { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 1.0f } }
-};
-
-const std::vector<u16> indices = {
-    0, 1, 2, 2, 3, 0,
-    4, 5, 6, 6, 7, 4
-};
-
 //////////////////////////////////////////////////////////////////////////
 
 using namespace clay;
@@ -114,6 +86,43 @@ const int   MAX_FRAMES_IN_FLIGHT = 3;
 const u32   WIDTH                = 1280;
 const u32   HEIGHT               = 720;
 const char* TITLE                = "Model Viewer";
+
+const char* MODEL_PATH = "E:/clay/test/gfx/viking_room.obj";
+
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 color;
+    glm::vec2 uv;
+
+    bool operator==(const Vertex& other) const { return position == other.position && color == other.color && uv == other.uv; }
+};
+
+namespace std
+{
+template <>
+struct hash<glm::vec2> {
+    size_t operator()(glm::vec2 const& k) const { return std::hash<float>()(k.x) ^ std::hash<float>()(k.y); }
+};
+template <>
+struct hash<glm::vec3> {
+    size_t operator()(glm::vec3 const& k) const { return std::hash<float>()(k.x) ^ std::hash<float>()(k.y) ^ std::hash<float>()(k.z); }
+};
+template <>
+struct hash<Vertex> {
+    size_t operator()(Vertex const& vertex) const { return ((hash<glm::vec3>()(vertex.position) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1); }
+};
+} // namespace std
+
+struct Mesh {
+    std::vector<Vertex> vertices;
+    std::vector<u32>    indices;
+};
+
+struct UBO {
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+};
 
 class ModelViewerApp
 {
@@ -156,6 +165,8 @@ private:
     // Assets
     gfx::Handle<gfx::Shader> hello_vs;
     gfx::Handle<gfx::Shader> hello_fs;
+
+    std::shared_ptr<Mesh>    mesh;
     gfx::Handle<gfx::Buffer> model_vb;
     gfx::Handle<gfx::Buffer> model_ib;
 
@@ -216,13 +227,58 @@ private:
 
     void create_assets()
     {
+        // Load model
+        mesh = std::make_shared<Mesh>();
+        {
+            tinyobj::attrib_t                attrib;
+            std::vector<tinyobj::shape_t>    shapes;
+            std::vector<tinyobj::material_t> materials;
+            std::string                      warn, err;
+
+            if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH))
+            {
+                throw std::runtime_error(warn + err);
+            }
+
+            std::unordered_map<Vertex, u32> uniqueVertices = {};
+
+            for (const auto& shape : shapes)
+            {
+                for (const auto& index : shape.mesh.indices)
+                {
+                    Vertex vertex = {};
+
+                    vertex.position = {
+                        attrib.vertices[3 * index.vertex_index + 0],
+                        attrib.vertices[3 * index.vertex_index + 1],
+                        attrib.vertices[3 * index.vertex_index + 2]
+                    };
+
+                    vertex.uv = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    };
+
+                    vertex.color = { 1.0f, 1.0f, 1.0f };
+
+                    if (uniqueVertices.count(vertex) == 0)
+                    {
+                        uniqueVertices[vertex] = static_cast<u32>(mesh->vertices.size());
+                        mesh->vertices.push_back(vertex);
+                    }
+
+                    mesh->indices.push_back(uniqueVertices[vertex]);
+                }
+            }
+        }
+
         auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
         auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
         hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
         hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
 
-        model_vb = create_vertex_buffer(command_pool, vertices.data(), vertices.size() * sizeof(Vertex));
-        model_ib = create_index_buffer(command_pool, indices.data(), indices.size() * sizeof(u16));
+        model_vb = create_vertex_buffer(command_pool, mesh->vertices.data(), mesh->vertices.size() * sizeof(Vertex));
+        model_ib = create_index_buffer(command_pool, mesh->indices.data(), mesh->indices.size() * sizeof(u32));
 
         image         = image::load_image("E:/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
         model_tex     = create_texture(command_pool, image.get());
@@ -399,9 +455,9 @@ private:
         gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
         gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
         gfx::cmd_bind_vertex_buffer(cmd, { .binding = 0, .buffer = model_vb, .offset = 0 });
-        gfx::cmd_bind_index_buffer(cmd, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint16 });
+        gfx::cmd_bind_index_buffer(cmd, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint32 });
         gfx::cmd_bind_descriptor_sets(cmd, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
-        gfx::cmd_draw_indexed(cmd, { .index_count = (u32)indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
+        gfx::cmd_draw_indexed(cmd, { .index_count = (u32)mesh->indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
         gfx::cmd_end_render_pass(cmd);
         gfx::cmd_end(cmd);
     }
@@ -418,13 +474,11 @@ private:
     static void copy_buffer_to_image(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& buffer, const gfx::Handle<gfx::Texture>& image, u32 width, u32 height)
     {
         gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
-        {
-            gfx::cmd_copy_buffer_to_texture(cb, { .buffer         = buffer,
-                                                  .texture        = image,
-                                                  .texture_extent = { width, height, 1 },
-                                                  .aspect_flags   = gfx::TextureAspect::Color,
-                                                  .dst_layout     = gfx::ImageLayout::TransferDstOptimal });
-        }
+        gfx::cmd_copy_buffer_to_texture(cb, { .buffer         = buffer,
+                                              .texture        = image,
+                                              .texture_extent = { width, height, 1 },
+                                              .aspect_flags   = gfx::TextureAspect::Color,
+                                              .dst_layout     = gfx::ImageLayout::TransferDstOptimal });
         end_single_command(cb);
     }
 
