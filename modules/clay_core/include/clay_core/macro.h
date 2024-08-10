@@ -44,3 +44,5 @@ static const i8  i8_MIN  = INT8_MIN;
 #else
     #define CLAY_DEBUG_BREAK raise(SIGTRAP);
 #endif // MSVC
+
+#define CLAY_NOEXCEPT noexcept
