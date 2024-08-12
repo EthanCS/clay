@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <clay_core/macro.h>
 
 namespace clay
@@ -53,10 +54,10 @@ public:
     static DAG* create() CLAY_NOEXCEPT;
     static void destroy(DAG* dag) CLAY_NOEXCEPT;
 
-    virtual ~DAG() CLAY_NOEXCEPT                                            = default;
-    virtual DAG_NodeHandle insert(DAG_Node* node) CLAY_NOEXCEPT             = 0;
-    virtual bool           remove(DAG_NodeHandle handle) CLAY_NOEXCEPT      = 0;
-    virtual DAG_Node*      access_node(DAG_NodeHandle handle) CLAY_NOEXCEPT = 0;
+    virtual ~DAG() CLAY_NOEXCEPT                                              = default;
+    virtual DAG_NodeHandle insert(DAG_Node* node) CLAY_NOEXCEPT               = 0;
+    virtual bool           remove(const std::string& name) CLAY_NOEXCEPT      = 0;
+    virtual DAG_Node*      access_node(const std::string& name) CLAY_NOEXCEPT = 0;
 };
 
 } // namespace core

@@ -17,14 +17,25 @@ class DAG_Impl : public DAG
         return new_node.getId();
     }
 
-    virtual bool remove(DAG_NodeHandle handle) CLAY_NOEXCEPT override
+    virtual bool remove(const std::string& name) CLAY_NOEXCEPT override
     {
+        // const auto& node = graph.getNode(name);
+        // if (node.has_value())
+        // {
+        //     DAG_Node* data = node.value()->getData();
+        //     if (data == nullptr) { return false; }
+
+        //     data->on_remove();
+        //     graph.removeNode(name);
+        //     return true;
+        // }
         return false;
     }
 
-    virtual DAG_Node* access_node(DAG_NodeHandle handle) CLAY_NOEXCEPT override
+    virtual DAG_Node* access_node(const std::string& name) CLAY_NOEXCEPT override
     {
-        return nullptr;
+        const auto& node = graph.getNode(name);
+        return node.has_value() ? node.value()->getData() : nullptr;
     }
 };
 
