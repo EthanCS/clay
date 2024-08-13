@@ -5,7 +5,7 @@ add_rules("plugin.compile_commands.autoupdate", { outputdir = ".vscode" })
 add_repositories("clay-xrepo xrepo", {rootdir = os.scriptdir()})
 
 add_requires("vulkansdk", "mimalloc", "spdlog", "libsdl 2.30.3", "stb", "rtm v2.3.1")
-add_requires("vulkan-memory-allocator v3.1.0", "cxxgraph v4.1.0")
+add_requires("vulkan-memory-allocator v3.1.0", "graaf v1.1.1")
 add_requires("glm", "tinyobjloader")
 
 add_requires("daScript 0.4.10")
@@ -22,6 +22,7 @@ target("clay")
     add_deps("clay_core", "clay_app", "clay_gfx", "clay_image")
     add_packages("daScript")
     set_toolchains("msvc")
+    add_cxxflags("/bigobj")
 
     after_build(function (target)
         os.cp("daslib", target:targetdir())
