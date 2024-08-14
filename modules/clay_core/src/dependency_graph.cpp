@@ -1,8 +1,10 @@
 #include <clay_core/dependency_graph.h>
 
+#include <optional>
+
 #include <graaflib/graph.h>
 #include <graaflib/types.h>
-#include <optional>
+#include <graaflib/algorithm/cycle_detection/dfs_cycle_detection.h>
 
 namespace clay
 {
@@ -78,7 +80,11 @@ class DependencyGraphImpl : public DependencyGraph
 
         graph.add_edge(from_id, to_id, Edge{ edge });
 
-        // Todo: Check if graph has cycle
+        if (graaf::algorithm::dfs_cycle_detection(graph))
+        {
+            graph.remove_edge(from_id, to_id);
+            return false;
+        }
 
         edge->from  = from;
         edge->to    = to;

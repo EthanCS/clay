@@ -1,6 +1,8 @@
 #pragma once
 
 #include <clay_gfx/backend.h>
+#include <clay_core/dependency_graph.h>
+
 #include <functional>
 
 namespace clay
@@ -29,7 +31,8 @@ public:
     virtual void execute() CLAY_NOEXCEPT;
 
 protected:
-    u64 frame_index = 0;
+    u64                    frame_index = 0;
+    core::DependencyGraph* graph       = nullptr;
 };
 
 } // namespace rg

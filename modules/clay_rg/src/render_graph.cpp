@@ -25,13 +25,13 @@ void RenderGraph::destroy(RenderGraph* render_graph) CLAY_NOEXCEPT
 
 void RenderGraph::initialize() CLAY_NOEXCEPT
 {
+    graph = core::DependencyGraph::create();
 }
 
 void RenderGraph::finalize() CLAY_NOEXCEPT
 {
+    core::DependencyGraph::destroy(graph);
 }
-
-
 
 } // namespace rg
 } // namespace clay
