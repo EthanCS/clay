@@ -98,6 +98,8 @@ PRO_DEF_MEMBER_DISPATCH(free_command_buffer, void(const Handle<CommandBuffer>&))
 /////// Command
 PRO_DEF_MEMBER_DISPATCH(cmd_begin, void(const Handle<CommandBuffer>&, bool));
 PRO_DEF_MEMBER_DISPATCH(cmd_end, void(const Handle<CommandBuffer>&));
+
+/////// Render Pass
 PRO_DEF_MEMBER_DISPATCH(cmd_begin_render_pass, void(const Handle<CommandBuffer>&, const CmdBeginRenderPassOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_end_render_pass, void(const Handle<CommandBuffer>&));
 PRO_DEF_MEMBER_DISPATCH(cmd_bind_graphics_pipeline, void(const Handle<CommandBuffer>&, const Handle<GraphicsPipeline>&));

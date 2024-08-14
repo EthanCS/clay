@@ -191,5 +191,13 @@ struct TextureBarrier {
     u32                 layer_count      = 1;
 };
 
+struct RenderPassEncoder {
+    Handle<CommandBuffer> cmd;
+};
+
+struct ComputePassEncoder {
+    Handle<CommandBuffer> cmd;
+};
+
 } // namespace gfx
 } // namespace clay
