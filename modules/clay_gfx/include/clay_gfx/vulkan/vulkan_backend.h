@@ -107,21 +107,22 @@ public:
     void                  free_command_buffer(const Handle<CommandBuffer>& buffer);
 
     void cmd_begin(const Handle<CommandBuffer>& cb, bool one_time);
-    void cmd_end(const Handle<CommandBuffer>& cb);
-    void cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options);
-    void cmd_end_render_pass(const Handle<CommandBuffer>& cb);
-    void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& cb, const Handle<GraphicsPipeline>& pipeline);
-    void cmd_set_viewport(const Handle<CommandBuffer>& cb, const CmdSetViewportOptions& viewport);
-    void cmd_set_scissor(const Handle<CommandBuffer>& cb, const CmdSetScissorOptions& scissor);
-    void cmd_draw(const Handle<CommandBuffer>& cb, const CmdDrawOptions& draw);
-    void cmd_draw_indexed(const Handle<CommandBuffer>& cb, const CmdDrawIndexedOptions& draw);
-    void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options);
-    void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options);
-    void cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options);
-    void cmd_bind_descriptor_sets(const Handle<CommandBuffer>& cb, const CmdBindDescriptorSetsOptions& options);
     void cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options);
     void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& cb, const CmdCopyBufferToTextureOptions& options);
     void cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options);
+    void cmd_end(const Handle<CommandBuffer>& cb);
+
+    RenderPassEncoder cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options);
+    void              cmd_bind_pipeline(const RenderPassEncoder& encoder, const Handle<GraphicsPipeline>& pipeline);
+    void              cmd_set_viewport(const RenderPassEncoder& encoder, const CmdSetViewportOptions& viewport);
+    void              cmd_set_scissor(const RenderPassEncoder& encoder, const CmdSetScissorOptions& scissor);
+    void              cmd_draw(const RenderPassEncoder& encoder, const CmdDrawOptions& draw);
+    void              cmd_draw_indexed(const RenderPassEncoder& encoder, const CmdDrawIndexedOptions& draw);
+    void              cmd_bind_vertex_buffer(const RenderPassEncoder& encoder, const CmdBindVertexBufferOptions& options);
+    void              cmd_bind_vertex_buffers(const RenderPassEncoder& encoder, const CmdBindVertexBuffersOptions& options);
+    void              cmd_bind_index_buffer(const RenderPassEncoder& encoder, const CmdBindIndexBufferOptions& options);
+    void              cmd_bind_descriptor_sets(const RenderPassEncoder& encoder, const CmdBindDescriptorSetsOptions& options);
+    void              cmd_end_render_pass(const Handle<CommandBuffer>& cb, const RenderPassEncoder& encoder);
 
 private:
     VkQueue get_queue(QueueType::Enum queue_type)

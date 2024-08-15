@@ -1325,20 +1325,20 @@ void VulkanBackend::cmd_end(const Handle<CommandBuffer>& buffer)
     vkEndCommandBuffer(vulkan_buffer->command_buffer);
 }
 
-void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options)
+RenderPassEncoder VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
-        return;
+        return {};
     }
 
     const VulkanFramebuffer* vulkan_framebuffer = resources.framebuffers.get(options.framebuffer);
     if (vulkan_framebuffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find framebuffer.");
-        return;
+        return {};
     }
 
     VkRenderPassBeginInfo begin_info = {};
@@ -1378,9 +1378,10 @@ void VulkanBackend::cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, c
     }
 
     vkCmdBeginRenderPass(vulkan_buffer->command_buffer, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    return RenderPassEncoder{ .cmd = buffer };
 }
 
-void VulkanBackend::cmd_end_render_pass(const Handle<CommandBuffer>& buffer)
+void VulkanBackend::cmd_end_render_pass(const Handle<CommandBuffer>& buffer, const RenderPassEncoder& encoder)
 {
     const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
     if (vulkan_buffer == nullptr) [[unlikely]]
@@ -1392,9 +1393,9 @@ void VulkanBackend::cmd_end_render_pass(const Handle<CommandBuffer>& buffer)
     vkCmdEndRenderPass(vulkan_buffer->command_buffer);
 }
 
-void VulkanBackend::cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline)
+void VulkanBackend::cmd_bind_pipeline(const RenderPassEncoder& encoder, const Handle<GraphicsPipeline>& pipeline)
 {
-    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(encoder.cmd);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1411,9 +1412,9 @@ void VulkanBackend::cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buff
     vkCmdBindPipeline(vulkan_buffer->command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->pipeline);
 }
 
-void VulkanBackend::cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport)
+void VulkanBackend::cmd_set_viewport(const RenderPassEncoder& encoder, const CmdSetViewportOptions& viewport)
 {
-    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(encoder.cmd);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1430,9 +1431,9 @@ void VulkanBackend::cmd_set_viewport(const Handle<CommandBuffer>& buffer, const 
     vkCmdSetViewport(vulkan_buffer->command_buffer, 0, 1, &vk_viewport);
 }
 
-void VulkanBackend::cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor)
+void VulkanBackend::cmd_set_scissor(const RenderPassEncoder& encoder, const CmdSetScissorOptions& scissor)
 {
-    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(encoder.cmd);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1445,9 +1446,9 @@ void VulkanBackend::cmd_set_scissor(const Handle<CommandBuffer>& buffer, const C
     vkCmdSetScissor(vulkan_buffer->command_buffer, 0, 1, &vk_scissor);
 }
 
-void VulkanBackend::cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw)
+void VulkanBackend::cmd_draw(const RenderPassEncoder& encoder, const CmdDrawOptions& draw)
 {
-    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(encoder.cmd);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1457,9 +1458,9 @@ void VulkanBackend::cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawO
     vkCmdDraw(vulkan_buffer->command_buffer, draw.vertex_count, draw.instance_count, draw.first_vertex, draw.first_instance);
 }
 
-void VulkanBackend::cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const CmdDrawIndexedOptions& draw)
+void VulkanBackend::cmd_draw_indexed(const RenderPassEncoder& encoder, const CmdDrawIndexedOptions& draw)
 {
-    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(buffer);
+    const VulkanCommandBuffer* vulkan_buffer = resources.command_buffers.get(encoder.cmd);
     if (vulkan_buffer == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1469,9 +1470,9 @@ void VulkanBackend::cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const 
     vkCmdDrawIndexed(vulkan_buffer->command_buffer, draw.index_count, draw.instance_count, draw.first_index, draw.vertex_offset, draw.first_instance);
 }
 
-void VulkanBackend::cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, const CmdBindVertexBufferOptions& options)
+void VulkanBackend::cmd_bind_vertex_buffer(const RenderPassEncoder& encoder, const CmdBindVertexBufferOptions& options)
 {
-    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(cb);
+    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(encoder.cmd);
     const VulkanBuffer*        vk_buffer = resources.buffers.get(options.buffer);
     if (vk_cb == nullptr || vk_buffer == nullptr) [[unlikely]]
     {
@@ -1483,9 +1484,9 @@ void VulkanBackend::cmd_bind_vertex_buffer(const Handle<CommandBuffer>& cb, cons
     vkCmdBindVertexBuffers(vk_cb->command_buffer, options.binding, 1, &vk_buffer->buffer, offsets);
 }
 
-void VulkanBackend::cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, const CmdBindVertexBuffersOptions& options)
+void VulkanBackend::cmd_bind_vertex_buffers(const RenderPassEncoder& encoder, const CmdBindVertexBuffersOptions& options)
 {
-    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(encoder.cmd);
     if (vk_cb == nullptr || options.buffers == nullptr || options.offsets == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");
@@ -1509,9 +1510,9 @@ void VulkanBackend::cmd_bind_vertex_buffers(const Handle<CommandBuffer>& cb, con
     vkCmdBindVertexBuffers(vk_cb->command_buffer, options.first_binding, options.binding_count, vk_buffers.data(), vk_offsets.data());
 }
 
-void VulkanBackend::cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const CmdBindIndexBufferOptions& options)
+void VulkanBackend::cmd_bind_index_buffer(const RenderPassEncoder& encoder, const CmdBindIndexBufferOptions& options)
 {
-    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(cb);
+    const VulkanCommandBuffer* vk_cb     = resources.command_buffers.get(encoder.cmd);
     const VulkanBuffer*        vk_buffer = resources.buffers.get(options.buffer);
     if (vk_cb == nullptr || vk_buffer == nullptr) [[unlikely]]
     {
@@ -1522,9 +1523,9 @@ void VulkanBackend::cmd_bind_index_buffer(const Handle<CommandBuffer>& cb, const
     vkCmdBindIndexBuffer(vk_cb->command_buffer, vk_buffer->buffer, options.offset, to_vk_index_type(options.index_type));
 }
 
-void VulkanBackend::cmd_bind_descriptor_sets(const Handle<CommandBuffer>& cb, const CmdBindDescriptorSetsOptions& options)
+void VulkanBackend::cmd_bind_descriptor_sets(const RenderPassEncoder& encoder, const CmdBindDescriptorSetsOptions& options)
 {
-    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(cb);
+    const VulkanCommandBuffer* vk_cb = resources.command_buffers.get(encoder.cmd);
     if (vk_cb == nullptr) [[unlikely]]
     {
         CLAY_LOG_ERROR("Failed to find command buffer.");

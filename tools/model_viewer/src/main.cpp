@@ -445,20 +445,20 @@ private:
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
         gfx::cmd_begin(cmd, false);
-        gfx::cmd_begin_render_pass(cmd,
-                                   { .framebuffer        = swapchain_framebuffers[image_index],
-                                     .render_pass_layout = render_pass_layout,
-                                     .extent             = { swapchain_width, swapchain_height },
-                                     .clear              = true,
-                                     .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } }, { .depth = 1.0f } } });
-        gfx::cmd_bind_graphics_pipeline(cmd, pipeline);
-        gfx::cmd_set_viewport(cmd, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
-        gfx::cmd_set_scissor(cmd, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
-        gfx::cmd_bind_vertex_buffer(cmd, { .binding = 0, .buffer = model_vb, .offset = 0 });
-        gfx::cmd_bind_index_buffer(cmd, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint32 });
-        gfx::cmd_bind_descriptor_sets(cmd, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
-        gfx::cmd_draw_indexed(cmd, { .index_count = (u32)mesh->indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
-        gfx::cmd_end_render_pass(cmd);
+        auto encoder = gfx::cmd_begin_render_pass(cmd,
+                                                  { .framebuffer        = swapchain_framebuffers[image_index],
+                                                    .render_pass_layout = render_pass_layout,
+                                                    .extent             = { swapchain_width, swapchain_height },
+                                                    .clear              = true,
+                                                    .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } }, { .depth = 1.0f } } });
+        gfx::cmd_bind_pipeline(encoder, pipeline);
+        gfx::cmd_set_viewport(encoder, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        gfx::cmd_set_scissor(encoder, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
+        gfx::cmd_bind_vertex_buffer(encoder, { .binding = 0, .buffer = model_vb, .offset = 0 });
+        gfx::cmd_bind_index_buffer(encoder, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint32 });
+        gfx::cmd_bind_descriptor_sets(encoder, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
+        gfx::cmd_draw_indexed(encoder, { .index_count = (u32)mesh->indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
+        gfx::cmd_end_render_pass(cmd, encoder);
         gfx::cmd_end(cmd);
     }
 

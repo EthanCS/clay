@@ -97,23 +97,23 @@ PRO_DEF_MEMBER_DISPATCH(free_command_buffer, void(const Handle<CommandBuffer>&))
 
 /////// Command
 PRO_DEF_MEMBER_DISPATCH(cmd_begin, void(const Handle<CommandBuffer>&, bool));
-PRO_DEF_MEMBER_DISPATCH(cmd_end, void(const Handle<CommandBuffer>&));
-
-/////// Render Pass
-PRO_DEF_MEMBER_DISPATCH(cmd_begin_render_pass, void(const Handle<CommandBuffer>&, const CmdBeginRenderPassOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_end_render_pass, void(const Handle<CommandBuffer>&));
-PRO_DEF_MEMBER_DISPATCH(cmd_bind_graphics_pipeline, void(const Handle<CommandBuffer>&, const Handle<GraphicsPipeline>&));
-PRO_DEF_MEMBER_DISPATCH(cmd_set_viewport, void(const Handle<CommandBuffer>&, const CmdSetViewportOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_set_scissor, void(const Handle<CommandBuffer>&, const CmdSetScissorOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_draw, void(const Handle<CommandBuffer>&, const CmdDrawOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_draw_indexed, void(const Handle<CommandBuffer>&, const CmdDrawIndexedOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffer, void(const Handle<CommandBuffer>&, const CmdBindVertexBufferOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffers, void(const Handle<CommandBuffer>&, const CmdBindVertexBuffersOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_bind_index_buffer, void(const Handle<CommandBuffer>&, const CmdBindIndexBufferOptions&));
-PRO_DEF_MEMBER_DISPATCH(cmd_bind_descriptor_sets, void(const Handle<CommandBuffer>&, const CmdBindDescriptorSetsOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_copy_buffer, void(const Handle<CommandBuffer>&, const CmdCopyBufferOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_copy_buffer_to_texture, void(const Handle<CommandBuffer>&, const CmdCopyBufferToTextureOptions&));
 PRO_DEF_MEMBER_DISPATCH(cmd_pipeline_barrier, void(const Handle<CommandBuffer>&, const CmdPipelineBarrierOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_end, void(const Handle<CommandBuffer>&));
+
+/////// Render Pass
+PRO_DEF_MEMBER_DISPATCH(cmd_begin_render_pass, RenderPassEncoder(const Handle<CommandBuffer>&, const CmdBeginRenderPassOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_pipeline, void(const RenderPassEncoder&, const Handle<GraphicsPipeline>&));
+PRO_DEF_MEMBER_DISPATCH(cmd_set_viewport, void(const RenderPassEncoder&, const CmdSetViewportOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_set_scissor, void(const RenderPassEncoder&, const CmdSetScissorOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_draw, void(const RenderPassEncoder&, const CmdDrawOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_draw_indexed, void(const RenderPassEncoder&, const CmdDrawIndexedOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffer, void(const RenderPassEncoder&, const CmdBindVertexBufferOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_vertex_buffers, void(const RenderPassEncoder&, const CmdBindVertexBuffersOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_index_buffer, void(const RenderPassEncoder&, const CmdBindIndexBufferOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_bind_descriptor_sets, void(const RenderPassEncoder&, const CmdBindDescriptorSetsOptions&));
+PRO_DEF_MEMBER_DISPATCH(cmd_end_render_pass, void(const Handle<CommandBuffer>&, const RenderPassEncoder&));
 
 PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                init,
@@ -163,11 +163,15 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                allocate_command_buffer,
                                reset_command_buffer,
                                free_command_buffer,
+
                                cmd_begin,
+                               cmd_copy_buffer,
+                               cmd_copy_buffer_to_texture,
                                cmd_end,
+                               cmd_pipeline_barrier,
+
                                cmd_begin_render_pass,
-                               cmd_end_render_pass,
-                               cmd_bind_graphics_pipeline,
+                               cmd_bind_pipeline,
                                cmd_set_viewport,
                                cmd_set_scissor,
                                cmd_draw,
@@ -176,9 +180,7 @@ PRO_DEF_FACADE(IRenderBackend, PRO_MAKE_DISPATCH_PACK(
                                cmd_bind_vertex_buffers,
                                cmd_bind_index_buffer,
                                cmd_bind_descriptor_sets,
-                               cmd_copy_buffer,
-                               cmd_copy_buffer_to_texture,
-                               cmd_pipeline_barrier));
+                               cmd_end_render_pass));
 } // namespace spec
 
 extern pro::proxy<spec::IRenderBackend> g_backend_proxy;
@@ -249,20 +251,21 @@ inline void                  free_command_buffer(const Handle<CommandBuffer>& bu
 
 inline void cmd_begin(const Handle<CommandBuffer>& buffer, bool one_time) { g_backend_proxy.cmd_begin(buffer, one_time); }
 inline void cmd_end(const Handle<CommandBuffer>& buffer) { g_backend_proxy.cmd_end(buffer); }
-inline void cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options) { g_backend_proxy.cmd_begin_render_pass(buffer, options); }
-inline void cmd_end_render_pass(const Handle<CommandBuffer>& buffer) { g_backend_proxy.cmd_end_render_pass(buffer); }
-inline void cmd_bind_graphics_pipeline(const Handle<CommandBuffer>& buffer, const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.cmd_bind_graphics_pipeline(buffer, pipeline); }
-inline void cmd_set_viewport(const Handle<CommandBuffer>& buffer, const CmdSetViewportOptions& viewport) { g_backend_proxy.cmd_set_viewport(buffer, viewport); }
-inline void cmd_set_scissor(const Handle<CommandBuffer>& buffer, const CmdSetScissorOptions& scissor) { g_backend_proxy.cmd_set_scissor(buffer, scissor); }
-inline void cmd_draw(const Handle<CommandBuffer>& buffer, const CmdDrawOptions& draw) { g_backend_proxy.cmd_draw(buffer, draw); }
-inline void cmd_draw_indexed(const Handle<CommandBuffer>& buffer, const CmdDrawIndexedOptions& draw) { g_backend_proxy.cmd_draw_indexed(buffer, draw); }
-inline void cmd_bind_vertex_buffer(const Handle<CommandBuffer>& buffer, const CmdBindVertexBufferOptions& vertex_buffer) { g_backend_proxy.cmd_bind_vertex_buffer(buffer, vertex_buffer); }
-inline void cmd_bind_vertex_buffers(const Handle<CommandBuffer>& buffer, const CmdBindVertexBuffersOptions& vertex_buffers) { g_backend_proxy.cmd_bind_vertex_buffers(buffer, vertex_buffers); }
-inline void cmd_bind_index_buffer(const Handle<CommandBuffer>& buffer, const CmdBindIndexBufferOptions& index_buffer) { g_backend_proxy.cmd_bind_index_buffer(buffer, index_buffer); }
-inline void cmd_bind_descriptor_sets(const Handle<CommandBuffer>& buffer, const CmdBindDescriptorSetsOptions& descriptor_sets) { g_backend_proxy.cmd_bind_descriptor_sets(buffer, descriptor_sets); }
 inline void cmd_copy_buffer(const Handle<CommandBuffer>& buffer, const CmdCopyBufferOptions& copy_buffer) { g_backend_proxy.cmd_copy_buffer(buffer, copy_buffer); }
 inline void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& buffer, const CmdCopyBufferToTextureOptions& copy_buffer) { g_backend_proxy.cmd_copy_buffer_to_texture(buffer, copy_buffer); }
 inline void cmd_pipeline_barrier(const Handle<CommandBuffer>& buffer, const CmdPipelineBarrierOptions& barrier) { g_backend_proxy.cmd_pipeline_barrier(buffer, barrier); }
+
+inline RenderPassEncoder cmd_begin_render_pass(const Handle<CommandBuffer>& buffer, const CmdBeginRenderPassOptions& options) { return g_backend_proxy.cmd_begin_render_pass(buffer, options); }
+inline void              cmd_bind_pipeline(const RenderPassEncoder& encoder, const Handle<GraphicsPipeline>& pipeline) { g_backend_proxy.cmd_bind_pipeline(encoder, pipeline); }
+inline void              cmd_set_viewport(const RenderPassEncoder& encoder, const CmdSetViewportOptions& viewport) { g_backend_proxy.cmd_set_viewport(encoder, viewport); }
+inline void              cmd_set_scissor(const RenderPassEncoder& encoder, const CmdSetScissorOptions& scissor) { g_backend_proxy.cmd_set_scissor(encoder, scissor); }
+inline void              cmd_draw(const RenderPassEncoder& encoder, const CmdDrawOptions& draw) { g_backend_proxy.cmd_draw(encoder, draw); }
+inline void              cmd_draw_indexed(const RenderPassEncoder& encoder, const CmdDrawIndexedOptions& draw) { g_backend_proxy.cmd_draw_indexed(encoder, draw); }
+inline void              cmd_bind_vertex_buffer(const RenderPassEncoder& encoder, const CmdBindVertexBufferOptions& vertex_buffer) { g_backend_proxy.cmd_bind_vertex_buffer(encoder, vertex_buffer); }
+inline void              cmd_bind_vertex_buffers(const RenderPassEncoder& encoder, const CmdBindVertexBuffersOptions& vertex_buffers) { g_backend_proxy.cmd_bind_vertex_buffers(encoder, vertex_buffers); }
+inline void              cmd_bind_index_buffer(const RenderPassEncoder& encoder, const CmdBindIndexBufferOptions& index_buffer) { g_backend_proxy.cmd_bind_index_buffer(encoder, index_buffer); }
+inline void              cmd_bind_descriptor_sets(const RenderPassEncoder& encoder, const CmdBindDescriptorSetsOptions& descriptor_sets) { g_backend_proxy.cmd_bind_descriptor_sets(encoder, descriptor_sets); }
+inline void              cmd_end_render_pass(const Handle<CommandBuffer>& buffer, const RenderPassEncoder& encoder) { g_backend_proxy.cmd_end_render_pass(buffer, encoder); }
 
 } // namespace gfx
 } // namespace clay

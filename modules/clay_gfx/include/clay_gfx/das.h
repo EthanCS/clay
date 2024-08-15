@@ -891,7 +891,7 @@ public:
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_end)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_begin_render_pass)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_end_render_pass)
-        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_graphics_pipeline)
+        ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_bind_pipeline)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_set_viewport)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_set_scissor)
         ADD_FUNC_RET_SIMPLE_ACCESS_EXTERNAL(cmd_draw)
