@@ -5,7 +5,7 @@ namespace clay
 {
 namespace rg
 {
-RenderGraph* RenderGraph::create(const RenderGraphBuilderFunc& func) CLAY_NOEXCEPT
+RenderGraph* RenderGraph::create(const RenderGraphSetupFunc& func) CLAY_NOEXCEPT
 {
     RenderGraphBuilder builder = {};
     func(builder);
@@ -22,6 +22,13 @@ void RenderGraph::destroy(RenderGraph* render_graph) CLAY_NOEXCEPT
         delete render_graph;
     }
 }
+
+// PassHandle RenderGraph::add_render_pass(const RenderPassSetupFunc& setup, const OnRenderPassExecute& on_execute) CLAY_NOEXCEPT
+// {
+//     RenderPassNode    pass = {};
+//     RenderPassBuilder builder(*this, pass);
+//     setup(*this, builder);
+// }
 
 void RenderGraph::initialize() CLAY_NOEXCEPT
 {

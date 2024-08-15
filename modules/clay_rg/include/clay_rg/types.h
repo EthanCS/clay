@@ -4,6 +4,7 @@
 #include <clay_gfx/resource.h>
 
 #include <functional>
+#include <string>
 
 namespace clay
 {
@@ -36,12 +37,27 @@ struct PassType {
     };
 };
 
+template <ResourceType::Enum type>
+struct ResourceHandle {
+    ResourceHandle(const core::DependencyGraphNodeID& _handle)
+        : handle(_handle)
+    {
+    }
+    inline operator core::DependencyGraphNodeID() const { return handle; }
+
+private:
+    core::DependencyGraphNodeID handle;
+};
+
+using PassHandle = ResourceHandle<ResourceType::Pass>;
+
 struct RenderPassContext;
 using OnRenderPassExecute = std::function<void(class RenderGraph&, RenderPassContext&)>;
 
 struct RenderGraphNode : public core::DependencyGraphNode {
     RenderGraphNode(ResourceType::Enum type);
     const ResourceType::Enum node_type;
+    std::string              name;
 };
 
 struct RenderGraphEdge : public core::DependencyGraphEdge {
