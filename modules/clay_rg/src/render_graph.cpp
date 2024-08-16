@@ -23,12 +23,14 @@ void RenderGraph::destroy(RenderGraph* render_graph) CLAY_NOEXCEPT
     }
 }
 
-// PassHandle RenderGraph::add_render_pass(const RenderPassSetupFunc& setup, const OnRenderPassExecute& on_execute) CLAY_NOEXCEPT
-// {
-//     RenderPassNode    pass = {};
-//     RenderPassBuilder builder(*this, pass);
-//     setup(*this, builder);
-// }
+PassHandle RenderGraph::add_render_pass(const RenderPassSetupFunc& setup, const OnRenderPassExecute& on_execute) CLAY_NOEXCEPT
+{
+    RenderPassNode*   pass_node = new RenderPassNode();
+    RenderPassBuilder builder(*this, *pass_node);
+    setup(*this, builder);
+    pass_node->on_execute = on_execute;
+    return PassHandle(graph->insert_node(pass_node));
+}
 
 void RenderGraph::initialize() CLAY_NOEXCEPT
 {

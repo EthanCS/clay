@@ -9,5 +9,14 @@ PassNode::PassNode(PassType::Enum type)
     , pass_type(type)
 {
 }
+
+//////////////////////////////////////////////////////////////////////////
+// RenderPassNode
+
+RenderPassNode::RenderPassNode()
+    : PassNode(PassType::Render)
+{
+}
+
 } // namespace rg
 } // namespace clay

@@ -22,9 +22,9 @@ class RenderPassBuilder
 public:
     friend class RenderGraph;
 
-    RenderPassBuilder& set_name(const char* name) CLAY_NOEXCEPT;
-    RenderPassBuilder& set_pipeline(const gfx::Handle<gfx::GraphicsPipeline>& pipeline) CLAY_NOEXCEPT;
-    RenderPassBuilder& set_layout(const gfx::Handle<gfx::PipelineLayout>& layout) CLAY_NOEXCEPT;
+    RenderPassBuilder& name(const char* name) CLAY_NOEXCEPT;
+    RenderPassBuilder& pipeline(const gfx::Handle<gfx::GraphicsPipeline>& pipeline) CLAY_NOEXCEPT;
+    RenderPassBuilder& layout(const gfx::Handle<gfx::PipelineLayout>& layout) CLAY_NOEXCEPT;
 
 protected:
     RenderPassBuilder(RenderGraph& graph, RenderPassNode& node) CLAY_NOEXCEPT;
