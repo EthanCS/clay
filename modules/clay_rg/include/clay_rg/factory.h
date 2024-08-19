@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clay_core/macro.h>
+#include <utility>
 
 namespace clay
 {
@@ -14,7 +15,19 @@ struct Factory {
     template <typename T, typename... Args>
     T* allocate(Args&&... args) CLAY_NOEXCEPT
     {
-        return nullptr;
+        if (auto allocated = internal_alloc<T>())
+        {
+            new (allocated) T(std::forward<Args>(args)...);
+            return allocated;
+        }
+        return new T(std::forward<Args>(args)...);
+    }
+
+    template <typename T>
+    void deallocate(T* obj) CLAY_NOEXCEPT
+    {
+        if (internal_deallocate<T>(obj)) return;
+        delete obj;
     }
 
 protected:
@@ -25,14 +38,14 @@ protected:
     }
 
     template <typename T>
-    bool internal_free(T* obj) CLAY_NOEXCEPT
+    bool internal_deallocate(T* obj) CLAY_NOEXCEPT
     {
         obj->~T();
         return internal_free_impl(obj, sizeof(T));
     }
 
-    virtual bool  internal_free_impl(void* obj, usize size) CLAY_NOEXCEPT = 0;
-    virtual void* internal_alloc_impl(usize size) CLAY_NOEXCEPT           = 0;
+    virtual bool  internal_deallocate_impl(void* obj, usize size) CLAY_NOEXCEPT = 0;
+    virtual void* internal_allocate_impl(usize size) CLAY_NOEXCEPT              = 0;
 };
 } // namespace rg
 } // namespace clay
