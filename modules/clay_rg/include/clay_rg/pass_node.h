@@ -18,11 +18,12 @@ protected:
 
 class RenderPassNode : public PassNode
 {
-    friend class RenderPassBuilder;
+public:
     friend class RenderGraph;
+    friend class RenderPassBuilder;
+    RenderPassNode();
 
 protected:
-    RenderPassNode();
     OnRenderPassExecute                on_execute;
     gfx::Handle<gfx::GraphicsPipeline> pipeline;
     gfx::Handle<gfx::PipelineLayout>   layout;

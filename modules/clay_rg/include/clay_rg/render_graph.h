@@ -1,6 +1,7 @@
 #pragma once
 
 #include <clay_rg/types.h>
+#include <clay_rg/factory.h>
 #include <clay_gfx/backend.h>
 #include <clay_core/dependency_graph.h>
 
@@ -38,6 +39,7 @@ public:
 protected:
     u64                    frame_index = 0;
     core::DependencyGraph* graph       = nullptr;
+    Factory*               factory     = nullptr;
 };
 
 } // namespace rg

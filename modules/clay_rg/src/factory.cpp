@@ -45,7 +45,6 @@ struct FactoryPool {
 };
 
 struct FactoryImpl final : public Factory {
-
     FactoryImpl() CLAY_NOEXCEPT {}
     ~FactoryImpl() CLAY_NOEXCEPT override
     {

@@ -9,6 +9,7 @@ namespace rg
 {
 struct Factory {
     virtual ~Factory() CLAY_NOEXCEPT = default;
+
     static Factory* create();
     static void     destroy(Factory* factory);
 
@@ -34,14 +35,14 @@ protected:
     template <typename T>
     T* internal_alloc() CLAY_NOEXCEPT
     {
-        return (T*)internal_alloc_impl(sizeof(T));
+        return (T*)internal_allocate_impl(sizeof(T));
     }
 
     template <typename T>
     bool internal_deallocate(T* obj) CLAY_NOEXCEPT
     {
         obj->~T();
-        return internal_free_impl(obj, sizeof(T));
+        return internal_deallocate_impl(obj, sizeof(T));
     }
 
     virtual bool  internal_deallocate_impl(void* obj, usize size) CLAY_NOEXCEPT = 0;
