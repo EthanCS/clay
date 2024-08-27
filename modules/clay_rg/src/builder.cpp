@@ -41,5 +41,27 @@ RenderPassBuilder& RenderPassBuilder::layout(const gfx::Handle<gfx::PipelineLayo
     return *this;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// PresentPassBuilder
+
+PresentPassBuilder::PresentPassBuilder(RenderGraph& graph, PresentPassNode& pass) CLAY_NOEXCEPT
+    : graph(graph),
+      node(pass)
+{
+}
+
+PresentPassBuilder& PresentPassBuilder::name(const char* name) CLAY_NOEXCEPT
+{
+    node.name = name;
+    return *this;
+}
+
+PresentPassBuilder& PresentPassBuilder::swapchain(const gfx::Handle<gfx::Swapchain>& swapchain, u32 image_index) CLAY_NOEXCEPT
+{
+    node.swapchain   = swapchain;
+    node.image_index = image_index;
+    return *this;
+}
+
 } // namespace rg
 } // namespace clay
