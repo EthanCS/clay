@@ -84,7 +84,7 @@ def on_init()
     render_pass_layout.colors[0] = [[ColorAttachmentDesc 
         format = Format B8G8R8A8_UNORM, 
         layout = ImageLayout PresentSrc, 
-        load_op = RenderPassLoadOp Clear]]
+        load_op = LoadAction Clear]]
     
     // Create pipeline
     var pipeline_layout_options = [[CreatePipelineLayoutOptions]]

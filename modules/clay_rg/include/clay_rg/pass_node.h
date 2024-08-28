@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/define.h"
 #include <clay_rg/types.h>
 #include <clay_gfx/resource.h>
 
@@ -30,9 +31,17 @@ public:
     RenderPassNode(u32 order);
 
 protected:
-    OnRenderPassExecute                on_execute;
+    OnRenderPassExecute on_execute;
+
     gfx::Handle<gfx::GraphicsPipeline> pipeline;
     gfx::Handle<gfx::PipelineLayout>   layout;
+
+    gfx::LoadAction  color_loads[gfx::MAX_COLOR_ATTACHMENTS];
+    gfx::StoreAction color_stores[gfx::MAX_COLOR_ATTACHMENTS];
+    gfx::LoadAction  depth_load;
+    gfx::StoreAction depth_store;
+    gfx::LoadAction  stencil_load;
+    gfx::StoreAction stencil_store;
 };
 
 class PresentPassNode : public PassNode

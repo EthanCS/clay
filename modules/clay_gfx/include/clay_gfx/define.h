@@ -82,7 +82,7 @@ struct ImageLayout {
     };
 };
 
-struct RenderPassLoadOp {
+struct LoadAction {
     enum Enum
     {
         DontCare = 0,
@@ -91,7 +91,7 @@ struct RenderPassLoadOp {
     };
 };
 
-struct RenderPassStoreOp {
+struct StoreAction {
     enum Enum
     {
         DontCare,

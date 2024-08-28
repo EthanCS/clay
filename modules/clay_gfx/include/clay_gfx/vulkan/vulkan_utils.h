@@ -69,15 +69,6 @@ inline VkShaderStageFlagBits to_vk_shader_stage_flag_bits(const ShaderStage::Fla
     return VK_SHADER_STAGE_ALL;
 }
 
-struct RenderPassOperation {
-    enum Enum
-    {
-        DontCare,
-        Load,
-        Clear,
-    };
-};
-
 inline VkImageLayout to_vk_image_layout(ImageLayout::Enum image_layout)
 {
     switch (image_layout)
@@ -106,27 +97,27 @@ inline VkImageLayout to_vk_image_layout(ImageLayout::Enum image_layout)
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-inline VkAttachmentLoadOp to_vk_attachment_load_op(RenderPassLoadOp::Enum load_op)
+inline VkAttachmentLoadOp to_vk_attachment_load_op(LoadAction::Enum load_op)
 {
     switch (load_op)
     {
-        case RenderPassLoadOp::DontCare:
+        case LoadAction::DontCare:
             return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        case RenderPassLoadOp::Load:
+        case LoadAction::Load:
             return VK_ATTACHMENT_LOAD_OP_LOAD;
-        case RenderPassLoadOp::Clear:
+        case LoadAction::Clear:
             return VK_ATTACHMENT_LOAD_OP_CLEAR;
     }
     return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 }
 
-inline VkAttachmentStoreOp to_vk_attachment_store_op(RenderPassStoreOp::Enum store_op)
+inline VkAttachmentStoreOp to_vk_attachment_store_op(StoreAction::Enum store_op)
 {
     switch (store_op)
     {
-        case RenderPassStoreOp::DontCare:
+        case StoreAction::DontCare:
             return VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        case RenderPassStoreOp::Store:
+        case StoreAction::Store:
             return VK_ATTACHMENT_STORE_OP_STORE;
     }
     return VK_ATTACHMENT_STORE_OP_DONT_CARE;

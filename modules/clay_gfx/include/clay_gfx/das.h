@@ -74,11 +74,11 @@ DAS_BASE_BIND_ENUM(clay::gfx::Format::Enum, Format, Undefined, D32_SFLOAT, D32_S
 DAS_BIND_ENUM_CAST(clay::gfx::ImageLayout::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::ImageLayout::Enum, ImageLayout, Undefined, General, ColorAttachmentOptimal, DepthStencilAttachmentOptimal, DepthStencilReadOnlyOptimal, ShaderReadOnlyOptimal, TransferSrcOptimal, TransferDstOptimal, Preinitialized, PresentSrc)
 
-DAS_BIND_ENUM_CAST(clay::gfx::RenderPassLoadOp::Enum);
-DAS_BASE_BIND_ENUM(clay::gfx::RenderPassLoadOp::Enum, RenderPassLoadOp, DontCare, Load, Clear)
+DAS_BIND_ENUM_CAST(clay::gfx::LoadAction::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::LoadAction::Enum, LoadAction, DontCare, Load, Clear)
 
-DAS_BIND_ENUM_CAST(clay::gfx::RenderPassStoreOp::Enum);
-DAS_BASE_BIND_ENUM(clay::gfx::RenderPassStoreOp::Enum, RenderPassStoreOp, DontCare, Store)
+DAS_BIND_ENUM_CAST(clay::gfx::StoreAction::Enum);
+DAS_BASE_BIND_ENUM(clay::gfx::StoreAction::Enum, RenderPassStoreOp, DontCare, Store)
 
 DAS_BIND_ENUM_CAST(clay::gfx::TextureComponentSwizzle::Enum);
 DAS_BASE_BIND_ENUM(clay::gfx::TextureComponentSwizzle::Enum, TextureComponentSwizzle, Identity, Zero, One, R, G, B, A)
@@ -718,7 +718,7 @@ public:
         ADD_ENUM_ANNOTATION(QueueType)
         ADD_ENUM_ANNOTATION(Format)
         ADD_ENUM_ANNOTATION(ImageLayout)
-        ADD_ENUM_ANNOTATION(RenderPassLoadOp)
+        ADD_ENUM_ANNOTATION(LoadAction)
         ADD_ENUM_ANNOTATION(RenderPassStoreOp)
         ADD_ENUM_ANNOTATION(TextureComponentSwizzle)
         ADD_ENUM_ANNOTATION(TextureType)

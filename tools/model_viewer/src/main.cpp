@@ -296,12 +296,12 @@ private:
         render_pass_layout.colors[0] = {
             .format  = gfx::Format::B8G8R8A8_UNORM,
             .layout  = gfx::ImageLayout::PresentSrc,
-            .load_op = gfx::RenderPassLoadOp::Clear
+            .load_op = gfx::LoadAction::Clear
         };
         render_pass_layout.depth_stencil = {
             .format   = gfx::Format::D32_SFLOAT,
             .layout   = gfx::ImageLayout::DepthStencilAttachmentOptimal,
-            .depth_op = gfx::RenderPassLoadOp::Clear
+            .depth_op = gfx::LoadAction::Clear
         };
 
         // Pipeline layout
@@ -401,12 +401,12 @@ private:
         swapchain_render_pass_layout.colors[0]             = {
                         .format  = gfx::Format::B8G8R8A8_UNORM,
                         .layout  = gfx::ImageLayout::PresentSrc,
-                        .load_op = gfx::RenderPassLoadOp::Clear
+                        .load_op = gfx::LoadAction::Clear
         };
         swapchain_render_pass_layout.depth_stencil = {
             .format   = gfx::Format::D32_SFLOAT,
             .layout   = gfx::ImageLayout::DepthStencilAttachmentOptimal,
-            .depth_op = gfx::RenderPassLoadOp::Clear
+            .depth_op = gfx::LoadAction::Clear
         };
 
         swapchain_framebuffers.resize(num_images);

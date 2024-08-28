@@ -36,7 +36,7 @@ struct SwapchainAcquireResult {
 struct ColorAttachmentDesc {
     Format::Enum           format  = Format::Undefined;
     ImageLayout::Enum      layout  = ImageLayout::Undefined;
-    RenderPassLoadOp::Enum load_op = RenderPassLoadOp::DontCare;
+    LoadAction::Enum load_op = LoadAction::DontCare;
 
     bool operator==(const ColorAttachmentDesc& rhs) const
     {
@@ -47,8 +47,8 @@ struct ColorAttachmentDesc {
 struct DepthStencilAttachmentDesc {
     Format::Enum           format     = Format::Undefined;
     ImageLayout::Enum      layout     = ImageLayout::Undefined;
-    RenderPassLoadOp::Enum depth_op   = RenderPassLoadOp::DontCare;
-    RenderPassLoadOp::Enum stencil_op = RenderPassLoadOp::DontCare;
+    LoadAction::Enum depth_op   = LoadAction::DontCare;
+    LoadAction::Enum stencil_op = LoadAction::DontCare;
 
     bool operator==(const DepthStencilAttachmentDesc& rhs) const
     {
