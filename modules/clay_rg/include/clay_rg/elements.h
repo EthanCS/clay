@@ -1,6 +1,5 @@
 #pragma once
 
-#include "clay_gfx/define.h"
 #include <clay_rg/types.h>
 #include <clay_gfx/resource.h>
 
@@ -8,6 +7,10 @@ namespace clay
 {
 namespace rg
 {
+
+//////////////////////////////////////////////////////////////////////////
+// Passes
+//////////////////////////////////////////////////////////////////////////
 
 class PassNode : public RenderGraphNode
 {
@@ -54,6 +57,37 @@ public:
 protected:
     gfx::Handle<gfx::Swapchain> swapchain;
     u32                         image_index;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Resources
+//////////////////////////////////////////////////////////////////////////
+
+class ResourceNode : public RenderGraphNode
+{
+public:
+    ResourceNode(ResourceType::Enum type) CLAY_NOEXCEPT;
+    virtual ~ResourceNode() CLAY_NOEXCEPT = default;
+};
+
+class TextureNode : public ResourceNode
+{
+public:
+    TextureNode() CLAY_NOEXCEPT;
+    inline const gfx::TextureDescriptor& get_descriptor() const CLAY_NOEXCEPT { return descriptor; }
+
+protected:
+    gfx::TextureDescriptor descriptor = {};
+};
+
+class BufferNode : public ResourceNode
+{
+public:
+    BufferNode() CLAY_NOEXCEPT;
+    inline const gfx::BufferDescriptor& get_descriptor() const CLAY_NOEXCEPT { return descriptor; }
+
+protected:
+    gfx::BufferDescriptor descriptor = {};
 };
 
 } // namespace rg

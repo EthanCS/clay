@@ -437,5 +437,20 @@ struct AccessMask {
     };
 };
 
+////////////////////////////////////////////////////////////////////////
+// Descriptors
+
+struct TextureDescriptor {
+    u32          width;
+    u32          height;
+    u32          depth;
+    u32          array_size;
+    Format::Enum format;
+    u32          mip_levels;
+};
+
+struct BufferDescriptor {
+};
+
 } // namespace gfx
 } // namespace clay

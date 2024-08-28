@@ -1,7 +1,6 @@
 #pragma once
 
-#include <clay_rg/pass_node.h>
-
+#include <clay_rg/elements.h>
 #include <clay_gfx/backend.h>
 #include <functional>
 
@@ -31,6 +30,9 @@ public:
     RenderPassBuilder& name(const char* name) CLAY_NOEXCEPT;
     RenderPassBuilder& pipeline(const gfx::Handle<gfx::GraphicsPipeline>& pipeline) CLAY_NOEXCEPT;
     RenderPassBuilder& layout(const gfx::Handle<gfx::PipelineLayout>& layout) CLAY_NOEXCEPT;
+
+    RenderPassBuilder& color(u32 mrt_index, gfx::Handle<gfx::Texture> handle, gfx::LoadAction load, gfx::StoreAction store) CLAY_NOEXCEPT;
+    RenderPassBuilder& depth_stencil(gfx::Handle<gfx::Texture> handle, gfx::LoadAction depth_load, gfx::StoreAction depth_store, gfx::LoadAction stencil_load, gfx::StoreAction stencil_store) CLAY_NOEXCEPT;
 
 protected:
     RenderPassBuilder(RenderGraph& graph, RenderPassNode& node) CLAY_NOEXCEPT;

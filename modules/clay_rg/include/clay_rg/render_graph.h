@@ -3,7 +3,6 @@
 #include <clay_rg/types.h>
 #include <clay_rg/factory.h>
 #include <clay_rg/builder.h>
-
 #include <clay_gfx/backend.h>
 #include <clay_core/dependency_graph.h>
 

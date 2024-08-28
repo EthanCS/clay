@@ -1,7 +1,6 @@
 #include <clay_core/macro.h>
 #include <clay_core/log.h>
 #include <clay_rg/factory.h>
-
 #include <unordered_map>
 #include <queue>
 

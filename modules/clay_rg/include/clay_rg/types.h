@@ -2,7 +2,6 @@
 
 #include <clay_core/dependency_graph.h>
 #include <clay_gfx/resource.h>
-
 #include <functional>
 #include <string>
 

@@ -1,4 +1,4 @@
-#include <clay_rg/pass_node.h>
+#include <clay_rg/elements.h>
 
 namespace clay
 {
@@ -24,6 +24,30 @@ RenderPassNode::RenderPassNode(u32 order)
 
 PresentPassNode::PresentPassNode(u32 order)
     : PassNode(PassType::Present, order)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+// ResourceNode
+
+ResourceNode::ResourceNode(ResourceType::Enum type) CLAY_NOEXCEPT
+    : RenderGraphNode(type)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+// TextureNode
+
+TextureNode::TextureNode() CLAY_NOEXCEPT
+    : ResourceNode(ResourceType::Texture)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+// BufferNode
+
+BufferNode::BufferNode() CLAY_NOEXCEPT
+    : ResourceNode(ResourceType::Buffer)
 {
 }
 

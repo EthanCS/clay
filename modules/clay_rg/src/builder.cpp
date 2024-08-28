@@ -41,6 +41,13 @@ RenderPassBuilder& RenderPassBuilder::layout(const gfx::Handle<gfx::PipelineLayo
     return *this;
 }
 
+RenderPassBuilder& RenderPassBuilder::color(u32 mrt_index, gfx::Handle<gfx::Texture> handle, gfx::LoadAction load, gfx::StoreAction store) CLAY_NOEXCEPT
+{
+    node.color_loads[mrt_index]  = load;
+    node.color_stores[mrt_index] = store;
+    return *this;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // PresentPassBuilder
 
