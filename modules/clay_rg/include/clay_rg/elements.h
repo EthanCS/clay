@@ -9,7 +9,7 @@ namespace rg
 {
 
 //////////////////////////////////////////////////////////////////////////
-// Passes
+// Pass Nodes
 //////////////////////////////////////////////////////////////////////////
 
 class PassNode : public RenderGraphNode
@@ -60,7 +60,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-// Resources
+// Resource Nodes
 //////////////////////////////////////////////////////////////////////////
 
 class ResourceNode : public RenderGraphNode
@@ -88,6 +88,46 @@ public:
 
 protected:
     gfx::BufferDescriptor descriptor = {};
+};
+
+//////////////////////////////////////////////////////////////////////////
+// Resource Edges
+//////////////////////////////////////////////////////////////////////////
+
+class TextureEdge : public RenderGraphEdge
+{
+public:
+    TextureEdge(ActionType::Enum action, gfx::TextureUsage usage) CLAY_NOEXCEPT;
+    virtual ~TextureEdge() CLAY_NOEXCEPT                           = default;
+    virtual TextureNode*    get_texture_node() const CLAY_NOEXCEPT = 0;
+    virtual PassNode*       get_pass_node() const CLAY_NOEXCEPT    = 0;
+    const gfx::TextureUsage texture_usage;
+};
+
+class TextureReadOnlyEdge : public TextureEdge
+{
+};
+
+class TextureReadWriteEdge : public TextureEdge
+{
+};
+
+class TextureRenderEdge : public TextureEdge
+{
+public:
+    TextureRenderEdge(u32 attachment_index, gfx::TextureUsage usage) CLAY_NOEXCEPT;
+};
+
+class BufferEdge : public RenderGraphEdge
+{
+};
+
+class BufferReadOnlyEdge : public BufferEdge
+{
+};
+
+class BufferReadWriteEdge : public BufferEdge
+{
 };
 
 } // namespace rg
