@@ -4,7 +4,7 @@ namespace clay
 {
 namespace rg
 {
-RenderGraphNode::RenderGraphNode(ResourceType::Enum type)
+RenderGraphNode::RenderGraphNode(ObjectType::Enum type)
     : node_type(type)
 {
 }

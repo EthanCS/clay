@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/handle.h"
 #include <clay_rg/types.h>
 #include <clay_gfx/resource.h>
 
@@ -66,7 +67,7 @@ protected:
 class ResourceNode : public RenderGraphNode
 {
 public:
-    ResourceNode(ResourceType::Enum type) CLAY_NOEXCEPT;
+    ResourceNode(ObjectType::Enum type) CLAY_NOEXCEPT;
     virtual ~ResourceNode() CLAY_NOEXCEPT = default;
 };
 
@@ -97,32 +98,36 @@ protected:
 class TextureEdge : public RenderGraphEdge
 {
 public:
-    TextureEdge(ActionType::Enum action, gfx::TextureUsage usage) CLAY_NOEXCEPT;
-    virtual ~TextureEdge() CLAY_NOEXCEPT                           = default;
-    virtual TextureNode*    get_texture_node() const CLAY_NOEXCEPT = 0;
-    virtual PassNode*       get_pass_node() const CLAY_NOEXCEPT    = 0;
-    const gfx::TextureUsage texture_usage;
+    TextureEdge(ActionType::Enum action, gfx::TextureUsage::Flag usage) CLAY_NOEXCEPT;
+    virtual ~TextureEdge() CLAY_NOEXCEPT                                 = default;
+    virtual TextureNode*          get_texture_node() const CLAY_NOEXCEPT = 0;
+    virtual PassNode*             get_pass_node() const CLAY_NOEXCEPT    = 0;
+    const gfx::TextureUsage::Flag texture_usage;
 };
 
-class TextureReadOnlyEdge : public TextureEdge
-{
-};
-
-class TextureReadWriteEdge : public TextureEdge
+class TextureReadEdge : public TextureEdge
 {
 };
 
 class TextureRenderEdge : public TextureEdge
 {
 public:
-    TextureRenderEdge(u32 attachment_index, gfx::TextureUsage usage) CLAY_NOEXCEPT;
+    TextureRenderEdge(u32 attachment_index, const TextureHandle::RTV& rtv, gfx::TextureUsage::Flag usage) CLAY_NOEXCEPT;
+
+protected:
+    TextureHandle::RTV rtv;
+    const u32          attachment_index;
+};
+
+class TextureReadWriteEdge : public TextureEdge
+{
 };
 
 class BufferEdge : public RenderGraphEdge
 {
 };
 
-class BufferReadOnlyEdge : public BufferEdge
+class BufferReadEdge : public BufferEdge
 {
 };
 

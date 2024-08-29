@@ -9,7 +9,8 @@ namespace clay
 {
 namespace rg
 {
-struct ResourceType {
+
+struct ObjectType {
     enum Enum
     {
         Pass,
@@ -21,7 +22,8 @@ struct ResourceType {
 struct ActionType {
     enum Enum
     {
-        ReadOnly,
+        Read,
+        Write,
         ReadWrite,
     };
 };
@@ -36,9 +38,9 @@ struct PassType {
     };
 };
 
-template <ResourceType::Enum type>
-struct ResourceHandle {
-    ResourceHandle(const core::DependencyGraphNodeID& _handle)
+template <ObjectType::Enum type>
+struct ObjectHandle {
+    ObjectHandle(const core::DependencyGraphNodeID& _handle)
         : handle(_handle)
     {
     }
@@ -48,15 +50,31 @@ private:
     core::DependencyGraphNodeID handle;
 };
 
-using PassHandle = ResourceHandle<ResourceType::Pass>;
+template <>
+struct ObjectHandle<ObjectType::Texture> {
+    struct SRV {
+    };
+
+    struct UAV {
+    };
+
+    struct RTV {
+    };
+
+    struct DSV {
+    };
+};
+
+using PassHandle    = ObjectHandle<ObjectType::Pass>;
+using TextureHandle = ObjectHandle<ObjectType::Texture>;
 
 struct RenderPassContext;
 using OnRenderPassExecute = std::function<void(class RenderGraph&, RenderPassContext&)>;
 
 struct RenderGraphNode : public core::DependencyGraphNode {
-    RenderGraphNode(ResourceType::Enum type);
-    const ResourceType::Enum node_type;
-    std::string              name;
+    RenderGraphNode(ObjectType::Enum type);
+    const ObjectType::Enum node_type;
+    std::string            name;
 };
 
 struct RenderGraphEdge : public core::DependencyGraphEdge {

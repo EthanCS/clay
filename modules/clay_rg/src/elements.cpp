@@ -5,7 +5,7 @@ namespace clay
 namespace rg
 {
 PassNode::PassNode(PassType::Enum type, u32 order)
-    : RenderGraphNode(ResourceType::Pass)
+    : RenderGraphNode(ObjectType::Pass)
     , pass_type(type)
     , order(order)
 {
@@ -30,7 +30,7 @@ PresentPassNode::PresentPassNode(u32 order)
 //////////////////////////////////////////////////////////////////////////
 // ResourceNode
 
-ResourceNode::ResourceNode(ResourceType::Enum type) CLAY_NOEXCEPT
+ResourceNode::ResourceNode(ObjectType::Enum type) CLAY_NOEXCEPT
     : RenderGraphNode(type)
 {
 }
@@ -39,7 +39,7 @@ ResourceNode::ResourceNode(ResourceType::Enum type) CLAY_NOEXCEPT
 // TextureNode
 
 TextureNode::TextureNode() CLAY_NOEXCEPT
-    : ResourceNode(ResourceType::Texture)
+    : ResourceNode(ObjectType::Texture)
 {
 }
 
@@ -47,7 +47,7 @@ TextureNode::TextureNode() CLAY_NOEXCEPT
 // BufferNode
 
 BufferNode::BufferNode() CLAY_NOEXCEPT
-    : ResourceNode(ResourceType::Buffer)
+    : ResourceNode(ObjectType::Buffer)
 {
 }
 
