@@ -40,12 +40,12 @@ protected:
     gfx::Handle<gfx::GraphicsPipeline> pipeline;
     gfx::Handle<gfx::PipelineLayout>   layout;
 
-    gfx::LoadAction  color_loads[gfx::MAX_COLOR_ATTACHMENTS];
-    gfx::StoreAction color_stores[gfx::MAX_COLOR_ATTACHMENTS];
-    gfx::LoadAction  depth_load;
-    gfx::StoreAction depth_store;
-    gfx::LoadAction  stencil_load;
-    gfx::StoreAction stencil_store;
+    gfx::LoadAction::Enum  color_loads[gfx::MAX_COLOR_ATTACHMENTS];
+    gfx::StoreAction::Enum color_stores[gfx::MAX_COLOR_ATTACHMENTS];
+    gfx::LoadAction::Enum  depth_load;
+    gfx::StoreAction::Enum depth_store;
+    gfx::LoadAction::Enum  stencil_load;
+    gfx::StoreAction::Enum stencil_store;
 };
 
 class PresentPassNode : public PassNode

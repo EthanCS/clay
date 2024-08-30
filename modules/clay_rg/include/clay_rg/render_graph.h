@@ -12,6 +12,18 @@ namespace rg
 {
 static const u8 MAX_FRAME_IN_FLIGHT = 3;
 
+class RenderGraphFrameExecutor
+{
+public:
+    RenderGraphFrameExecutor() = default;
+    void initialize();
+    void finalize();
+
+    gfx::Handle<gfx::CommandPool>   cmd_pool;
+    gfx::Handle<gfx::CommandBuffer> cmd_buffer;
+    gfx::Handle<gfx::Fence>         fence;
+};
+
 class RenderGraph
 {
 public:
@@ -38,6 +50,8 @@ protected:
     core::DependencyGraph* graph       = nullptr;
     Factory*               factory     = nullptr;
     std::vector<PassNode*> pass_nodes;
+
+    RenderGraphFrameExecutor frame_executors[MAX_FRAME_IN_FLIGHT];
 };
 
 } // namespace rg

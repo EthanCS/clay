@@ -28,11 +28,17 @@ public:
     friend class RenderGraph;
 
     RenderPassBuilder& name(const char* name) CLAY_NOEXCEPT;
+
     RenderPassBuilder& pipeline(const gfx::Handle<gfx::GraphicsPipeline>& pipeline) CLAY_NOEXCEPT;
     RenderPassBuilder& layout(const gfx::Handle<gfx::PipelineLayout>& layout) CLAY_NOEXCEPT;
 
-    RenderPassBuilder& color(u32 mrt_index, gfx::Handle<gfx::Texture> handle, gfx::LoadAction load, gfx::StoreAction store) CLAY_NOEXCEPT;
-    RenderPassBuilder& depth_stencil(gfx::Handle<gfx::Texture> handle, gfx::LoadAction depth_load, gfx::StoreAction depth_store, gfx::LoadAction stencil_load, gfx::StoreAction stencil_store) CLAY_NOEXCEPT;
+    RenderPassBuilder& color(u32 mrt_index, const TextureHandle::RTV& handle, gfx::LoadAction::Enum load, gfx::StoreAction::Enum store) CLAY_NOEXCEPT;
+    RenderPassBuilder& depth_stencil(const TextureHandle::DSV& handle,
+                                     gfx::LoadAction::Enum depth_load, gfx::StoreAction::Enum depth_store,
+                                     gfx::LoadAction::Enum stencil_load, gfx::StoreAction::Enum stencil_store) CLAY_NOEXCEPT;
+
+    RenderPassBuilder& read(u32 set, u32 binding, const TextureHandle::SRV& texture) CLAY_NOEXCEPT;
+    RenderPassBuilder& read(const char* name, const TextureHandle::SRV& texture) CLAY_NOEXCEPT;
 
 protected:
     RenderPassBuilder(RenderGraph& graph, RenderPassNode& node) CLAY_NOEXCEPT;
