@@ -12,6 +12,9 @@ namespace clay
 {
 namespace gfx
 {
+
+DEFINE_CLAY_GFX_RESOURCE_TAG(Device)
+DEFINE_CLAY_GFX_RESOURCE_TAG(Queue)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Swapchain)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Fence)
 DEFINE_CLAY_GFX_RESOURCE_TAG(Semaphore)
@@ -34,9 +37,9 @@ struct SwapchainAcquireResult {
 };
 
 struct ColorAttachmentDesc {
-    Format::Enum           format  = Format::Undefined;
-    ImageLayout::Enum      layout  = ImageLayout::Undefined;
-    LoadAction::Enum load_op = LoadAction::DontCare;
+    Format::Enum      format  = Format::Undefined;
+    ImageLayout::Enum layout  = ImageLayout::Undefined;
+    LoadAction::Enum  load_op = LoadAction::DontCare;
 
     bool operator==(const ColorAttachmentDesc& rhs) const
     {
@@ -45,10 +48,10 @@ struct ColorAttachmentDesc {
 };
 
 struct DepthStencilAttachmentDesc {
-    Format::Enum           format     = Format::Undefined;
-    ImageLayout::Enum      layout     = ImageLayout::Undefined;
-    LoadAction::Enum depth_op   = LoadAction::DontCare;
-    LoadAction::Enum stencil_op = LoadAction::DontCare;
+    Format::Enum      format     = Format::Undefined;
+    ImageLayout::Enum layout     = ImageLayout::Undefined;
+    LoadAction::Enum  depth_op   = LoadAction::DontCare;
+    LoadAction::Enum  stencil_op = LoadAction::DontCare;
 
     bool operator==(const DepthStencilAttachmentDesc& rhs) const
     {

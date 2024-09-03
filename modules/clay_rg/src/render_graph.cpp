@@ -5,6 +5,14 @@ namespace clay
 {
 namespace rg
 {
+
+void RenderGraphFrameExecutor::initialize(gfx::IRenderBackend* backend, const gfx::Handle<gfx::Queue>& queue)
+{
+    cmd_pool   = backend->create_command_pool(queue);
+    cmd_buffer = backend->allocate_command_buffer(cmd_pool, false);
+    fence      = backend->create_fence(false);
+}
+
 RenderGraph* RenderGraph::create(const RenderGraphSetupFunc& func) CLAY_NOEXCEPT
 {
     RenderGraphBuilder builder = {};
@@ -33,6 +41,12 @@ void RenderGraph::finalize() CLAY_NOEXCEPT
 {
     core::DependencyGraph::destroy(graph);
     Factory::destroy(factory);
+}
+
+u64 RenderGraph::execute() CLAY_NOEXCEPT
+{
+    const u64 executor_index = frame_number % MAX_FRAME_IN_FLIGHT;
+    return frame_number++;
 }
 
 PassHandle RenderGraph::add_render_pass(const RenderPassSetupFunc& setup, const OnRenderPassExecute& on_execute) CLAY_NOEXCEPT

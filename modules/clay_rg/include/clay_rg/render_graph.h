@@ -12,6 +12,21 @@ namespace rg
 {
 static const u8 MAX_FRAME_IN_FLIGHT = 3;
 
+class RenderGraphFrameExecutor
+{
+public:
+    gfx::Handle<gfx::CommandPool>   cmd_pool;
+    gfx::Handle<gfx::CommandBuffer> cmd_buffer;
+    gfx::Handle<gfx::Fence>         fence;
+
+    RenderGraphFrameExecutor() = default;
+    void initialize(gfx::IRenderBackend* backend, const gfx::Handle<gfx::Queue>& queue);
+    void finalize();
+
+    void reset_begin();
+    void end();
+};
+
 class RenderGraph
 {
 public:
@@ -25,19 +40,21 @@ public:
     virtual void initialize() CLAY_NOEXCEPT;
     virtual void finalize() CLAY_NOEXCEPT;
 
-    inline u64 get_frame_index() const CLAY_NOEXCEPT { return frame_index; }
+    inline u64 get_frame_number() const CLAY_NOEXCEPT { return frame_number; }
 
     virtual bool compile() CLAY_NOEXCEPT;
-    virtual void execute() CLAY_NOEXCEPT;
+    virtual u64  execute() CLAY_NOEXCEPT;
 
     PassHandle add_render_pass(const RenderPassSetupFunc& setup, const OnRenderPassExecute& on_execute) CLAY_NOEXCEPT;
     PassHandle add_present_pass(const PresentPassSetupFunc& setup) CLAY_NOEXCEPT;
 
 protected:
-    u64                    frame_index = 0;
-    core::DependencyGraph* graph       = nullptr;
-    Factory*               factory     = nullptr;
+    u64                    frame_number = 0;
+    core::DependencyGraph* graph        = nullptr;
+    Factory*               factory      = nullptr;
     std::vector<PassNode*> pass_nodes;
+
+    RenderGraphFrameExecutor frame_executors[MAX_FRAME_IN_FLIGHT];
 };
 
 } // namespace rg
