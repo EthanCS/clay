@@ -12,7 +12,7 @@ namespace gfx
 
 static const u32 MAX_GLOBAL_POOL_ELEMENTS = 128;
 
-class VulkanBackend
+class VulkanBackend final : public IRenderBackend
 {
 private:
     VulkanResources resources;
@@ -38,108 +38,89 @@ private:
     PFN_vkCmdEndDebugUtilsLabelEXT   pfn_CmdEndDebugUtilsLabelEXT;
 
 public:
-    bool              init(const InitBackendOptions& desc);
-    void              shutdown();
-    BackendType::Enum get_type() noexcept { return BackendType::Vulkan; }
+    bool init(const InitBackendOptions& desc);
+    void shutdown();
 
-    void device_wait_idle() { vkDeviceWaitIdle(device); }
+    void              initialize(const InitBackendOptions& options) override;
+    void              finalize() override;
+    BackendType::Enum get_type() const CLAY_NOEXCEPT override { return BackendType::Vulkan; }
 
-    void queue_wait_idle(QueueType::Enum queue_type)
-    {
-        VkQueue queue = get_queue(queue_type);
-        if (queue != VK_NULL_HANDLE) [[likely]] { vkQueueWaitIdle(get_queue(queue_type)); }
-    }
-    void                  queue_submit(QueueType::Enum, const QueueSubmitOptions options);
-    SwapchainStatus::Enum queue_present(const QueuePresentOptions& options);
+    void device_wait_idle() override { vkDeviceWaitIdle(device); }
 
-    Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc);
-    SwapchainAcquireResult acquire_next_image(const Handle<Swapchain>& swapchain, const AcquireNextImageOptions& options);
-    u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain);
-    Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index);
-    void                   destroy_swapchain(const Handle<Swapchain>& swapchain);
+    Handle<Queue>         get_queue(const QueueType::Enum& queue_type) override;
+    void                  queue_wait_idle(const Handle<Queue>& queue) override;
+    void                  queue_submit(const Handle<Queue>& queue, const QueueSubmitOptions& options) override;
+    SwapchainStatus::Enum queue_present(const Handle<Queue>& queue, const QueuePresentOptions& options) override;
 
-    Handle<Fence> create_fence(bool signal);
-    void          wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout);
-    void          wait_for_fences(const Handle<Fence>* fences, int num_fence, bool wait_all, u64 timeout);
-    void          reset_fences(const Handle<Fence>* fences, int num_fence);
-    void          destroy_fence(const Handle<Fence>& fence);
+    Handle<Swapchain>      create_swapchain(const CreateSwapchainOptions& desc) override;
+    SwapchainAcquireResult acquire_next_image(const Handle<Swapchain>& swapchain, const AcquireNextImageOptions& options) override;
+    u32                    get_swapchain_image_count(const Handle<Swapchain>& swapchain) override;
+    Handle<Texture>        get_swapchain_back_buffer(const Handle<Swapchain>& swapchain, u32 index) override;
+    void                   destroy_swapchain(const Handle<Swapchain>& swapchain) override;
 
-    Handle<Semaphore> create_semaphore();
-    void              destroy_semaphore(const Handle<Semaphore>& semaphore);
+    Handle<Fence> create_fence(bool signal) override;
+    void          wait_for_fences(const Handle<Fence>* fences, int num_fence, bool wait_all, u64 timeout) override;
+    void          reset_fences(const Handle<Fence>* fences, int num_fence) override;
+    void          destroy_fence(const Handle<Fence>& fence) override;
 
-    Handle<Shader> create_shader(const CreateShaderOptions& desc);
-    void           destroy_shader(const Handle<Shader>& shader);
+    Handle<Semaphore> create_semaphore() override;
+    void              destroy_semaphore(const Handle<Semaphore>& semaphore) override;
 
-    Handle<PipelineLayout> create_pipeline_layout(const CreatePipelineLayoutOptions& desc);
-    void                   destroy_pipeline_layout(const Handle<PipelineLayout>& layout);
+    Handle<Shader> create_shader(const CreateShaderOptions& desc) override;
+    void           destroy_shader(const Handle<Shader>& shader) override;
 
-    Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc);
-    void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline);
+    Handle<PipelineLayout> create_pipeline_layout(const CreatePipelineLayoutOptions& desc) override;
+    void                   destroy_pipeline_layout(const Handle<PipelineLayout>& layout) override;
 
-    Handle<Texture> create_texture(const CreateTextureOptions& desc);
-    u32             get_texture_width(const Handle<Texture>& texture);
-    u32             get_texture_height(const Handle<Texture>& texture);
-    void            destroy_texture(const Handle<Texture>& texture);
+    Handle<GraphicsPipeline> create_graphics_pipeline(const CreateGraphicsPipelineOptions& desc) override;
+    void                     destroy_graphics_pipeline(const Handle<GraphicsPipeline>& pipeline) override;
 
-    Handle<Sampler> create_sampler(const CreateSamplerOptions& desc);
-    void            destroy_sampler(const Handle<Sampler>& sampler);
+    Handle<Texture>   create_texture(const CreateTextureOptions& desc) override;
+    TextureDescriptor get_texture_descriptor(const Handle<Texture>& texture) override;
+    void              destroy_texture(const Handle<Texture>& texture) override;
 
-    Handle<Buffer> create_buffer(const CreateBufferOptions& desc);
-    void*          map_buffer(const Handle<Buffer>& buffer);
-    void           unmap_buffer(const Handle<Buffer>& buffer);
-    void           destroy_buffer(const Handle<Buffer>& buffer);
+    Handle<Sampler> create_sampler(const CreateSamplerOptions& desc) override;
+    void            destroy_sampler(const Handle<Sampler>& sampler) override;
 
-    Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc);
-    void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer);
+    Handle<Buffer> create_buffer(const CreateBufferOptions& desc) override;
+    void*          map_buffer(const Handle<Buffer>& buffer) override;
+    void           unmap_buffer(const Handle<Buffer>& buffer) override;
+    void           destroy_buffer(const Handle<Buffer>& buffer) override;
 
-    Handle<DescriptorSetLayout> create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc);
-    void                        destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout);
+    Handle<Framebuffer> create_framebuffer(const CreateFramebufferOptions& desc) override;
+    void                destroy_framebuffer(const Handle<Framebuffer>& framebuffer) override;
 
-    Handle<DescriptorSet> create_descriptor_set(const CreateDescriptorSetOptions& desc);
-    void                  update_descriptor_set(const Handle<DescriptorSet>& set, const UpdateDescriptorSetOptions& desc);
-    void                  destroy_descriptor_set(const Handle<DescriptorSet>& set);
+    Handle<DescriptorSetLayout> create_descriptor_set_layout(const CreateDescriptorSetLayoutOptions& desc) override;
+    void                        destroy_descriptor_set_layout(const Handle<DescriptorSetLayout>& layout) override;
 
-    Handle<CommandPool> create_command_pool(QueueType::Enum queue_type);
-    void                destroy_command_pool(const Handle<CommandPool>& pool);
+    Handle<DescriptorSet> create_descriptor_set(const CreateDescriptorSetOptions& desc) override;
+    void                  update_descriptor_set(const Handle<DescriptorSet>& set, const UpdateDescriptorSetOptions& desc) override;
+    void                  destroy_descriptor_set(const Handle<DescriptorSet>& set) override;
 
-    Handle<CommandBuffer> allocate_command_buffer(const Handle<CommandPool>& pool);
-    void                  reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource);
-    void                  free_command_buffer(const Handle<CommandBuffer>& buffer);
+    Handle<CommandPool> create_command_pool(const Handle<Queue>& queue) override;
+    void                destroy_command_pool(const Handle<CommandPool>& pool) override;
 
-    void cmd_begin(const Handle<CommandBuffer>& cb, bool one_time);
-    void cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options);
-    void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& cb, const CmdCopyBufferToTextureOptions& options);
-    void cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options);
-    void cmd_end(const Handle<CommandBuffer>& cb);
+    Handle<CommandBuffer> allocate_command_buffer(const Handle<CommandPool>& pool, bool primary) override;
+    void                  reset_command_buffer(const Handle<CommandBuffer>& buffer, bool release_resource) override;
+    void                  free_command_buffer(const Handle<CommandBuffer>& buffer) override;
 
-    RenderPassEncoder cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options);
-    void              cmd_bind_pipeline(const RenderPassEncoder& encoder, const Handle<GraphicsPipeline>& pipeline);
-    void              cmd_set_viewport(const RenderPassEncoder& encoder, const CmdSetViewportOptions& viewport);
-    void              cmd_set_scissor(const RenderPassEncoder& encoder, const CmdSetScissorOptions& scissor);
-    void              cmd_draw(const RenderPassEncoder& encoder, const CmdDrawOptions& draw);
-    void              cmd_draw_indexed(const RenderPassEncoder& encoder, const CmdDrawIndexedOptions& draw);
-    void              cmd_bind_vertex_buffer(const RenderPassEncoder& encoder, const CmdBindVertexBufferOptions& options);
-    void              cmd_bind_vertex_buffers(const RenderPassEncoder& encoder, const CmdBindVertexBuffersOptions& options);
-    void              cmd_bind_index_buffer(const RenderPassEncoder& encoder, const CmdBindIndexBufferOptions& options);
-    void              cmd_bind_descriptor_sets(const RenderPassEncoder& encoder, const CmdBindDescriptorSetsOptions& options);
-    void              cmd_end_render_pass(const Handle<CommandBuffer>& cb, const RenderPassEncoder& encoder);
+    void cmd_begin(const Handle<CommandBuffer>& cb, bool one_time) override;
+    void cmd_copy_buffer(const Handle<CommandBuffer>& cb, const CmdCopyBufferOptions& options) override;
+    void cmd_copy_buffer_to_texture(const Handle<CommandBuffer>& cb, const CmdCopyBufferToTextureOptions& options) override;
+    void cmd_pipeline_barrier(const Handle<CommandBuffer>& cb, const CmdPipelineBarrierOptions& options) override;
+    void cmd_end(const Handle<CommandBuffer>& cb) override;
 
-private:
-    VkQueue get_queue(QueueType::Enum queue_type)
-    {
-        switch (queue_type)
-        {
-            case QueueType::Graphics:
-                return graphics_queue.queue;
-            case QueueType::Present:
-                return present_queue.queue;
-            case QueueType::Compute:
-                return compute_queue.queue;
-            case QueueType::Transfer:
-                return transfer_queue.queue;
-        }
-        return VK_NULL_HANDLE;
-    }
+    RenderPassEncoder cmd_begin_render_pass(const Handle<CommandBuffer>& cb, const CmdBeginRenderPassOptions& options) override;
+    void              cmd_bind_pipeline(const RenderPassEncoder& encoder, const Handle<GraphicsPipeline>& pipeline) override;
+    void              cmd_set_viewport(const RenderPassEncoder& encoder, const CmdSetViewportOptions& viewport) override;
+    void              cmd_set_scissor(const RenderPassEncoder& encoder, const CmdSetScissorOptions& scissor) override;
+    void              cmd_draw(const RenderPassEncoder& encoder, const CmdDrawOptions& draw) override;
+    void              cmd_draw_indexed(const RenderPassEncoder& encoder, const CmdDrawIndexedOptions& draw) override;
+    void              cmd_bind_vertex_buffer(const RenderPassEncoder& encoder, const CmdBindVertexBufferOptions& options) override;
+    void              cmd_bind_vertex_buffers(const RenderPassEncoder& encoder, const CmdBindVertexBuffersOptions& options) override;
+    void              cmd_bind_index_buffer(const RenderPassEncoder& encoder, const CmdBindIndexBufferOptions& options) override;
+    void              cmd_bind_descriptor_sets(const RenderPassEncoder& encoder, const CmdBindDescriptorSetsOptions& options) override;
+    void              cmd_end_render_pass(const Handle<CommandBuffer>& cb, const RenderPassEncoder& encoder) override;
 };
 } // namespace gfx
 } // namespace clay
