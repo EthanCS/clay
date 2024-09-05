@@ -14,7 +14,7 @@ struct IRenderBackend {
     virtual ~IRenderBackend() = default;
 
     /////// General
-    virtual void              initialize(const InitBackendOptions& options) = 0;
+    virtual bool              initialize(const InitBackendOptions& options) = 0;
     virtual void              finalize()                                    = 0;
     virtual BackendType::Enum get_type() const CLAY_NOEXCEPT                = 0;
 
@@ -22,7 +22,7 @@ struct IRenderBackend {
     virtual void device_wait_idle() = 0;
 
     /////// Queue
-    virtual Handle<Queue>         get_queue(const QueueType::Enum& queue_type)                                  = 0;
+    virtual Handle<Queue>         get_queue(const QueueType::Enum& queue_type) CLAY_NOEXCEPT                    = 0;
     virtual void                  queue_wait_idle(const Handle<Queue>& queue)                                   = 0;
     virtual void                  queue_submit(const Handle<Queue>& queue, const QueueSubmitOptions& options)   = 0;
     virtual SwapchainStatus::Enum queue_present(const Handle<Queue>& queue, const QueuePresentOptions& options) = 0;

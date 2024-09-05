@@ -1,3 +1,4 @@
+#include "clay_gfx/vulkan/vulkan_resource.h"
 #include <vector>
 
 #include <SDL.h>
@@ -40,38 +41,16 @@ static VkBool32 debug_utils_callback(VkDebugUtilsMessageSeverityFlagBitsEXT     
     return VK_FALSE;
 }
 
-static inline VmaMemoryUsage to_vma_memory_usage(const MemoryUsage::Enum& usage)
-{
-    VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_UNKNOWN;
-    switch (usage)
-    {
-        case MemoryUsage::GpuOnly:
-            vma_usage = VMA_MEMORY_USAGE_GPU_ONLY;
-            break;
-        case MemoryUsage::CpuToGpu:
-            vma_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-            break;
-        case MemoryUsage::GpuToCpu:
-            vma_usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
-            break;
-        case MemoryUsage::CpuOnly:
-            vma_usage = VMA_MEMORY_USAGE_CPU_ONLY;
-            break;
-    }
-    return vma_usage;
-}
-
 VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_info()
 {
     VkDebugUtilsMessengerCreateInfoEXT creation_info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
     creation_info.pfnUserCallback                    = debug_utils_callback;
     creation_info.messageSeverity                    = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
     creation_info.messageType                        = VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-
     return creation_info;
 }
 
-bool VulkanBackend::init(const InitBackendOptions& desc)
+bool VulkanBackend::initialize(const InitBackendOptions& desc)
 {
     CLAY_LOG_INFO("Initializing Vulkan backend...");
 
@@ -268,6 +247,11 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
         CLAY_ASSERT(result == VK_SUCCESS, "Failed to create Vulkan logical device. ({})", string_VkResult(result));
 
         //////// Get queues.
+        VulkanQueue graphics_queue;
+        VulkanQueue present_queue;
+        VulkanQueue compute_queue;
+        VulkanQueue transfer_queue;
+
         graphics_queue.family_index = main_queue_family_index;
         vkGetDeviceQueue(device, main_queue_family_index, 0, &graphics_queue.queue);
         present_queue = graphics_queue;
@@ -277,6 +261,11 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
 
         transfer_queue.family_index = transfer_queue_family_index;
         vkGetDeviceQueue(device, transfer_queue_family_index, 0, &transfer_queue.queue);
+
+        h_graphics_queue = resources.queues.push(graphics_queue);
+        h_present_queue  = resources.queues.push(present_queue);
+        h_compute_queue  = resources.queues.push(compute_queue);
+        h_transfer_queue = resources.queues.push(transfer_queue);
     }
 
     //////// Init VMA.
@@ -345,7 +334,7 @@ bool VulkanBackend::init(const InitBackendOptions& desc)
     return true;
 }
 
-void VulkanBackend::shutdown()
+void VulkanBackend::finalize()
 {
     resources.destroy(device, vma_allocator);
 
@@ -363,13 +352,43 @@ void VulkanBackend::shutdown()
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);
 
-    CLAY_LOG_INFO("Vulkan backend shutdown.");
+    CLAY_LOG_INFO("Vulkan backend is finalized.");
 }
 
-void VulkanBackend::queue_submit(QueueType::Enum queue_type, const QueueSubmitOptions options)
+Handle<Queue> VulkanBackend::get_queue(const QueueType::Enum& queue_type) CLAY_NOEXCEPT
 {
-    VkQueue queue = get_queue(queue_type);
-    if (queue == VK_NULL_HANDLE) [[unlikely]] { return; }
+    switch (queue_type)
+    {
+        case QueueType::Graphics:
+            return h_graphics_queue;
+        case QueueType::Present:
+            return h_present_queue;
+        case QueueType::Compute:
+            return h_compute_queue;
+        case QueueType::Transfer:
+            return h_transfer_queue;
+    }
+}
+
+void VulkanBackend::queue_wait_idle(const Handle<Queue>& queue)
+{
+    const VulkanQueue* vulkan_queue = resources.queues.get(queue);
+    if (vulkan_queue == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Vulkan queue not found.");
+        return;
+    }
+    vkQueueWaitIdle(vulkan_queue->queue);
+}
+
+void VulkanBackend::queue_submit(const Handle<Queue>& queue, const QueueSubmitOptions& options)
+{
+    const VulkanQueue* vulkan_queue = resources.queues.get(queue);
+    if (vulkan_queue == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Vulkan queue not found.");
+        return;
+    }
 
     std::vector<VkCommandBuffer> command_buffers;
     command_buffers.reserve(options.num_command_buffers);
@@ -413,11 +432,18 @@ void VulkanBackend::queue_submit(QueueType::Enum queue_type, const QueueSubmitOp
     const VulkanFence* vulkan_fence = resources.fences.get(options.fence);
     VkFence            fence        = vulkan_fence != nullptr ? vulkan_fence->fence : VK_NULL_HANDLE;
 
-    vkQueueSubmit(queue, 1, &submit_info, fence);
+    vkQueueSubmit(vulkan_queue->queue, 1, &submit_info, fence);
 }
 
-SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& options)
+SwapchainStatus::Enum VulkanBackend::queue_present(const Handle<Queue>& queue, const QueuePresentOptions& options)
 {
+    const VulkanQueue* vulkan_queue = resources.queues.get(queue);
+    if (vulkan_queue == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Vulkan queue not found.");
+        return SwapchainStatus::Error;
+    }
+
     VkPresentInfoKHR present_info = {};
     present_info.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -441,8 +467,7 @@ SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& op
     present_info.pSwapchains    = swapchains;
     present_info.pImageIndices  = &options.image_index;
 
-    VkQueue  queue  = get_queue(QueueType::Present);
-    VkResult result = vkQueuePresentKHR(queue, &present_info);
+    VkResult result = vkQueuePresentKHR(vulkan_queue->queue, &present_info);
 
     if (result == VK_SUCCESS) [[likely]] { return SwapchainStatus::Success; }
     else if (result == VK_ERROR_OUT_OF_DATE_KHR) { return SwapchainStatus::OutOfDate; }
@@ -456,8 +481,15 @@ SwapchainStatus::Enum VulkanBackend::queue_present(const QueuePresentOptions& op
 
 Handle<Swapchain> VulkanBackend::create_swapchain(const CreateSwapchainOptions& options)
 {
+    const VulkanQueue* vulkan_queue = resources.queues.get(h_graphics_queue);
+    if (vulkan_queue == nullptr) [[unlikely]]
+    {
+        CLAY_LOG_ERROR("Vulkan queue not found.");
+        return Handle<Swapchain>::invalid();
+    }
+
     VkBool32 is_surface_support = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, graphics_queue.family_index, surface, &is_surface_support);
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, vulkan_queue->family_index, surface, &is_surface_support);
 
     if (!is_surface_support)
     {
@@ -648,13 +680,6 @@ Handle<Fence> VulkanBackend::create_fence(bool signal)
     }
 
     return resources.fences.push(VulkanFence{ .fence = fence });
-}
-
-void VulkanBackend::wait_for_fence(const Handle<Fence>& fence, bool wait_all, u64 timeout)
-{
-    const VulkanFence* vulkan_fence = resources.fences.get(fence);
-    if (vulkan_fence == nullptr) [[unlikely]] { return; }
-    vkWaitForFences(device, 1, &vulkan_fence->fence, wait_all, timeout);
 }
 
 void VulkanBackend::wait_for_fences(const Handle<Fence>* fences, int num_fence, bool wait_all, u64 timeout)
@@ -888,18 +913,17 @@ Handle<Texture> VulkanBackend::create_texture(const CreateTextureOptions& desc)
     return resources.textures.push(texture);
 }
 
-u32 VulkanBackend::get_texture_width(const Handle<Texture>& texture)
+TextureDescriptor VulkanBackend::get_texture_descriptor(const Handle<Texture>& texture)
 {
-    const VulkanTexture* vulkan_texture = resources.textures.get(texture);
-    if (vulkan_texture == nullptr) [[unlikely]] { return 0; }
-    return vulkan_texture->width;
-}
+    TextureDescriptor ret = {};
 
-u32 VulkanBackend::get_texture_height(const Handle<Texture>& texture)
-{
     const VulkanTexture* vulkan_texture = resources.textures.get(texture);
-    if (vulkan_texture == nullptr) [[unlikely]] { return 0; }
-    return vulkan_texture->height;
+    if (vulkan_texture == nullptr) [[unlikely]]
+    {
+        ret.width  = vulkan_texture->width;
+        ret.height = vulkan_texture->height;
+    }
+    return ret;
 }
 
 void VulkanBackend::destroy_texture(const Handle<Texture>& texture)
@@ -1212,24 +1236,16 @@ void VulkanBackend::destroy_descriptor_set(const Handle<DescriptorSet>& set)
     resources.descriptor_sets.free(set);
 }
 
-Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_type)
+Handle<CommandPool> VulkanBackend::create_command_pool(const Handle<Queue>& queue)
 {
-    u32 family_index = 0;
-    switch (queue_type)
+    const VulkanQueue* vulkan_queue = resources.queues.get(queue);
+    if (vulkan_queue == nullptr) [[unlikely]]
     {
-        case QueueType::Graphics:
-            family_index = graphics_queue.family_index;
-            break;
-        case QueueType::Transfer:
-            family_index = transfer_queue.family_index;
-            break;
-        case QueueType::Compute:
-            family_index = compute_queue.family_index;
-            break;
-        case QueueType::Present:
-            family_index = present_queue.family_index;
-            break;
+        CLAY_LOG_ERROR("Failed to find queue.");
+        return Handle<CommandPool>::invalid();
     }
+
+    u32 family_index = vulkan_queue->family_index;
 
     VkCommandPoolCreateInfo create_info = {};
     create_info.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1244,7 +1260,7 @@ Handle<CommandPool> VulkanBackend::create_command_pool(QueueType::Enum queue_typ
         return Handle<CommandPool>::invalid();
     }
 
-    return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool, .queue_type = queue_type });
+    return resources.command_pools.push(VulkanCommandPool{ .command_pool = command_pool, .queue = queue });
 }
 
 void VulkanBackend::destroy_command_pool(const Handle<CommandPool>& pool)
@@ -1255,7 +1271,7 @@ void VulkanBackend::destroy_command_pool(const Handle<CommandPool>& pool)
     resources.command_pools.free(pool);
 }
 
-Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<CommandPool>& pool)
+Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<CommandPool>& pool, bool primary)
 {
     const VulkanCommandPool* vulkan_pool = resources.command_pools.get(pool);
     if (vulkan_pool == nullptr) [[unlikely]] { return Handle<CommandBuffer>::invalid(); }
@@ -1263,7 +1279,7 @@ Handle<CommandBuffer> VulkanBackend::allocate_command_buffer(const Handle<Comman
     VkCommandBufferAllocateInfo allocate_info = {};
     allocate_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocate_info.commandPool                 = vulkan_pool->command_pool;
-    allocate_info.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocate_info.level                       = primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
     allocate_info.commandBufferCount          = 1;
 
     VkCommandBuffer command_buffer = VK_NULL_HANDLE;

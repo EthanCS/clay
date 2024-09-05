@@ -1,5 +1,6 @@
 #pragma once
 
+#include "clay_gfx/handle.h"
 #include <vector>
 #include <clay_gfx/resource.h>
 #include <clay_gfx/define.h>
@@ -115,8 +116,8 @@ struct VulkanRenderPass {
 };
 
 struct VulkanCommandPool {
-    VkCommandPool   command_pool = VK_NULL_HANDLE;
-    QueueType::Enum queue_type;
+    VkCommandPool command_pool = VK_NULL_HANDLE;
+    Handle<Queue> queue;
 };
 
 struct VulkanCommandBuffer {
@@ -149,6 +150,7 @@ struct VulkanDescriptorSet {
 };
 
 struct VulkanResources {
+    Pool<Queue, VulkanQueue>                             queues;
     Pool<Swapchain, VulkanSwapchain>                     swapchains;
     Pool<Fence, VulkanFence>                             fences;
     Pool<Semaphore, VulkanSemaphore>                     semaphores;
@@ -167,7 +169,8 @@ struct VulkanResources {
     std::vector<VulkanRenderPass> render_passes;
 
     VulkanResources()
-        : swapchains(2)
+        : queues(4)
+        , swapchains(2)
         , fences(4)
         , semaphores(16)
         , shaders(32)

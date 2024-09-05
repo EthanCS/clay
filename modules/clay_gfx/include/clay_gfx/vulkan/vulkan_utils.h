@@ -653,5 +653,26 @@ inline VkAccessFlags to_vk_access_flags(AccessMask::Flag access)
     return flags;
 }
 
+inline VmaMemoryUsage to_vma_memory_usage(const MemoryUsage::Enum& usage)
+{
+    VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_UNKNOWN;
+    switch (usage)
+    {
+        case MemoryUsage::GpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_GPU_ONLY;
+            break;
+        case MemoryUsage::CpuToGpu:
+            vma_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+            break;
+        case MemoryUsage::GpuToCpu:
+            vma_usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+            break;
+        case MemoryUsage::CpuOnly:
+            vma_usage = VMA_MEMORY_USAGE_CPU_ONLY;
+            break;
+    }
+    return vma_usage;
+}
+
 } // namespace gfx
 } // namespace clay

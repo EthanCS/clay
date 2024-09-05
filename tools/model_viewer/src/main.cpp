@@ -1,3 +1,5 @@
+#include "clay_gfx/handle.h"
+#include "clay_gfx/resource.h"
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
@@ -135,7 +137,8 @@ public:
     }
 
 private:
-    app::Window window;
+    app::Window          window;
+    gfx::IRenderBackend* backend = nullptr;
 
     //////////////////////////////////////////////////////////////////////////
     // Per frame data
@@ -152,6 +155,7 @@ private:
 
     //////////////////////////////////////////////////////////////////////////
     // Common
+    gfx::Handle<gfx::Queue>       graphics_queue;
     gfx::RenderPassLayout         render_pass_layout;
     gfx::Handle<gfx::CommandPool> command_pool;
 
@@ -183,20 +187,21 @@ private:
     {
         window.init({ .title = TITLE, .width = WIDTH, .height = HEIGHT });
 
-        bool bInit = gfx::init({ .type     = gfx::BackendType::Vulkan,
-                                 .window   = window.platform_handle,
-                                 .app_name = TITLE,
-                                 .debug    = true });
-        if (!bInit) { throw std::runtime_error("failed to initialize clay gfx!"); }
+        backend = gfx::create_render_backend({ .type     = gfx::BackendType::Vulkan,
+                                               .window   = window.platform_handle,
+                                               .app_name = TITLE,
+                                               .debug    = true });
+        if (!backend) { throw std::runtime_error("failed to initialize clay gfx!"); }
 
-        command_pool = gfx::create_command_pool(gfx::QueueType::Graphics);
+        graphics_queue = backend->get_queue(gfx::QueueType::Graphics);
+        command_pool   = backend->create_command_pool(graphics_queue);
 
         create_assets();
 
         command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
         for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            command_buffers[i] = gfx::allocate_command_buffer(command_pool);
+            command_buffers[i] = backend->allocate_command_buffer(command_pool, true);
         }
 
         in_flight_fences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -204,22 +209,22 @@ private:
         render_finished_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
         for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            in_flight_fences[i]           = gfx::create_fence(true);
-            image_available_semaphores[i] = gfx::create_semaphore();
-            render_finished_semaphores[i] = gfx::create_semaphore();
+            in_flight_fences[i]           = backend->create_fence(true);
+            image_available_semaphores[i] = backend->create_semaphore();
+            render_finished_semaphores[i] = backend->create_semaphore();
         }
 
         uniform_buffers.resize(MAX_FRAMES_IN_FLIGHT);
         descriptor_sets.resize(MAX_FRAMES_IN_FLIGHT);
         for (usize i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            uniform_buffers[i] = gfx::create_buffer({ .size = sizeof(UBO), .usage = gfx::BufferUsage::UniformBuffer, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-            descriptor_sets[i] = gfx::create_descriptor_set({ .layout = descriptor_set_layout });
+            uniform_buffers[i] = backend->create_buffer({ .size = sizeof(UBO), .usage = gfx::BufferUsage::UniformBuffer, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+            descriptor_sets[i] = backend->create_descriptor_set({ .layout = descriptor_set_layout });
 
             gfx::UpdateDescriptorSetOptions update_info = {};
             update_info.bind_buffer(0u, uniform_buffers[i]);
             update_info.bind_texture_sampler(1u, model_tex, model_sampler);
-            gfx::update_descriptor_set(descriptor_sets[i], update_info);
+            backend->update_descriptor_set(descriptor_sets[i], update_info);
         }
 
         create_swapchain(window.width, window.height);
@@ -274,22 +279,22 @@ private:
 
         auto vert_shader_code = Compiler::Compile({ .source = VERTEX_SHADER, .fileName = "vert.hlsl", .entryPoint = "main", .stage = ShaderStage::VertexShader }, {}, { .language = ShadingLanguage::SpirV });
         auto frag_shader_code = Compiler::Compile({ .source = FRAGMENT_SHADER, .fileName = "frag.hlsl", .entryPoint = "main", .stage = ShaderStage::PixelShader }, {}, { .language = ShadingLanguage::SpirV });
-        hello_vs              = gfx::create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
-        hello_fs              = gfx::create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
+        hello_vs              = backend->create_shader({ .code = vert_shader_code.target.Data(), .code_size = (u32)vert_shader_code.target.Size() });
+        hello_fs              = backend->create_shader({ .code = frag_shader_code.target.Data(), .code_size = (u32)frag_shader_code.target.Size() });
 
         model_vb = create_vertex_buffer(command_pool, mesh->vertices.data(), mesh->vertices.size() * sizeof(Vertex));
         model_ib = create_index_buffer(command_pool, mesh->indices.data(), mesh->indices.size() * sizeof(u32));
 
         image         = image::load_image("E:/clay/test/gfx/clay_cat.jpg", image::ImageChannel::RGBAlpha);
         model_tex     = create_texture(command_pool, image.get());
-        model_sampler = gfx::create_sampler({});
+        model_sampler = backend->create_sampler({});
 
         // Create descriptor set layout
         gfx::CreateDescriptorSetLayoutOptions layout_options = {};
         layout_options
         .add_binding(gfx::DescriptorType::UniformBuffer, 0u, 1u, "UBO")
         .add_binding(gfx::DescriptorType::CombinedImageSampler, 1u, 1u, "myTexture");
-        descriptor_set_layout = gfx::create_descriptor_set_layout(layout_options);
+        descriptor_set_layout = backend->create_descriptor_set_layout(layout_options);
 
         // Render pass layout
         render_pass_layout           = {};
@@ -307,7 +312,7 @@ private:
         // Pipeline layout
         gfx::CreatePipelineLayoutOptions pipeline_layout_options = {};
         pipeline_layout_options.add_descriptor_set_layout(descriptor_set_layout);
-        pipeline_layout = gfx::create_pipeline_layout(pipeline_layout_options);
+        pipeline_layout = backend->create_pipeline_layout(pipeline_layout_options);
 
         // Create pipeline
         gfx::CreateGraphicsPipelineOptions pipeline_options = { .name           = "triangle",
@@ -319,7 +324,7 @@ private:
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 0, offsetof(Vertex, position), gfx::Format::R32G32B32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 1, offsetof(Vertex, color), gfx::Format::R32G32B32_SFLOAT);
         pipeline_options.graphics_state.set_vertex_buffer_attribute(0, 2, offsetof(Vertex, uv), gfx::Format::R32G32_SFLOAT);
-        pipeline = gfx::create_graphics_pipeline(pipeline_options);
+        pipeline = backend->create_graphics_pipeline(pipeline_options);
     }
 
     void main_loop()
@@ -329,12 +334,12 @@ private:
             window.handle_events();
             draw_frame();
         }
-        gfx::device_wait_idle();
+        backend->device_wait_idle();
     }
 
     void draw_frame()
     {
-        gfx::wait_for_fence(in_flight_fences[current_frame], true, u64_MAX);
+        backend->wait_for_fence(in_flight_fences[current_frame], true, u64_MAX);
 
         gfx::SwapchainAcquireResult acquire_swapchain = gfx::acquire_next_image(swapchain, { .semaphore = image_available_semaphores[current_frame] });
         if (acquire_swapchain.status == gfx::SwapchainStatus::OutOfDate)
@@ -345,9 +350,9 @@ private:
 
         update_uniform_buffer(current_frame);
 
-        gfx::reset_fences(&in_flight_fences[current_frame], 1);
+        backend->reset_fences(&in_flight_fences[current_frame], 1);
 
-        gfx::reset_command_buffer(command_buffers[current_frame], false);
+        backend->reset_command_buffer(command_buffers[current_frame], false);
         record_commands(command_buffers[current_frame], acquire_swapchain.image_index);
 
         gfx::QueueSubmitOptions submit_options = {};
@@ -359,7 +364,7 @@ private:
         submit_options.num_signal_semaphores   = 1;
         submit_options.wait_dst_stage          = gfx::PipelineStage::ColorAttachmentOutput;
         submit_options.fence                   = in_flight_fences[current_frame];
-        gfx::queue_submit(gfx::QueueType::Graphics, submit_options);
+        backend->queue_submit(graphics_queue, submit_options);
 
         gfx::SwapchainStatus::Enum present_status = gfx::queue_present({ .swapchain = swapchain, .image_index = acquire_swapchain.image_index, .wait_semaphores = &render_finished_semaphores[current_frame], .num_wait_semaphores = 1 });
 
@@ -378,24 +383,24 @@ private:
 
     void recreate_swapchain()
     {
-        gfx::device_wait_idle();
+        backend->device_wait_idle();
 
         for (const auto& framebuffer : swapchain_framebuffers)
         {
-            gfx::destroy_framebuffer(framebuffer);
+            backend->destroy_framebuffer(framebuffer);
         }
-        gfx::destroy_texture(depth_texture);
-        gfx::destroy_swapchain(swapchain);
+        backend->destroy_texture(depth_texture);
+        backend->destroy_swapchain(swapchain);
 
         create_swapchain(window.width, window.height);
     }
 
     void create_swapchain(u32 width, u32 height)
     {
-        swapchain      = gfx::create_swapchain({ .width = width, .height = height, .vsync = true, .format = gfx::Format::B8G8R8A8_UNORM });
-        u32 num_images = gfx::get_swapchain_image_count(swapchain);
+        swapchain      = backend->create_swapchain({ .width = width, .height = height, .vsync = true, .format = gfx::Format::B8G8R8A8_UNORM });
+        u32 num_images = backend->get_swapchain_image_count(swapchain);
 
-        depth_texture = gfx::create_texture({ .width = width, .height = height, .format = gfx::Format::D32_SFLOAT, .usage = gfx::TextureUsage::DepthStencilAttachment, .memory_usage = gfx::MemoryUsage::GpuOnly });
+        depth_texture = backend->create_texture({ .width = width, .height = height, .format = gfx::Format::D32_SFLOAT, .usage = gfx::TextureUsage::DepthStencilAttachment, .memory_usage = gfx::MemoryUsage::GpuOnly });
 
         gfx::RenderPassLayout swapchain_render_pass_layout = {};
         swapchain_render_pass_layout.colors[0]             = {
@@ -412,10 +417,10 @@ private:
         swapchain_framebuffers.resize(num_images);
         for (u32 i = 0; i < num_images; i++)
         {
-            swapchain_framebuffers[i] = gfx::create_framebuffer(
+            swapchain_framebuffers[i] = backend->create_framebuffer(
             { .width                    = width,
               .height                   = height,
-              .color_attachments        = { { .texture = gfx::get_swapchain_back_buffer(swapchain, i), .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Color } },
+              .color_attachments        = { { .texture = backend->get_swapchain_back_buffer(swapchain, i), .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Color } },
               .depth_stencil_attachment = { .texture = depth_texture, .view_type = gfx::TextureViewType::Texture2D, .aspect_flags = gfx::TextureAspect::Depth },
               .render_pass_layout       = swapchain_render_pass_layout });
         }
@@ -437,116 +442,116 @@ private:
         ubo.proj  = glm::perspective(glm::radians(45.0f), swapchain_width / (float)swapchain_height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
-        void* data = gfx::map_buffer(uniform_buffers[image_index]);
+        void* data = backend->map_buffer(uniform_buffers[image_index]);
         memcpy(data, &ubo, sizeof(UBO));
-        gfx::unmap_buffer(uniform_buffers[image_index]);
+        backend->unmap_buffer(uniform_buffers[image_index]);
     }
 
     void record_commands(gfx::Handle<gfx::CommandBuffer> cmd, u32 image_index)
     {
-        gfx::cmd_begin(cmd, false);
-        auto encoder = gfx::cmd_begin_render_pass(cmd,
-                                                  { .framebuffer        = swapchain_framebuffers[image_index],
-                                                    .render_pass_layout = render_pass_layout,
-                                                    .extent             = { swapchain_width, swapchain_height },
-                                                    .clear              = true,
-                                                    .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } }, { .depth = 1.0f } } });
-        gfx::cmd_bind_pipeline(encoder, pipeline);
-        gfx::cmd_set_viewport(encoder, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
-        gfx::cmd_set_scissor(encoder, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
-        gfx::cmd_bind_vertex_buffer(encoder, { .binding = 0, .buffer = model_vb, .offset = 0 });
-        gfx::cmd_bind_index_buffer(encoder, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint32 });
-        gfx::cmd_bind_descriptor_sets(encoder, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
-        gfx::cmd_draw_indexed(encoder, { .index_count = (u32)mesh->indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
-        gfx::cmd_end_render_pass(cmd, encoder);
-        gfx::cmd_end(cmd);
+        backend->cmd_begin(cmd, false);
+        auto encoder = backend->cmd_begin_render_pass(cmd,
+                                                      { .framebuffer        = swapchain_framebuffers[image_index],
+                                                        .render_pass_layout = render_pass_layout,
+                                                        .extent             = { swapchain_width, swapchain_height },
+                                                        .clear              = true,
+                                                        .clear_values       = { { .color = { 0.0f, 0.0f, 1.0f, 1.0f } }, { .depth = 1.0f } } });
+        backend->cmd_bind_pipeline(encoder, pipeline);
+        backend->cmd_set_viewport(encoder, { .x = 0.0f, .y = 0.0f, .width = (f32)swapchain_width, .height = (f32)swapchain_height, .min_depth = 0.0f, .max_depth = 1.0f });
+        backend->cmd_set_scissor(encoder, { .offset = { 0, 0 }, .extent = { swapchain_width, window.height } });
+        backend->cmd_bind_vertex_buffer(encoder, { .binding = 0, .buffer = model_vb, .offset = 0 });
+        backend->cmd_bind_index_buffer(encoder, { .buffer = model_ib, .offset = 0, .index_type = gfx::IndexType::Uint32 });
+        backend->cmd_bind_descriptor_sets(encoder, { .layout = pipeline_layout, .bind_point = gfx::PipelineBindPoint::Graphics, .first_set = 0, .sets = &descriptor_sets[current_frame], .num_sets = 1 });
+        backend->cmd_draw_indexed(encoder, { .index_count = (u32)mesh->indices.size(), .instance_count = 1, .first_index = 0, .vertex_offset = 0, .first_instance = 0 });
+        backend->cmd_end_render_pass(cmd, encoder);
+        backend->cmd_end(cmd);
     }
 
-    static void copy_buffer(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
+    static void copy_buffer(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& src, const gfx::Handle<gfx::Buffer>& dst, u64 size)
     {
         gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
         {
-            gfx::cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
+            backend->cmd_copy_buffer(cb, { .src_buffer = src, .src_offset = 0, .dst_buffer = dst, .dst_offset = 0, .size = size });
         }
         end_single_command(cb);
     }
 
-    static void copy_buffer_to_image(const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& buffer, const gfx::Handle<gfx::Texture>& image, u32 width, u32 height)
+    static void copy_buffer_to_image(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, const gfx::Handle<gfx::Buffer>& buffer, const gfx::Handle<gfx::Texture>& image, u32 width, u32 height)
     {
         gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
-        gfx::cmd_copy_buffer_to_texture(cb, { .buffer         = buffer,
-                                              .texture        = image,
-                                              .texture_extent = { width, height, 1 },
-                                              .aspect_flags   = gfx::TextureAspect::Color,
-                                              .dst_layout     = gfx::ImageLayout::TransferDstOptimal });
+        backend->cmd_copy_buffer_to_texture(cb, { .buffer         = buffer,
+                                                  .texture        = image,
+                                                  .texture_extent = { width, height, 1 },
+                                                  .aspect_flags   = gfx::TextureAspect::Color,
+                                                  .dst_layout     = gfx::ImageLayout::TransferDstOptimal });
         end_single_command(cb);
     }
 
-    static gfx::Handle<gfx::Buffer> create_vertex_buffer(const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
+    static gfx::Handle<gfx::Buffer> create_vertex_buffer(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
     {
-        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        gfx::Handle<gfx::Buffer> staging_buffer = backend->create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = backend->map_buffer(staging_buffer);
         memcpy(mapped_data, data, size);
-        gfx::unmap_buffer(staging_buffer);
+        backend->unmap_buffer(staging_buffer);
 
-        gfx::Handle<gfx::Buffer> vertex_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::VertexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
-        copy_buffer(pool, staging_buffer, vertex_buffer, size);
+        gfx::Handle<gfx::Buffer> vertex_buffer = backend->create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::VertexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
+        copy_buffer(backend, pool, staging_buffer, vertex_buffer, size);
 
-        gfx::destroy_buffer(staging_buffer);
+        backend->destroy_buffer(staging_buffer);
         return vertex_buffer;
     }
 
-    static gfx::Handle<gfx::Buffer> create_index_buffer(const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
+    static gfx::Handle<gfx::Buffer> create_index_buffer(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, const void* data, usize size)
     {
-        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        gfx::Handle<gfx::Buffer> staging_buffer = backend->create_buffer({ .size = size, .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = backend->map_buffer(staging_buffer);
         memcpy(mapped_data, data, size);
-        gfx::unmap_buffer(staging_buffer);
+        backend->unmap_buffer(staging_buffer);
 
-        gfx::Handle<gfx::Buffer> index_buffer = gfx::create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::IndexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
-        copy_buffer(pool, staging_buffer, index_buffer, size);
+        gfx::Handle<gfx::Buffer> index_buffer = backend->create_buffer({ .size = size, .usage = (gfx::BufferUsage::Flag)(gfx::BufferUsage::IndexBuffer | gfx::BufferUsage::TransferDst), .memory_usage = gfx::MemoryUsage::GpuOnly });
+        copy_buffer(backend, pool, staging_buffer, index_buffer, size);
 
-        gfx::destroy_buffer(staging_buffer);
+        backend->destroy_buffer(staging_buffer);
         return index_buffer;
     }
 
-    static gfx::Handle<gfx::Texture> create_texture(const gfx::Handle<gfx::CommandPool>& pool, const image::IImage* pImage)
+    static gfx::Handle<gfx::Texture> create_texture(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, const image::IImage* pImage)
     {
-        gfx::Handle<gfx::Buffer> staging_buffer = gfx::create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
-        void*                    mapped_data    = gfx::map_buffer(staging_buffer);
+        gfx::Handle<gfx::Buffer> staging_buffer = backend->create_buffer({ .size = pImage->get_size(), .usage = gfx::BufferUsage::TransferSrc, .memory_usage = gfx::MemoryUsage::CpuToGpu });
+        void*                    mapped_data    = backend->map_buffer(staging_buffer);
         memcpy(mapped_data, pImage->get_data(), pImage->get_size());
-        gfx::unmap_buffer(staging_buffer);
+        backend->unmap_buffer(staging_buffer);
 
-        gfx::Handle<gfx::Texture> image = gfx::create_texture({ .width        = pImage->get_width(),
-                                                                .height       = pImage->get_height(),
-                                                                .format       = gfx::Format::R8G8B8A8_UNORM,
-                                                                .usage        = (gfx::TextureUsage::Flag)(gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst),
-                                                                .memory_usage = gfx::MemoryUsage::GpuOnly });
+        gfx::Handle<gfx::Texture> image = backend->create_texture({ .width        = pImage->get_width(),
+                                                                    .height       = pImage->get_height(),
+                                                                    .format       = gfx::Format::R8G8B8A8_UNORM,
+                                                                    .usage        = (gfx::TextureUsage::Flag)(gfx::TextureUsage::Sampled | gfx::TextureUsage::TransferDst),
+                                                                    .memory_usage = gfx::MemoryUsage::GpuOnly });
 
-        transition_image_layout(pool, image, gfx::ImageLayout::Undefined, gfx::ImageLayout::TransferDstOptimal);
-        copy_buffer_to_image(pool, staging_buffer, image, pImage->get_width(), pImage->get_height());
-        transition_image_layout(pool, image, gfx::ImageLayout::TransferDstOptimal, gfx::ImageLayout::ShaderReadOnlyOptimal);
+        transition_image_layout(backend, pool, image, gfx::ImageLayout::Undefined, gfx::ImageLayout::TransferDstOptimal);
+        copy_buffer_to_image(backend, pool, staging_buffer, image, pImage->get_width(), pImage->get_height());
+        transition_image_layout(backend, pool, image, gfx::ImageLayout::TransferDstOptimal, gfx::ImageLayout::ShaderReadOnlyOptimal);
 
-        gfx::destroy_buffer(staging_buffer);
+        backend->destroy_buffer(staging_buffer);
         return image;
     }
 
-    static inline gfx::Handle<gfx::CommandBuffer> begin_single_command(const gfx::Handle<gfx::CommandPool>& pool)
+    static inline gfx::Handle<gfx::CommandBuffer> begin_single_command(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool)
     {
-        gfx::Handle<gfx::CommandBuffer> cb = gfx::allocate_command_buffer(pool);
-        gfx::cmd_begin(cb, true);
+        gfx::Handle<gfx::CommandBuffer> cb = backend->allocate_command_buffer(pool, true);
+        backend->cmd_begin(cb, true);
         return cb;
     }
 
-    static inline void end_single_command(gfx::Handle<gfx::CommandBuffer> cb)
+    static inline void end_single_command(gfx::IRenderBackend* backend, gfx::Handle<gfx::Queue> queue, gfx::Handle<gfx::CommandBuffer> cb)
     {
-        gfx::cmd_end(cb);
-        gfx::queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
-        gfx::queue_wait_idle(gfx::QueueType::Graphics);
-        gfx::free_command_buffer(cb);
+        backend->cmd_end(cb);
+        backend->queue_submit(gfx::QueueType::Graphics, { .command_buffers = &cb, .num_command_buffers = 1 });
+        backend->queue_wait_idle(gfx::QueueType::Graphics);
+        backend->free_command_buffer(cb);
     }
 
-    static void transition_image_layout(const gfx::Handle<gfx::CommandPool>& pool, gfx::Handle<gfx::Texture> image, gfx::ImageLayout::Enum old_layout, gfx::ImageLayout::Enum new_layout)
+    static void transition_image_layout(gfx::IRenderBackend* backend, const gfx::Handle<gfx::CommandPool>& pool, gfx::Handle<gfx::Texture> image, gfx::ImageLayout::Enum old_layout, gfx::ImageLayout::Enum new_layout)
     {
         gfx::Handle<gfx::CommandBuffer> cb = begin_single_command(pool);
         {
@@ -570,14 +575,14 @@ private:
                 throw std::runtime_error("unsupported layout transition!");
             }
 
-            gfx::cmd_pipeline_barrier(cb, barrier_options);
+            backend->cmd_pipeline_barrier(cb, barrier_options);
         }
         end_single_command(cb);
     }
 
     void shutdown()
     {
-        gfx::shutdown();
+        backend->f;
         window.shutdown();
     }
 };

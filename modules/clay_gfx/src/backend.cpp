@@ -6,37 +6,34 @@ namespace clay
 {
 namespace gfx
 {
-pro::proxy<spec::IRenderBackend> g_backend_proxy;
 
-bool init(const InitBackendOptions& desc)
+IRenderBackend* create_render_backend(const InitBackendOptions& desc)
 {
-    if (g_backend_proxy.has_value())
-    {
-        CLAY_LOG_WARNING("Backend already initialized");
-        return true;
-    }
-
     switch (desc.type)
     {
         case BackendType::Vulkan: {
-            VulkanBackend backend;
-            if (!backend.init(desc)) { return false; }
-            g_backend_proxy = pro::make_proxy<spec::IRenderBackend>(backend);
+            VulkanBackend* backend = new VulkanBackend();
+            if (backend->initialize(desc)) { return backend; }
+            else
+            {
+                delete backend;
+                return nullptr;
+            }
             break;
         }
         default:
-            return false;
+            return nullptr;
     }
 
-    return g_backend_proxy.has_value();
+    return nullptr;
 }
 
-void shutdown()
+void destroy_render_backend(IRenderBackend* backend)
 {
-    if (g_backend_proxy.has_value())
+    if (backend)
     {
-        g_backend_proxy.shutdown();
-        g_backend_proxy.reset();
+        backend->finalize();
+        delete backend;
     }
 }
 

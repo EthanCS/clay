@@ -24,10 +24,10 @@ private:
 
     VmaAllocator vma_allocator = VK_NULL_HANDLE;
 
-    VulkanQueue graphics_queue;
-    VulkanQueue present_queue;
-    VulkanQueue compute_queue;
-    VulkanQueue transfer_queue;
+    Handle<Queue> h_graphics_queue;
+    Handle<Queue> h_present_queue;
+    Handle<Queue> h_compute_queue;
+    Handle<Queue> h_transfer_queue;
 
     VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 
@@ -38,16 +38,13 @@ private:
     PFN_vkCmdEndDebugUtilsLabelEXT   pfn_CmdEndDebugUtilsLabelEXT;
 
 public:
-    bool init(const InitBackendOptions& desc);
-    void shutdown();
-
-    void              initialize(const InitBackendOptions& options) override;
+    bool              initialize(const InitBackendOptions& options) override;
     void              finalize() override;
     BackendType::Enum get_type() const CLAY_NOEXCEPT override { return BackendType::Vulkan; }
 
     void device_wait_idle() override { vkDeviceWaitIdle(device); }
 
-    Handle<Queue>         get_queue(const QueueType::Enum& queue_type) override;
+    Handle<Queue>         get_queue(const QueueType::Enum& queue_type) CLAY_NOEXCEPT override;
     void                  queue_wait_idle(const Handle<Queue>& queue) override;
     void                  queue_submit(const Handle<Queue>& queue, const QueueSubmitOptions& options) override;
     SwapchainStatus::Enum queue_present(const Handle<Queue>& queue, const QueuePresentOptions& options) override;

@@ -6,7 +6,8 @@
 
 #define DEFINE_CLAY_GFX_RESOURCE_TAG(name) \
     struct name {                          \
-    };
+    };                                     \
+    using H##name = Handle<name>;
 
 namespace clay
 {
